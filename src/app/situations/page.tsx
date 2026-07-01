@@ -6,6 +6,18 @@ import { FileText, Calendar, Trash2 } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { redirect } from "next/navigation";
 
+interface Company {
+  id: string;
+  ticker: string;
+  name: string;
+  sector: string | null;
+}
+
+interface ContentCompany {
+  id: string;
+  company: Company;
+}
+
 interface Content {
   id: string;
   title: string | null;
@@ -14,8 +26,8 @@ interface Content {
   sourceName: string;
   contentType: string;
   date: string;
-  tickers: string[];
   status: string;
+  companies: ContentCompany[];
 }
 
 export default function SituationsPage() {
@@ -154,15 +166,26 @@ export default function SituationsPage() {
                     </p>
                   )}
 
-                  {/* Tickers */}
-                  {content.tickers.length > 0 && (
+                  {/* Companies */}
+                  {content.companies.length > 0 && (
                     <div className="flex flex-wrap gap-2 mb-4">
-                      {content.tickers.map((ticker) => (
+                      {content.companies.map(({ company }) => (
                         <span
-                          key={ticker}
-                          className="px-2 py-1 text-xs font-mono font-medium bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded"
+                          key={company.id}
+                          className="group relative px-2 py-1 text-xs font-mono font-medium bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded cursor-help"
+                          title={`${company.name}${company.sector ? ` · ${company.sector}` : ''}`}
                         >
-                          ${ticker}
+                          ${company.ticker}
+                          {/* Tooltip */}
+                          <span className="invisible group-hover:visible absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 text-xs font-normal text-white bg-zinc-900 dark:bg-zinc-700 rounded-md whitespace-nowrap z-10 shadow-lg">
+                            <span className="block font-semibold">{company.name}</span>
+                            {company.sector && (
+                              <span className="block text-zinc-300 dark:text-zinc-400 text-[10px]">
+                                {company.sector}
+                              </span>
+                            )}
+                            <span className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-zinc-900 dark:border-t-zinc-700"></span>
+                          </span>
                         </span>
                       ))}
                     </div>

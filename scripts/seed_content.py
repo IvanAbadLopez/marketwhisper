@@ -97,25 +97,47 @@ def seed_database():
                 print("  Skipping: " + content["title"] + " (already exists)")
                 continue
             
+            # Insert content
             cur.execute(
                 '''INSERT INTO "Content" (
-                    id, title, description, "contentType", date, tickers, 
+                    id, title, description, "contentType", date,
                     "sourceUrl", "sourceName", status, metadata, "createdAt", "updatedAt"
                 ) VALUES (
-                    gen_random_uuid(), %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW(), NOW()
-                )''',
+                    replace(cast(gen_random_uuid() as text), '-', ''), %s, %s, %s, %s, %s, %s, %s, %s, NOW(), NOW()
+                ) RETURNING id''',
                 (
                     content["title"],
                     content["description"],
                     content["contentType"],
                     content["date"],
-                    content["tickers"],
                     content["sourceUrl"],
                     content["sourceName"],
                     content["status"],
                     json.dumps(content["metadata"]),
                 )
             )
+            content_id = cur.fetchone()[0]
+            
+            # Link companies
+            for ticker in content["tickers"]:
+                cur.execute(
+                    'SELECT id FROM "Company" WHERE ticker = %s',
+                    (ticker,)
+                )
+                company = cur.fetchone()
+                
+                if company:
+                    company_id = company[0]
+                    # Create ContentCompany relation
+                    cur.execute(
+                        '''INSERT INTO "ContentCompany" (
+                            id, "contentId", "companyId", "createdAt"
+                        ) VALUES (
+                            replace(cast(gen_random_uuid() as text), '-', ''), %s, %s, NOW()
+                        )''',
+                        (content_id, company_id)
+                    )
+            
             print("  Added: " + content["title"])
         
         conn.commit()

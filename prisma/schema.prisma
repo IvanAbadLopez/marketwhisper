@@ -65,25 +65,24 @@ model VerificationToken {
 // ==========================================
 
 model Content {
-  id          String        @id @default(cuid())
+  id          String           @id @default(cuid())
   title       String
   description String?
   contentType ContentType
   date        DateTime
-  tickers     String[]      // Array of ticker symbols mentioned
-  sourceUrl   String        @unique // URL where content was scraped from
-  sourceName  String        // Display name of source (e.g., "MarketWatch", "TuBlog")
-  status      ContentStatus @default(PENDING)
-  summary     String?       // AI-generated summary
-  metadata    Json?         // Type-specific data (duration, videoPath, situationType, etc.)
+  sourceUrl   String           @unique // URL where content was scraped from
+  sourceName  String           // Display name of source (e.g., "MarketWatch", "TuBlog")
+  status      ContentStatus    @default(PENDING)
+  summary     String?          // AI-generated summary
+  metadata    Json?            // Type-specific data (duration, videoPath, situationType, etc.)
   transcripts Transcript[]
   mentions    Mention[]
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
+  companies   ContentCompany[] // Many-to-many relation with Company
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
 
   @@index([contentType])
   @@index([date])
-  @@index([tickers])
 }
 
 enum ContentType {
@@ -119,7 +118,9 @@ model Mention {
   id        String    @id @default(cuid())
   contentId String
   content   Content   @relation(fields: [contentId], references: [id], onDelete: Cascade)
-  ticker    String
+  companyId String?   // Optional relation to Company
+  company   Company?  @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  ticker    String    // Kept for backward compatibility
   sentiment Sentiment @default(NEUTRAL)
   context   String    // surrounding text where ticker is mentioned
   timestamp Float?    // second in the video (null for non-video content)
@@ -127,10 +128,47 @@ model Mention {
 
   @@index([contentId])
   @@index([ticker])
+  @@index([companyId])
 }
 
 enum Sentiment {
   BULLISH
   BEARISH
   NEUTRAL
+}
+
+// ==========================================
+// COMPANY MODELS
+// ==========================================
+
+model Company {
+  id               String           @id @default(cuid())
+  ticker           String           @unique // Stock ticker symbol (e.g., AAPL, MSFT)
+  name             String           // Company name (e.g., Apple Inc.)
+  description      String?          // Company description
+  sector           String?          // Industry sector
+  industry         String?          // Specific industry
+  marketCap        Float?           // Market capitalization
+  logoUrl          String?          // Company logo URL
+  website          String?          // Official website
+  content          ContentCompany[] // Many-to-many relation with Content
+  mentions         Mention[]        // Direct mentions in content
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+
+  @@index([ticker])
+  @@index([sector])
+}
+
+model ContentCompany {
+  id        String   @id @default(cuid())
+  contentId String
+  companyId String
+  content   Content  @relation(fields: [contentId], references: [id], onDelete: Cascade)
+  company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([contentId, companyId]) // Prevent duplicate relations
+  @@index([contentId])
+  @@index([companyId])
 }

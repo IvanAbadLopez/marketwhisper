@@ -14,6 +14,13 @@ export async function GET() {
       orderBy: {
         date: "desc",
       },
+      include: {
+        companies: {
+          include: {
+            company: true,
+          },
+        },
+      },
     });
 
     return NextResponse.json(allContent, { status: 200 });
