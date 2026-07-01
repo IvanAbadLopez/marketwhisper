@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import type { Prisma } from "@/generated/prisma/client";
 
 export const dynamic = "force-dynamic";
 
@@ -12,7 +13,7 @@ interface ScrapedContent {
   contentType: string;
   publishDate: string;
   tickers?: string[];
-  metadata?: Record<string, unknown>;
+  metadata?: Prisma.InputJsonValue;
 }
 
 export async function POST(request: NextRequest) {
@@ -108,10 +109,9 @@ export async function saveContentToDatabase(
             title: content.title,
             description: content.description,
             contentType: content.contentType as "VIDEO" | "WEB_ARTICLE" | "BLOG_POST" | "SPECIAL_EVENT" | "NEWS",
-            tickers: content.tickers || [],
             date: new Date(content.publishDate),
             sourceName: content.sourceName,
-            metadata: content.metadata,
+            metadata: content.metadata || null,
           },
         });
         updated++;
@@ -124,10 +124,9 @@ export async function saveContentToDatabase(
             sourceUrl: content.url,
             sourceName: content.sourceName,
             contentType: content.contentType as "VIDEO" | "WEB_ARTICLE" | "BLOG_POST" | "SPECIAL_EVENT" | "NEWS",
-            tickers: content.tickers || [],
             date: new Date(content.publishDate),
             status: "PENDING",
-            metadata: content.metadata,
+            metadata: content.metadata || null,
           },
         });
         created++;
