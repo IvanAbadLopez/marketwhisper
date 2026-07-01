@@ -30,8 +30,7 @@ describe("DELETE /api/content/[id]", () => {
 
   it("returns 401 if user is not authenticated", async () => {
     const { auth } = await import("@/lib/auth");
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    vi.mocked(auth).mockResolvedValue(null as any);
+    vi.mocked(auth).mockResolvedValue(null as unknown as Awaited<ReturnType<typeof auth>>);
 
     const request = new NextRequest("http://localhost:3000/api/content/123");
     const params = Promise.resolve({ id: "123" });
@@ -47,11 +46,10 @@ describe("DELETE /api/content/[id]", () => {
     const { auth } = await import("@/lib/auth");
     const { prisma } = await import("@/lib/prisma");
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     vi.mocked(auth).mockResolvedValue({
       user: { id: "user1", email: "test@example.com" },
       expires: "2026-12-31",
-    } as any);
+    } as unknown as Awaited<ReturnType<typeof auth>>);
 
     vi.mocked(prisma.content.findUnique).mockResolvedValue(null);
 
@@ -69,11 +67,10 @@ describe("DELETE /api/content/[id]", () => {
     const { auth } = await import("@/lib/auth");
     const { prisma } = await import("@/lib/prisma");
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     vi.mocked(auth).mockResolvedValue({
       user: { id: "user1", email: "test@example.com" },
       expires: "2026-12-31",
-    } as any);
+    } as unknown as Awaited<ReturnType<typeof auth>>);
 
     vi.mocked(prisma.content.findUnique).mockResolvedValue({
       id: "123",

@@ -12,8 +12,7 @@ interface ScrapedContent {
   contentType: string;
   publishDate: string;
   tickers?: string[];
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  metadata?: any;
+  metadata?: unknown;
 }
 
 export async function POST(request: NextRequest) {
