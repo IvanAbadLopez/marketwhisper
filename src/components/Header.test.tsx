@@ -26,10 +26,10 @@ describe("Header Component", () => {
     expect(screen.getByText("test@example.com")).toBeInTheDocument();
   });
 
-  it("renders MarketWhisper title", () => {
+it("renders page title", () => {
     render(<Header user={mockUser} />);
-    
-    expect(screen.getByText("MarketWhisper")).toBeInTheDocument();
+
+    expect(screen.getByText("Dashboard")).toBeInTheDocument();
   });
 
   it("renders logout button", () => {
