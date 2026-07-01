@@ -184,6 +184,55 @@ marketwhisper/
 - API routes: lowercase with hyphens (`[...nextauth]/route.ts`)
 - Types: PascalCase with `.ts` extension (`types.ts`)
 
+## Development Rules & Testing
+
+### Testing Requirements ⚠️
+
+**MANDATORY**: Every new feature MUST include tests before merging.
+
+**Test Coverage Required**:
+- ✅ **API Routes**: Unit tests for all endpoints (request/response, error handling)
+- ✅ **Components**: Component tests for user interactions and rendering
+- ✅ **Business Logic**: Unit tests for utilities, helpers, and complex functions
+- ✅ **Critical Flows**: E2E tests for auth, sync, and user journeys
+
+**Testing Framework**:
+- **Unit/Integration**: Vitest + Testing Library
+- **E2E**: Playwright
+- **Location**: 
+  - Unit tests: `src/**/*.test.ts(x)` (next to the code)
+  - E2E tests: `e2e/**/*.spec.ts`
+
+**Running Tests**:
+```bash
+npm test              # Unit tests (watch mode)
+npm test -- --run     # Unit tests (single run)
+npm run test:e2e      # E2E tests
+```
+
+**CI/CD**: All tests run automatically on push. PRs cannot merge with failing tests.
+
+**Example Test Structure**:
+```typescript
+// src/app/api/sync/route.test.ts
+import { describe, it, expect } from 'vitest';
+import { POST } from './route';
+
+describe('POST /api/sync', () => {
+  it('should start sync process', async () => {
+    const response = await POST(new Request('http://localhost:3000/api/sync'));
+    expect(response.status).toBe(200);
+  });
+});
+```
+
+### Workflow
+1. Write failing test first (TDD encouraged)
+2. Implement feature
+3. Verify all tests pass
+4. Update documentation if needed
+5. Create PR (CI will run tests)
+
 ## Environment Variables
 
 Required in `.env.local`:
