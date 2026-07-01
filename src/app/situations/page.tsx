@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { MainLayout } from "@/components/MainLayout";
-import { TrendingUp, FileText, Building2, Globe } from "lucide-react";
+import { TrendingUp, FileText, Building2, Globe, Search } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { redirect, useRouter } from "next/navigation";
 
@@ -40,6 +40,7 @@ export default function SituationsPage() {
   const router = useRouter();
   const [companies, setCompanies] = useState<Company[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -79,6 +80,22 @@ export default function SituationsPage() {
     return `$${marketCap.toLocaleString()}`;
   };
 
+  // Filter companies based on search query
+  const filteredCompanies = useMemo(() => {
+    if (!searchQuery.trim()) return companies;
+
+    const query = searchQuery.toLowerCase();
+    return companies.filter((company) => {
+      return (
+        company.ticker.toLowerCase().includes(query) ||
+        company.name.toLowerCase().includes(query) ||
+        company.sector?.toLowerCase().includes(query) ||
+        company.industry?.toLowerCase().includes(query) ||
+        company.description?.toLowerCase().includes(query)
+      );
+    });
+  }, [companies, searchQuery]);
+
   if (status === "loading" || loading) {
     return (
       <MainLayout user={session?.user}>
@@ -104,6 +121,35 @@ export default function SituationsPage() {
             </p>
           </div>
 
+          {/* Search Bar */}
+          {companies.length > 0 && (
+            <div className="mb-6">
+              <div className="relative max-w-2xl">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-400" />
+                <input
+                  type="text"
+                  placeholder="Search by ticker, company name, sector, industry..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-10 pr-4 py-3 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 dark:placeholder-zinc-600 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
+                />
+                {searchQuery && (
+                  <button
+                    onClick={() => setSearchQuery("")}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300"
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+              {searchQuery && (
+                <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
+                  Found {filteredCompanies.length} {filteredCompanies.length === 1 ? 'company' : 'companies'}
+                </p>
+              )}
+            </div>
+          )}
+
           {companies.length === 0 ? (
             <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg p-12 text-center">
               <div className="text-6xl mb-4">🏢</div>
@@ -114,9 +160,25 @@ export default function SituationsPage() {
                 Add content to start tracking companies
               </p>
             </div>
+          ) : filteredCompanies.length === 0 ? (
+            <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg p-12 text-center">
+              <div className="text-6xl mb-4">🔍</div>
+              <h2 className="text-xl font-semibold text-zinc-900 dark:text-zinc-100 mb-2">
+                No Companies Found
+              </h2>
+              <p className="text-zinc-600 dark:text-zinc-400 mb-4">
+                No companies match your search "{searchQuery}"
+              </p>
+              <button
+                onClick={() => setSearchQuery("")}
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+              >
+                Clear Search
+              </button>
+            </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {companies.map((company) => (
+              {filteredCompanies.map((company) => (
                 <div
                   key={company.id}
                   onClick={() => handleCompanyClick(company.ticker)}
@@ -236,7 +298,7 @@ export default function SituationsPage() {
             </div>
           )}
 
-          {companies.length > 0 && (
+          {companies.length > 0 && filteredCompanies.length > 0 && !searchQuery && (
             <div className="mt-6 text-center text-sm text-zinc-500 dark:text-zinc-400">
               Tracking {companies.length} {companies.length === 1 ? 'company' : 'companies'}
             </div>
