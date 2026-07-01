@@ -2,6 +2,7 @@
 
 import { signOut } from "next-auth/react";
 import { User } from "next-auth";
+import { SyncButton } from "./SyncButton";
 
 interface HeaderProps {
   user: User;
@@ -9,17 +10,22 @@ interface HeaderProps {
 
 export function Header({ user }: HeaderProps) {
   return (
-    <header className="w-full border-b border-zinc-200 dark:border-zinc-800">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
-          <div className="flex items-center gap-3">
+    <header className="w-full border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-black">
+      <div className="px-6 py-4">
+        <div className="flex items-center justify-between">
+          {/* Page title will be dynamic */}
+          <div className="flex items-center gap-4">
             <h1 className="text-xl font-semibold text-zinc-900 dark:text-zinc-100">
-              MarketWhisper
+              Dashboard
             </h1>
           </div>
 
           <div className="flex items-center gap-4">
-            <div className="flex items-center gap-3">
+            {/* Sync button */}
+            <SyncButton />
+
+            {/* User menu */}
+            <div className="flex items-center gap-3 pl-4 border-l border-zinc-200 dark:border-zinc-800">
               {user.image ? (
                 <img
                   src={user.image}
@@ -41,14 +47,14 @@ export function Header({ user }: HeaderProps) {
                   {user.email}
                 </span>
               </div>
-            </div>
 
-            <button
-              onClick={() => signOut({ callbackUrl: "/login" })}
-              className="px-4 py-2 text-sm font-medium text-zinc-700 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-md transition-colors"
-            >
-              Logout
-            </button>
+              <button
+                onClick={() => signOut({ callbackUrl: "/login" })}
+                className="px-3 py-1.5 text-sm font-medium text-zinc-700 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-md transition-colors"
+              >
+                Logout
+              </button>
+            </div>
           </div>
         </div>
       </div>
