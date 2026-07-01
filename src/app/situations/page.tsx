@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { MainLayout } from "@/components/MainLayout";
 import { TrendingUp, FileText, Building2, Globe, Search } from "lucide-react";
 import { useSession } from "next-auth/react";
@@ -48,13 +48,7 @@ export default function SituationsPage() {
     }
   }, [status]);
 
-  useEffect(() => {
-    if (status === "authenticated") {
-      fetchCompanies();
-    }
-  }, [status]);
-
-  const fetchCompanies = async () => {
+  const fetchCompanies = useCallback(async () => {
     try {
       const response = await fetch("/api/companies");
       if (response.ok) {
@@ -66,7 +60,14 @@ export default function SituationsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    if (status === "authenticated") {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      fetchCompanies();
+    }
+  }, [status, fetchCompanies]);
 
   const handleCompanyClick = (ticker: string) => {
     router.push(`/companies/${ticker.toLowerCase()}`);
@@ -167,7 +168,7 @@ export default function SituationsPage() {
                 No Companies Found
               </h2>
               <p className="text-zinc-600 dark:text-zinc-400 mb-4">
-                No companies match your search "{searchQuery}"
+                No companies match your search &quot;{searchQuery}&quot;
               </p>
               <button
                 onClick={() => setSearchQuery("")}

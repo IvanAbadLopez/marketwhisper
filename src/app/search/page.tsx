@@ -31,7 +31,7 @@ export default async function SearchPage() {
               Semantic search with pgvector will allow natural language queries
             </p>
             <p className="text-sm text-zinc-500 dark:text-zinc-500">
-              Example: "What did they say about tech stocks last month?"
+              Example: &quot;What did they say about tech stocks last month?&quot;
             </p>
           </div>
         </div>

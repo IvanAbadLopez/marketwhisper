@@ -12,7 +12,7 @@ interface ScrapedContent {
   contentType: string;
   publishDate: string;
   tickers?: string[];
-  metadata?: any;
+  metadata?: Record<string, unknown>;
 }
 
 export async function POST(request: NextRequest) {
@@ -107,7 +107,7 @@ export async function saveContentToDatabase(
           data: {
             title: content.title,
             description: content.description,
-            contentType: content.contentType as any,
+            contentType: content.contentType as "VIDEO" | "WEB_ARTICLE" | "BLOG_POST" | "SPECIAL_EVENT" | "NEWS",
             tickers: content.tickers || [],
             date: new Date(content.publishDate),
             sourceName: content.sourceName,
@@ -123,7 +123,7 @@ export async function saveContentToDatabase(
             description: content.description,
             sourceUrl: content.url,
             sourceName: content.sourceName,
-            contentType: content.contentType as any,
+            contentType: content.contentType as "VIDEO" | "WEB_ARTICLE" | "BLOG_POST" | "SPECIAL_EVENT" | "NEWS",
             tickers: content.tickers || [],
             date: new Date(content.publishDate),
             status: "PENDING",

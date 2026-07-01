@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { MainLayout } from "@/components/MainLayout";
 import { 
   Building2, 
@@ -14,14 +14,6 @@ import {
 } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { redirect, useRouter } from "next/navigation";
-
-interface ContentSummary {
-  id: string;
-  title: string | null;
-  contentType: string;
-  date: string;
-  status: string;
-}
 
 interface Mention {
   id: string;
@@ -97,13 +89,7 @@ export default function CompanyDetailPage({ params }: { params: Promise<{ ticker
     }
   }, [status]);
 
-  useEffect(() => {
-    if (status === "authenticated" && ticker) {
-      fetchCompany();
-    }
-  }, [status, ticker]);
-
-  const fetchCompany = async () => {
+  const fetchCompany = useCallback(async () => {
     try {
       const response = await fetch(`/api/companies/${ticker}`);
       if (response.ok) {
@@ -118,7 +104,14 @@ export default function CompanyDetailPage({ params }: { params: Promise<{ ticker
     } finally {
       setLoading(false);
     }
-  };
+  }, [ticker]);
+
+  useEffect(() => {
+    if (status === "authenticated" && ticker) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      fetchCompany();
+    }
+  }, [status, ticker, fetchCompany]);
 
   const formatMarketCap = (marketCap: number | null): string => {
     if (!marketCap) return "N/A";
@@ -361,7 +354,7 @@ export default function CompanyDetailPage({ params }: { params: Promise<{ ticker
                               )}
                               {mention.context && (
                                 <p className="text-sm text-zinc-700 dark:text-zinc-300 mb-1">
-                                  "{mention.context}"
+                                  &quot;{mention.context}&quot;
                                 </p>
                               )}
                               {mention.sentiment && (

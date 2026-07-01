@@ -28,7 +28,7 @@ export default async function VideosPage() {
               No Videos Yet
             </h2>
             <p className="text-zinc-600 dark:text-zinc-400 mb-6">
-              Click "Sync Now" to download and transcribe your first videos
+              Click &quot;Sync Now&quot; to download and transcribe your first videos
             </p>
             <p className="text-sm text-zinc-500 dark:text-zinc-500">
               Coming soon: Video list, transcriptions, and AI insights
