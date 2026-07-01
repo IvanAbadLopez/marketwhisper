@@ -111,7 +111,7 @@ export async function saveContentToDatabase(
             contentType: content.contentType as "VIDEO" | "WEB_ARTICLE" | "BLOG_POST" | "SPECIAL_EVENT" | "NEWS",
             date: new Date(content.publishDate),
             sourceName: content.sourceName,
-            metadata: content.metadata || null,
+            metadata: (content.metadata || null) as Prisma.JsonValue,
           },
         });
         updated++;
@@ -126,7 +126,7 @@ export async function saveContentToDatabase(
             contentType: content.contentType as "VIDEO" | "WEB_ARTICLE" | "BLOG_POST" | "SPECIAL_EVENT" | "NEWS",
             date: new Date(content.publishDate),
             status: "PENDING",
-            metadata: content.metadata || null,
+            metadata: (content.metadata || null) as Prisma.JsonValue,
           },
         });
         created++;
