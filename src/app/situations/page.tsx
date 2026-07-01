@@ -1,26 +1,89 @@
-import { auth } from "@/lib/auth";
+"use client";
+
+import { useState, useEffect } from "react";
 import { MainLayout } from "@/components/MainLayout";
+import { FileText, Calendar, Trash2 } from "lucide-react";
+import { useSession } from "next-auth/react";
 import { redirect } from "next/navigation";
-import { prisma } from "@/lib/prisma";
-import { FileText, Calendar, TrendingUp } from "lucide-react";
 
-export default async function SituationsPage() {
-  const session = await auth();
+interface Content {
+  id: string;
+  title: string | null;
+  description: string | null;
+  sourceUrl: string;
+  sourceName: string;
+  contentType: string;
+  date: string;
+  tickers: string[];
+  status: string;
+}
 
-  if (!session?.user) {
-    redirect("/login");
+export default function SituationsPage() {
+  const { data: session, status } = useSession();
+  const [allContent, setAllContent] = useState<Content[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (status === "unauthenticated") {
+      redirect("/login");
+    }
+  }, [status]);
+
+  useEffect(() => {
+    if (status === "authenticated") {
+      fetchContent();
+    }
+  }, [status]);
+
+  const fetchContent = async () => {
+    try {
+      const response = await fetch("/api/content");
+      if (response.ok) {
+        const data = await response.json();
+        setAllContent(data);
+      }
+    } catch (error) {
+      console.error("Error fetching content:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this content?")) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/content/${id}`, {
+        method: "DELETE",
+      });
+
+      if (response.ok) {
+        fetchContent();
+      } else {
+        alert("Error deleting content");
+      }
+    } catch (error) {
+      console.error("Error deleting content:", error);
+      alert("Error deleting content");
+    }
+  };
+
+  if (status === "loading" || loading) {
+    return (
+      <MainLayout user={session?.user}>
+        <div className="p-8">
+          <div className="max-w-6xl mx-auto text-center">
+            <p className="text-zinc-600 dark:text-zinc-400">Loading...</p>
+          </div>
+        </div>
+      </MainLayout>
+    );
   }
 
-  // Fetch content from database (all types or filter by specific types)
-  const allContent = await prisma.content.findMany({
-    orderBy: {
-      date: "desc",
-    },
-    take: 50,
-  });
-
   return (
-    <MainLayout user={session.user}>
+    <MainLayout user={session?.user}>
       <div className="p-8">
         <div className="max-w-6xl mx-auto">
           <div className="mb-6">
@@ -47,10 +110,20 @@ export default async function SituationsPage() {
               {allContent.map((content) => (
                 <div
                   key={content.id}
-                  className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg p-6 hover:border-blue-500 dark:hover:border-blue-500 transition-colors"
+                  className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg p-6 hover:border-blue-500 dark:hover:border-blue-500 transition-colors relative"
                 >
+                  {/* Delete Button - Top Right */}
+                  <button
+                    onClick={() => handleDelete(content.id)}
+                    className="absolute top-4 right-4 p-2 text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md transition-colors"
+                    aria-label="Delete content"
+                    title="Delete"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+
                   {/* Header */}
-                  <div className="flex items-start justify-between mb-3">
+                  <div className="flex items-start justify-between mb-3 pr-10">
                     <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100 flex-1">
                       {content.title}
                     </h3>
