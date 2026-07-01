@@ -1,6 +1,7 @@
 import { auth } from "@/lib/auth";
 import { MainLayout } from "@/components/MainLayout";
 import { redirect } from "next/navigation";
+import { prisma } from "@/lib/prisma";
 
 export default async function Home() {
   const session = await auth();
@@ -8,6 +9,17 @@ export default async function Home() {
   if (!session?.user) {
     redirect("/login");
   }
+
+  // Fetch stats from database
+  const [videoCount, articleCount, mentionCount] = await Promise.all([
+    prisma.content.count({ where: { contentType: "VIDEO" } }),
+    prisma.content.count({
+      where: {
+        contentType: { in: ["WEB_ARTICLE", "BLOG_POST", "SPECIAL_EVENT", "NEWS"] },
+      },
+    }),
+    prisma.mention.count(),
+  ]);
 
   return (
     <MainLayout user={session.user}>
@@ -32,7 +44,7 @@ export default async function Home() {
                     Videos Analyzed
                   </p>
                   <p className="text-3xl font-bold text-zinc-900 dark:text-zinc-100 mt-2">
-                    0
+                    {videoCount}
                   </p>
                 </div>
                 <div className="h-12 w-12 bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-center">
@@ -45,10 +57,10 @@ export default async function Home() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400">
-                    Special Situations
+                    Content Items
                   </p>
                   <p className="text-3xl font-bold text-zinc-900 dark:text-zinc-100 mt-2">
-                    0
+                    {articleCount}
                   </p>
                 </div>
                 <div className="h-12 w-12 bg-green-100 dark:bg-green-900 rounded-lg flex items-center justify-center">
@@ -64,7 +76,7 @@ export default async function Home() {
                     Stock Mentions
                   </p>
                   <p className="text-3xl font-bold text-zinc-900 dark:text-zinc-100 mt-2">
-                    0
+                    {mentionCount}
                   </p>
                 </div>
                 <div className="h-12 w-12 bg-purple-100 dark:bg-purple-900 rounded-lg flex items-center justify-center">
@@ -80,16 +92,16 @@ export default async function Home() {
               🚀 Getting Started
             </h3>
             <p className="text-blue-700 dark:text-blue-300 mb-4">
-              Start by syncing your content to populate the dashboard with market intelligence.
+              Start by adding content from any web source to populate the dashboard.
             </p>
             <ul className="space-y-2 text-sm text-blue-600 dark:text-blue-400">
               <li className="flex items-center gap-2">
                 <span className="text-blue-500">•</span>
-                Click <strong>Sync Now</strong> to download and process videos
+                Click <strong>Add Content</strong> to scrape from any URL
               </li>
               <li className="flex items-center gap-2">
                 <span className="text-blue-500">•</span>
-                Explore transcriptions and AI-extracted insights
+                Content is automatically analyzed for ticker mentions
               </li>
               <li className="flex items-center gap-2">
                 <span className="text-blue-500">•</span>

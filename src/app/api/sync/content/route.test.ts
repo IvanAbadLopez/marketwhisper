@@ -4,7 +4,7 @@ import { NextRequest } from "next/server";
 // Create manual mocks
 const mockAuth = vi.fn();
 const mockPrisma = {
-  specialSituation: {
+  content: {
     findFirst: vi.fn(),
     create: vi.fn(),
     update: vi.fn(),
@@ -20,7 +20,7 @@ vi.mock("@/lib/prisma", () => ({
   prisma: mockPrisma,
 }));
 
-describe("POST /api/sync/situations", () => {
+describe("POST /api/sync/content", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -29,8 +29,9 @@ describe("POST /api/sync/situations", () => {
     mockAuth.mockResolvedValue(null);
 
     const { POST } = await import("./route");
-    const request = new NextRequest("http://localhost:3000/api/sync/situations", {
+    const request = new NextRequest("http://localhost:3000/api/sync/content", {
       method: "POST",
+      body: JSON.stringify({ url: "https://example.com", sourceName: "Example" }),
     });
 
     const response = await POST(request);
@@ -40,18 +41,41 @@ describe("POST /api/sync/situations", () => {
     expect(data.error).toBe("Unauthorized");
   });
 
-  it("should return success when authenticated", async () => {
+  it("should return 400 if url or sourceName is missing", async () => {
     mockAuth.mockResolvedValue({
       user: { id: "test-id", email: "test@example.com", name: "Test User" },
       expires: "2026-12-31",
     });
 
-    mockPrisma.specialSituation.findFirst.mockResolvedValue(null);
-    mockPrisma.specialSituation.create.mockResolvedValue({});
+    const { POST } = await import("./route");
+    const request = new NextRequest("http://localhost:3000/api/sync/content", {
+      method: "POST",
+      body: JSON.stringify({ url: "https://example.com" }), // Missing sourceName
+    });
+
+    const response = await POST(request);
+    const data = await response.json();
+
+    expect(response.status).toBe(400);
+    expect(data.error).toContain("Missing required fields");
+  });
+
+  it("should return success when authenticated with valid data", async () => {
+    mockAuth.mockResolvedValue({
+      user: { id: "test-id", email: "test@example.com", name: "Test User" },
+      expires: "2026-12-31",
+    });
+
+    mockPrisma.content.findFirst.mockResolvedValue(null);
+    mockPrisma.content.create.mockResolvedValue({});
 
     const { POST } = await import("./route");
-    const request = new NextRequest("http://localhost:3000/api/sync/situations", {
+    const request = new NextRequest("http://localhost:3000/api/sync/content", {
       method: "POST",
+      body: JSON.stringify({
+        url: "https://example.com/article",
+        sourceName: "Example Blog",
+      }),
     });
 
     const response = await POST(request);
@@ -60,71 +84,39 @@ describe("POST /api/sync/situations", () => {
     expect(response.status).toBe(200);
     expect(data.success).toBe(true);
     expect(data).toHaveProperty("count");
-    expect(data).toHaveProperty("message");
-    expect(data.count).toBeGreaterThanOrEqual(0);
+    expect(data).toHaveProperty("created");
+    expect(data).toHaveProperty("updated");
   });
 
-  it("should not create duplicate situations", async () => {
+  it("should update existing content with same URL", async () => {
     mockAuth.mockResolvedValue({
       user: { id: "test-id", email: "test@example.com", name: "Test User" },
       expires: "2026-12-31",
     });
 
-    // Mock all situations as already existing
-    mockPrisma.specialSituation.findFirst.mockResolvedValue({
-      id: "existing-id",
-      title: "Existing Situation",
-    });
-    mockPrisma.specialSituation.update.mockResolvedValue({});
-
-    const { POST } = await import("./route");
-    const request = new NextRequest("http://localhost:3000/api/sync/situations", {
-      method: "POST",
-    });
-
-    const response = await POST(request);
-    const data = await response.json();
-
-    expect(response.status).toBe(200);
-    expect(mockPrisma.specialSituation.create).not.toHaveBeenCalled();
-  });
-
-  it("should update existing situations with new data", async () => {
-    mockAuth.mockResolvedValue({
-      user: { id: "test-id", email: "test@example.com", name: "Test User" },
-      expires: "2026-12-31",
-    });
-
-    // Mock existing situation found
-    mockPrisma.specialSituation.findFirst.mockResolvedValue({
+    // Mock existing content found
+    mockPrisma.content.findFirst.mockResolvedValue({
       id: "existing-id",
       title: "Old Title",
       description: "Old description",
     });
-    mockPrisma.specialSituation.update.mockResolvedValue({});
+    mockPrisma.content.update.mockResolvedValue({});
 
     const { POST } = await import("./route");
-    const request = new NextRequest("http://localhost:3000/api/sync/situations", {
+    const request = new NextRequest("http://localhost:3000/api/sync/content", {
       method: "POST",
+      body: JSON.stringify({
+        url: "https://example.com/article",
+        sourceName: "Example Blog",
+      }),
     });
 
     const response = await POST(request);
     const data = await response.json();
 
     expect(response.status).toBe(200);
-    expect(mockPrisma.specialSituation.update).toHaveBeenCalled();
-    // Verify update was called with the existing id and new data
-    expect(mockPrisma.specialSituation.update).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: { id: "existing-id" },
-        data: expect.objectContaining({
-          title: expect.any(String),
-          description: expect.any(String),
-        }),
-      })
-    );
+    expect(mockPrisma.content.update).toHaveBeenCalled();
+    expect(mockPrisma.content.create).not.toHaveBeenCalled();
+    expect(data.updated).toBeGreaterThan(0);
   });
 });
-
-
-

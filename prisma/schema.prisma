@@ -61,56 +61,71 @@ model VerificationToken {
 }
 
 // ==========================================
-// CORE MODELS
+// CORE MODELS - Unified Content System
 // ==========================================
 
-model Video {
-  id          String      @id @default(cuid())
+model Content {
+  id          String        @id @default(cuid())
   title       String
+  description String?
+  contentType ContentType
   date        DateTime
-  duration    Int         // duration in seconds
-  sourceUrl   String?
-  localPath   String?
-  status      VideoStatus @default(PENDING)
-  summary     String?     // AI-generated summary
+  tickers     String[]      // Array of ticker symbols mentioned
+  sourceUrl   String        @unique // URL where content was scraped from
+  sourceName  String        // Display name of source (e.g., "MarketWatch", "TuBlog")
+  status      ContentStatus @default(PENDING)
+  summary     String?       // AI-generated summary
+  metadata    Json?         // Type-specific data (duration, videoPath, situationType, etc.)
   transcripts Transcript[]
   mentions    Mention[]
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@index([contentType])
+  @@index([date])
+  @@index([tickers])
 }
 
-enum VideoStatus {
-  PENDING
-  DOWNLOADING
-  TRANSCRIBING
-  PROCESSING
-  COMPLETED
-  FAILED
+enum ContentType {
+  VIDEO          // Daily analysis videos
+  WEB_ARTICLE    // Scraped web articles
+  BLOG_POST      // Blog posts
+  SPECIAL_EVENT  // Special situations (mergers, spinoffs, etc.)
+  NEWS           // News articles
+}
+
+enum ContentStatus {
+  PENDING       // Not yet processed
+  DOWNLOADING   // Downloading content
+  TRANSCRIBING  // Transcribing video
+  PROCESSING    // AI processing (extraction, summary)
+  COMPLETED     // Fully processed
+  FAILED        // Processing failed
 }
 
 model Transcript {
   id        String   @id @default(cuid())
-  videoId   String
-  video     Video    @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  contentId String
+  content   Content  @relation(fields: [contentId], references: [id], onDelete: Cascade)
   text      String
-  startTime Float    // seconds from start
-  endTime   Float    // seconds from end
+  startTime Float?   // seconds from start (null for non-video content)
+  endTime   Float?   // seconds from end (null for non-video content)
   createdAt DateTime @default(now())
 
-  @@index([videoId])
+  @@index([contentId])
 }
 
 model Mention {
   id        String    @id @default(cuid())
-  videoId   String
-  video     Video     @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  contentId String
+  content   Content   @relation(fields: [contentId], references: [id], onDelete: Cascade)
   ticker    String
   sentiment Sentiment @default(NEUTRAL)
   context   String    // surrounding text where ticker is mentioned
-  timestamp Float     // second in the video
+  timestamp Float?    // second in the video (null for non-video content)
   createdAt DateTime  @default(now())
 
-  @@index([videoId])
+  @@index([contentId])
   @@index([ticker])
 }
 
@@ -118,35 +133,4 @@ enum Sentiment {
   BULLISH
   BEARISH
   NEUTRAL
-}
-
-model SpecialSituation {
-  id          String          @id @default(cuid())
-  title       String
-  description String
-  date        DateTime
-  tickers     String[]
-  type        SituationType
-  sourceUrl   String?
-  status      SituationStatus @default(NEW)
-  createdAt   DateTime        @default(now())
-  updatedAt   DateTime        @updatedAt
-}
-
-enum SituationType {
-  OPA
-  SPLIT
-  MERGER
-  ARBITRAGE
-  SPINOFF
-  DIVIDEND_SPECIAL
-  OTHER
-}
-
-enum SituationStatus {
-  NEW
-  REVIEWED
-  ACTIVE
-  CLOSED
-  ARCHIVED
 }
