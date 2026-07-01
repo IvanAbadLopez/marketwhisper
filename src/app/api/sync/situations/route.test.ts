@@ -7,6 +7,7 @@ const mockPrisma = {
   specialSituation: {
     findFirst: vi.fn(),
     create: vi.fn(),
+    update: vi.fn(),
   },
 };
 
@@ -74,6 +75,7 @@ describe("POST /api/sync/situations", () => {
       id: "existing-id",
       title: "Existing Situation",
     });
+    mockPrisma.specialSituation.update.mockResolvedValue({});
 
     const { POST } = await import("./route");
     const request = new NextRequest("http://localhost:3000/api/sync/situations", {
@@ -84,8 +86,43 @@ describe("POST /api/sync/situations", () => {
     const data = await response.json();
 
     expect(response.status).toBe(200);
-    expect(data.count).toBe(0); // No new situations saved
     expect(mockPrisma.specialSituation.create).not.toHaveBeenCalled();
+  });
+
+  it("should update existing situations with new data", async () => {
+    mockAuth.mockResolvedValue({
+      user: { id: "test-id", email: "test@example.com", name: "Test User" },
+      expires: "2026-12-31",
+    });
+
+    // Mock existing situation found
+    mockPrisma.specialSituation.findFirst.mockResolvedValue({
+      id: "existing-id",
+      title: "Old Title",
+      description: "Old description",
+    });
+    mockPrisma.specialSituation.update.mockResolvedValue({});
+
+    const { POST } = await import("./route");
+    const request = new NextRequest("http://localhost:3000/api/sync/situations", {
+      method: "POST",
+    });
+
+    const response = await POST(request);
+    const data = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(mockPrisma.specialSituation.update).toHaveBeenCalled();
+    // Verify update was called with the existing id and new data
+    expect(mockPrisma.specialSituation.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: "existing-id" },
+        data: expect.objectContaining({
+          title: expect.any(String),
+          description: expect.any(String),
+        }),
+      })
+    );
   });
 });
 

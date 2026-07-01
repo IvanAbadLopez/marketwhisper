@@ -25,12 +25,15 @@ export async function POST(request: NextRequest) {
     const situations = await getSituations();
 
     // Save to database
-    const savedCount = await saveSituationsToDatabase(situations);
+    const { created, updated } = await saveSituationsToDatabase(situations);
+    const total = created + updated;
 
     return NextResponse.json({
       success: true,
-      message: `Successfully synced ${savedCount} special situations`,
-      count: savedCount,
+      message: `Successfully synced ${total} special situations (${created} new, ${updated} updated)`,
+      count: total,
+      created,
+      updated,
     });
   } catch (error) {
     console.error("Sync error:", error);
@@ -73,8 +76,9 @@ export async function getSituations(): Promise<SituationResult[]> {
 // Exported for testing
 export async function saveSituationsToDatabase(
   situations: SituationResult[]
-): Promise<number> {
-  let savedCount = 0;
+): Promise<{ created: number; updated: number }> {
+  let created = 0;
+  let updated = 0;
 
   for (const situation of situations) {
     try {
@@ -83,25 +87,40 @@ export async function saveSituationsToDatabase(
         where: { sourceUrl: situation.url },
       });
 
-      if (!existing) {
+      if (existing) {
+        // Update existing situation
+        await prisma.specialSituation.update({
+          where: { id: existing.id },
+          data: {
+            title: situation.title,
+            description: situation.summary,
+            type: situation.type as any,
+            tickers: situation.tickers || [],
+            date: new Date(situation.publishDate),
+            // Keep existing status, don't overwrite
+          },
+        });
+        updated++;
+      } else {
+        // Create new situation
         await prisma.specialSituation.create({
           data: {
             title: situation.title,
             description: situation.summary,
             sourceUrl: situation.url,
-            type: situation.type as any, // Type from enum
+            type: situation.type as any,
             tickers: situation.tickers || [],
             date: new Date(situation.publishDate),
             status: "NEW",
           },
         });
-        savedCount++;
+        created++;
       }
     } catch (error) {
-      console.error(`Failed to save situation: ${situation.title}`, error);
+      console.error(`Failed to save/update situation: ${situation.title}`, error);
     }
   }
 
-  return savedCount;
+  return { created, updated };
 }
 
