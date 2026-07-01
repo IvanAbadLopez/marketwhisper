@@ -90,9 +90,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     signIn: "/login",
   },
   callbacks: {
-    async signIn({ user, account }) {
+    async signIn() {
       // For OAuth providers, create/update user in database
       // Disabled until Neon is configured
+      // Parameters: { user, account }
       /*
       if (account?.provider !== "credentials") {
         const existingUser = await prisma.user.findUnique({
