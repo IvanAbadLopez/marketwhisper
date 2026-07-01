@@ -110,6 +110,7 @@ export async function saveContentToDatabase(
             contentType: content.contentType as "VIDEO" | "WEB_ARTICLE" | "BLOG_POST" | "SPECIAL_EVENT" | "NEWS",
             date: new Date(content.publishDate),
             sourceName: content.sourceName,
+            // @ts-expect-error - Prisma Json type accepts any valid JSON value
             metadata: content.metadata,
           },
         });
@@ -125,6 +126,7 @@ export async function saveContentToDatabase(
             contentType: content.contentType as "VIDEO" | "WEB_ARTICLE" | "BLOG_POST" | "SPECIAL_EVENT" | "NEWS",
             date: new Date(content.publishDate),
             status: "PENDING",
+            // @ts-expect-error - Prisma Json type accepts any valid JSON value
             metadata: content.metadata,
           },
         });
