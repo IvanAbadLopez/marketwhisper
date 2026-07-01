@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { DELETE } from "./route";
 import { NextRequest } from "next/server";
+import type { Session } from "next-auth";
 
 // Mock auth module
 vi.mock("@/lib/auth", () => ({
@@ -30,7 +31,7 @@ describe("DELETE /api/content/[id]", () => {
 
   it("returns 401 if user is not authenticated", async () => {
     const { auth } = await import("@/lib/auth");
-    vi.mocked(auth).mockResolvedValue(null);
+    vi.mocked(auth).mockResolvedValue(null as Session | null);
 
     const request = new NextRequest("http://localhost:3000/api/content/123");
     const params = Promise.resolve({ id: "123" });
@@ -49,7 +50,7 @@ describe("DELETE /api/content/[id]", () => {
     vi.mocked(auth).mockResolvedValue({
       user: { id: "user1", email: "test@example.com" },
       expires: "2026-12-31",
-    });
+    } as Session);
 
     vi.mocked(prisma.content.findUnique).mockResolvedValue(null);
 
@@ -70,7 +71,7 @@ describe("DELETE /api/content/[id]", () => {
     vi.mocked(auth).mockResolvedValue({
       user: { id: "user1", email: "test@example.com" },
       expires: "2026-12-31",
-    });
+    } as Session);
 
     vi.mocked(prisma.content.findUnique).mockResolvedValue({
       id: "123",
