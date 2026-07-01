@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import type { Prisma } from "@/generated/prisma/client";
 
 export const dynamic = "force-dynamic";
 
@@ -13,7 +12,8 @@ interface ScrapedContent {
   contentType: string;
   publishDate: string;
   tickers?: string[];
-  metadata?: Prisma.InputJsonValue;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  metadata?: any;
 }
 
 export async function POST(request: NextRequest) {
@@ -111,7 +111,7 @@ export async function saveContentToDatabase(
             contentType: content.contentType as "VIDEO" | "WEB_ARTICLE" | "BLOG_POST" | "SPECIAL_EVENT" | "NEWS",
             date: new Date(content.publishDate),
             sourceName: content.sourceName,
-            metadata: (content.metadata || null) as Prisma.JsonValue,
+            metadata: content.metadata,
           },
         });
         updated++;
@@ -126,7 +126,7 @@ export async function saveContentToDatabase(
             contentType: content.contentType as "VIDEO" | "WEB_ARTICLE" | "BLOG_POST" | "SPECIAL_EVENT" | "NEWS",
             date: new Date(content.publishDate),
             status: "PENDING",
-            metadata: (content.metadata || null) as Prisma.JsonValue,
+            metadata: content.metadata,
           },
         });
         created++;
