@@ -1,4 +1,6 @@
 openai-whisper
 playwright
+python-dotenv
+psycopg[binary]
 requests
 python-dotenv

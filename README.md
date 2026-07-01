@@ -143,6 +143,33 @@ npm run test:e2e:report    # View HTML report
 
 See [TESTING.md](TESTING.md) for detailed testing documentation.
 
+### Scraping Content Locally
+
+MarketWhisper uses a **local scraping approach**: you run the Python scraper on your PC, which saves content directly to the cloud database (Neon). The deployed app (on Vercel) reads from the same database.
+
+```bash
+# Install Python dependencies (one-time)
+cd scripts
+pip install -r requirements.txt
+playwright install chromium
+
+# Scrape a URL
+python scrape_url.py <URL> "<SOURCE_NAME>" --type <TYPE>
+
+# Example
+python scrape_url.py https://www.marketwatch.com/story/apple "MarketWatch" --type WEB_ARTICLE
+```
+
+**Content Types**: `WEB_ARTICLE` (default), `BLOG_POST`, `NEWS`, `SPECIAL_EVENT`, `VIDEO`
+
+The scraper automatically:
+- Extracts title, description, and body text
+- Detects stock ticker mentions (`$AAPL`, `AAPL`, etc.)
+- Saves to Neon DB (creates or updates existing content)
+- Status: `COMPLETED` after successful scrape
+
+See [scripts/README.md](scripts/README.md) for detailed scraping documentation.
+
 Visit [http://localhost:3000](http://localhost:3000) to see the app.
 
 **Demo Login**:
