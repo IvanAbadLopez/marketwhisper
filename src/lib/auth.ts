@@ -3,15 +3,7 @@ import Credentials from "next-auth/providers/credentials";
 import Google from "next-auth/providers/google";
 import GitHub from "next-auth/providers/github";
 import bcrypt from "bcrypt";
-// import { prisma } from "@/lib/prisma"; // Disabled until Neon is configured
-
-// Temporary demo user (remove when database is configured)
-const DEMO_USER = {
-  id: "demo-user-id",
-  email: "demo@marketwhisper.com",
-  name: "Demo User",
-  password: "$2b$12$wzh0yJF7XuD7vm/9lp35L.26oOJvfHavzXyWD7sFPyPfgqzeFhS0S", // "demo1234"
-};
+import { prisma } from "@/lib/prisma";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   providers: [
@@ -34,28 +26,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           return null;
         }
 
-        // Temporary: use demo user instead of database
-        if (credentials.email !== DEMO_USER.email) {
-          return null;
-        }
-
-        const passwordMatch = await bcrypt.compare(
-          credentials.password as string,
-          DEMO_USER.password
-        );
-
-        if (!passwordMatch) {
-          return null;
-        }
-
-        return {
-          id: DEMO_USER.id,
-          email: DEMO_USER.email,
-          name: DEMO_USER.name,
-          image: null,
-        };
-
-        /* Database version (restore when Neon is configured):
         const user = await prisma.user.findUnique({
           where: { email: credentials.email as string },
         });
@@ -79,7 +49,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           name: user.name,
           image: user.image,
         };
-        */
       },
     }),
   ],
@@ -90,11 +59,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     signIn: "/login",
   },
   callbacks: {
-    async signIn() {
-      // For OAuth providers, create/update user in database
-      // Disabled until Neon is configured
-      // Parameters: { user, account }
-      /*
+    async signIn({ user, account }) {
       if (account?.provider !== "credentials") {
         const existingUser = await prisma.user.findUnique({
           where: { email: user.email! },
@@ -111,7 +76,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           });
         }
       }
-      */
       return true;
     },
     async jwt({ token, user }) {

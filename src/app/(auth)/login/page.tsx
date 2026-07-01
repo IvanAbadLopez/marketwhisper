@@ -1,11 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 
-export default function LoginPage() {
+function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get("callbackUrl") || "/";
@@ -54,7 +54,7 @@ export default function LoginPage() {
       <div className="bg-[#12121a] border border-[#1e1e2e] rounded-lg p-8">
         {/* Demo credentials notice */}
         <div className="bg-blue-500/10 border border-blue-500/20 text-blue-400 px-4 py-3 rounded-md mb-6 text-sm">
-          <p className="font-semibold mb-1">Demo Account (Database not configured yet):</p>
+          <p className="font-semibold mb-1">Demo Account:</p>
           <p>Email: <code className="bg-blue-500/20 px-1.5 py-0.5 rounded">demo@marketwhisper.com</code></p>
           <p>Password: <code className="bg-blue-500/20 px-1.5 py-0.5 rounded">demo1234</code></p>
         </div>
@@ -152,5 +152,13 @@ export default function LoginPage() {
         </p>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense>
+      <LoginForm />
+    </Suspense>
   );
 }

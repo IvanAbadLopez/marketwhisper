@@ -124,9 +124,28 @@ npx tsc --noEmit
 npm run build
 ```
 
+### Testing
+
+MarketWhisper includes comprehensive testing with Vitest and Playwright.
+
+```bash
+# Unit & Integration tests
+npm test              # Watch mode
+npm test -- --run     # Single run
+npm run test:ui       # Interactive UI
+npm run test:coverage # With coverage
+
+# E2E tests
+npm run test:e2e           # Run E2E tests
+npm run test:e2e:ui        # Interactive mode
+npm run test:e2e:report    # View HTML report
+```
+
+See [TESTING.md](TESTING.md) for detailed testing documentation.
+
 Visit [http://localhost:3000](http://localhost:3000) to see the app.
 
-**Demo Login** (when database not configured):
+**Demo Login**:
 - Email: `demo@marketwhisper.com`
 - Password: `demo1234`
 
@@ -194,13 +213,15 @@ python sync_all.py
 
 **✅ Completed**
 - [x] Next.js 16 project setup
-- [x] Authentication (NextAuth.js with demo user)
-- [x] Database schema (Prisma)
+- [x] Authentication (NextAuth.js v5)
+- [x] Neon PostgreSQL database
+- [x] Prisma 7 ORM with driver adapters
 - [x] Login/Register pages
 - [x] Middleware route protection
-- [x] GitHub Actions CI/CD
+- [x] GitHub Actions CI/CD (lint + typecheck + test + build)
+- [x] Testing suite (Vitest + Playwright)
 - [x] Python scripts structure
-
+- [x] Layout & navigation (sidebar, sync button)
 **🚧 In Progress**
 - [ ] Neon database connection
 - [ ] Layout & navigation

@@ -41,6 +41,9 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
+# Prisma generated client
+src/generated/
+
 # Python
 scripts/__pycache__/
 scripts/*.pyc
@@ -52,3 +55,10 @@ scripts/cookies/
 
 # Whisper models cache
 models/
+
+# Testing
+test-results/
+playwright-report/
+coverage/
+.vitest/
+
