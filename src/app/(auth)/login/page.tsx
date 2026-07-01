@@ -52,6 +52,13 @@ export default function LoginPage() {
 
       {/* Card */}
       <div className="bg-[#12121a] border border-[#1e1e2e] rounded-lg p-8">
+        {/* Demo credentials notice */}
+        <div className="bg-blue-500/10 border border-blue-500/20 text-blue-400 px-4 py-3 rounded-md mb-6 text-sm">
+          <p className="font-semibold mb-1">Demo Account (Database not configured yet):</p>
+          <p>Email: <code className="bg-blue-500/20 px-1.5 py-0.5 rounded">demo@marketwhisper.com</code></p>
+          <p>Password: <code className="bg-blue-500/20 px-1.5 py-0.5 rounded">demo1234</code></p>
+        </div>
+
         {/* Error message */}
         {error && (
           <div className="bg-red-500/10 border border-red-500/20 text-red-400 px-4 py-3 rounded-md mb-6 text-sm">
