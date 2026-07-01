@@ -4,7 +4,7 @@ import { Header } from "./Header";
 import { Sidebar } from "./Sidebar";
 
 interface MainLayoutProps {
-  user: User;
+  user?: User;
   children: ReactNode;
 }
 
