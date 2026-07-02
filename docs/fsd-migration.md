@@ -1,8 +1,8 @@
 # Feature-Sliced Design (FSD) - Migration Guide
 
-**Status**: � In Progress - Step 1 Complete!  
+**Status**: 🟢 In Progress - Step 2 Complete!  
 **Target**: Q3 2026  
-**Current**: Step 1 ✅ → Step 2 (Next)
+**Current**: Step 2 ✅ → Step 3 (Next)
 
 ---
 
@@ -81,7 +81,48 @@ src/shared/index.ts
 
 ---
 
-### Step 2: Create `entities/` Layer (Week 2)
+### ✅ Step 2: Create `entities/` Layer (COMPLETED - Week 2)
+
+**Commit**: dddaa72
+
+Extract business entities (company, analysis, user):
+
+**Structure Created**:
+```
+src/entities/
+  company/
+    model/
+      types.ts         # Company, CompanyWithDetails, AnalysisSummary
+      utils.ts         # formatMarketCap, getSentimentColor, getReliabilityColor
+      hooks.ts         # useCompanies, useCompany
+    ui/
+      CompanyCard.tsx  # Reusable company card component
+    index.ts           # Public API
+  analysis/
+    model/
+      types.ts         # Analysis, AnalysisFormData
+    ui/
+      AnalysisCard.tsx # Reusable analysis card
+    index.ts
+  user/
+    model/
+      types.ts         # UserProfile, UserSession
+    index.ts
+```
+
+**Completed Actions**:
+- ✅ Created `entities/company/` slice with types, utils, hooks, CompanyCard
+- ✅ Created `entities/analysis/` slice with types, AnalysisCard
+- ✅ Created `entities/user/` slice with types
+- ✅ All entities have Public API via index.ts
+- ✅ Build compiles successfully
+- ✅ 15/15 tests passing
+
+**Files**: 10 new files (476 lines added)
+
+---
+
+### ⏳ Step 3: Create `features/` Layer (Week 3-4)
 
 Extract business entities (company, analysis, user):
 
