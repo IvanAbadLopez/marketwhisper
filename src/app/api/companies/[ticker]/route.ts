@@ -24,6 +24,7 @@ export async function GET(
           select: {
             content: true,
             mentions: true,
+            analyses: true,
           },
         },
         content: {
@@ -58,6 +59,11 @@ export async function GET(
           },
           orderBy: {
             timestamp: "asc",
+          },
+        },
+        analyses: {
+          orderBy: {
+            createdAt: "desc",
           },
         },
       },

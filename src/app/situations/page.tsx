@@ -28,11 +28,21 @@ interface Company {
   industry: string | null;
   marketCap: number | null;
   website: string | null;
+  avgSentimentScore: number | null;
+  avgReliabilityScore: number | null;
+  analysisCount: number;
   _count: {
     content: number;
     mentions: number;
+    analyses: number;
   };
   content: ContentCompany[];
+  analyses?: {
+    id: string;
+    sentiment: string;
+    reliabilityScore: number;
+    createdAt: string;
+  }[];
 }
 
 export default function SituationsPage() {
@@ -79,6 +89,33 @@ export default function SituationsPage() {
     if (marketCap >= 1e9) return `$${(marketCap / 1e9).toFixed(2)}B`;
     if (marketCap >= 1e6) return `$${(marketCap / 1e6).toFixed(2)}M`;
     return `$${marketCap.toLocaleString()}`;
+  };
+
+  const getSentimentColor = (score: number | null): string => {
+    if (score === null) return "bg-zinc-300 dark:bg-zinc-700";
+    if (score > 0.3) return "bg-green-500 dark:bg-green-600";
+    if (score < -0.3) return "bg-red-500 dark:bg-red-600";
+    return "bg-zinc-400 dark:bg-zinc-600";
+  };
+
+  const getSentimentLabel = (score: number | null): string => {
+    if (score === null) return "No data";
+    if (score > 0.5) return "Bullish";
+    if (score > 0.2) return "Slightly Bullish";
+    if (score < -0.5) return "Bearish";
+    if (score < -0.2) return "Slightly Bearish";
+    return "Neutral";
+  };
+
+  const getReliabilityWidth = (score: number | null): string => {
+    if (score === null) return "0%";
+    return `${(score / 10) * 100}%`;
+  };
+
+  const getReliabilityColor = (score: number | null): string => {
+    if (score === null || score < 4) return "bg-red-400 dark:bg-red-500";
+    if (score < 7) return "bg-yellow-400 dark:bg-yellow-500";
+    return "bg-green-500 dark:bg-green-600";
   };
 
   // Filter companies based on search query
@@ -226,6 +263,55 @@ export default function SituationsPage() {
                       <p className="text-lg font-bold text-zinc-900 dark:text-zinc-100">
                         {formatMarketCap(company.marketCap)}
                       </p>
+                    </div>
+                  )}
+
+                  {/* AI Analysis Scores */}
+                  {company.analysisCount > 0 && (
+                    <div className="mb-4 space-y-3 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-md border border-blue-100 dark:border-blue-800">
+                      {/* Sentiment */}
+                      <div>
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-xs font-medium text-zinc-700 dark:text-zinc-300">
+                            Sentiment
+                          </span>
+                          <span className="text-xs font-semibold text-zinc-900 dark:text-zinc-100">
+                            {getSentimentLabel(company.avgSentimentScore)}
+                          </span>
+                        </div>
+                        <div className="w-full bg-zinc-200 dark:bg-zinc-700 rounded-full h-2">
+                          <div
+                            className={`h-2 rounded-full transition-all ${getSentimentColor(company.avgSentimentScore)}`}
+                            style={{ 
+                              width: company.avgSentimentScore !== null 
+                                ? `${50 + (company.avgSentimentScore * 50)}%`
+                                : '0%'
+                            }}
+                          />
+                        </div>
+                      </div>
+
+                      {/* Reliability */}
+                      <div>
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-xs font-medium text-zinc-700 dark:text-zinc-300">
+                            Reliability
+                          </span>
+                          <span className="text-xs font-semibold text-zinc-900 dark:text-zinc-100">
+                            {company.avgReliabilityScore?.toFixed(1) || '0'}/10
+                          </span>
+                        </div>
+                        <div className="w-full bg-zinc-200 dark:bg-zinc-700 rounded-full h-2">
+                          <div
+                            className={`h-2 rounded-full transition-all ${getReliabilityColor(company.avgReliabilityScore)}`}
+                            style={{ width: getReliabilityWidth(company.avgReliabilityScore) }}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="text-[10px] text-zinc-500 dark:text-zinc-400 text-center pt-1">
+                        Based on {company.analysisCount} {company.analysisCount === 1 ? 'analysis' : 'analyses'}
+                      </div>
                     </div>
                   )}
 

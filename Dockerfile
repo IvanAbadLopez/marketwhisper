@@ -2,6 +2,9 @@
 FROM node:20-alpine AS deps
 WORKDIR /app
 
+# Fix for corporate proxy with self-signed certificates
+ENV NODE_TLS_REJECT_UNAUTHORIZED=0
+
 # Copy package files
 COPY package.json package-lock.json ./
 RUN npm ci
@@ -9,6 +12,9 @@ RUN npm ci
 # Stage 2: Builder
 FROM node:20-alpine AS builder
 WORKDIR /app
+
+# Fix for corporate proxy with self-signed certificates
+ENV NODE_TLS_REJECT_UNAUTHORIZED=0
 
 # Copy dependencies from deps stage
 COPY --from=deps /app/node_modules ./node_modules
@@ -38,9 +44,12 @@ COPY --from=builder /app/public ./public
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/prisma ./prisma
-COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
-COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
 COPY --from=builder /app/src/generated ./src/generated
+COPY --from=builder /app/prisma.config.ts ./prisma.config.ts
+# Copy Prisma adapter and pg driver (not included in standalone)
+COPY --from=builder /app/node_modules/@prisma/adapter-pg ./node_modules/@prisma/adapter-pg
+COPY --from=builder /app/node_modules/pg ./node_modules/pg
+COPY --from=builder /app/node_modules/pg-pool ./node_modules/pg-pool
 
 # Change ownership
 RUN chown -R nextjs:nodejs /app

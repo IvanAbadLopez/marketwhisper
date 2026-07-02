@@ -16,6 +16,7 @@ export async function GET() {
           select: {
             content: true,
             mentions: true,
+            analyses: true,
           },
         },
         content: {
@@ -34,6 +35,18 @@ export async function GET() {
             content: {
               date: "desc",
             },
+          },
+          take: 3, // Only latest 3 for summary
+        },
+        analyses: {
+          select: {
+            id: true,
+            sentiment: true,
+            reliabilityScore: true,
+            createdAt: true,
+          },
+          orderBy: {
+            createdAt: "desc",
           },
           take: 3, // Only latest 3 for summary
         },

@@ -34,9 +34,17 @@ services:
       # Database
       DATABASE_URL: postgresql://marketwhisper:marketwhisper_dev_2026@db:5432/marketwhisper
       
+      # Fix for corporate proxy with self-signed certificates
+      NODE_TLS_REJECT_UNAUTHORIZED: "0"
+      
       # NextAuth.js
       NEXTAUTH_URL: http://localhost:3000
       NEXTAUTH_SECRET: docker-dev-secret-change-in-production-please
+      AUTH_TRUST_HOST: "true"
+      
+      # Google Gemini AI
+      GEMINI_API_KEY: "AQ.Ab8RN6Kldiz538tbI4b386HdN2uC0A6iGwvA215gv6Dju8AC5w"
+      GEMINI_MODEL: "gemini-flash-latest"
       
       # Optional: OAuth (leave empty for demo mode)
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
@@ -54,11 +62,9 @@ services:
       
       # Optional: APIs
       FINNHUB_API_KEY: ${FINNHUB_API_KEY:-}
-      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
     depends_on:
       db:
         condition: service_healthy
-    command: sh -c "npx prisma db push && node server.js"
 
 volumes:
   postgres_data:

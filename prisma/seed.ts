@@ -1,9 +1,12 @@
 import pg from "pg";
 import bcrypt from "bcrypt";
 
+// Check if we're using local Docker DB (no SSL) or cloud DB (requires SSL)
+const isLocalDB = process.env.DATABASE_URL?.includes('localhost') || process.env.DATABASE_URL?.includes('127.0.0.1');
+
 const client = new pg.Client({
   connectionString: process.env.DATABASE_URL!,
-  ssl: { rejectUnauthorized: false },
+  ssl: isLocalDB ? false : { rejectUnauthorized: false },
 });
 
 async function main() {
@@ -21,7 +24,7 @@ async function main() {
     return;
   }
 
-  const hashedPassword = await bcrypt.hash("demo1234", 12);
+  const hashedPassword = await bcrypt.hash("MarketWhisper2026!", 12);
   const id = `cm${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`;
 
   await client.query(

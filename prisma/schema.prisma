@@ -142,19 +142,23 @@ enum Sentiment {
 // ==========================================
 
 model Company {
-  id               String           @id @default(cuid())
-  ticker           String           @unique // Stock ticker symbol (e.g., AAPL, MSFT)
-  name             String           // Company name (e.g., Apple Inc.)
-  description      String?          // Company description
-  sector           String?          // Industry sector
-  industry         String?          // Specific industry
-  marketCap        Float?           // Market capitalization
-  logoUrl          String?          // Company logo URL
-  website          String?          // Official website
-  content          ContentCompany[] // Many-to-many relation with Content
-  mentions         Mention[]        // Direct mentions in content
-  createdAt        DateTime         @default(now())
-  updatedAt        DateTime         @updatedAt
+  id                   String           @id @default(cuid())
+  ticker               String           @unique // Stock ticker symbol (e.g., AAPL, MSFT)
+  name                 String           // Company name (e.g., Apple Inc.)
+  description          String?          // Company description
+  sector               String?          // Industry sector
+  industry             String?          // Specific industry
+  marketCap            Float?           // Market capitalization
+  logoUrl              String?          // Company logo URL
+  website              String?          // Official website
+  avgSentimentScore    Float?           // Aggregated sentiment score (-1 to +1)
+  avgReliabilityScore  Float?           // Aggregated reliability score (1-10)
+  analysisCount        Int              @default(0) // Total number of analyses
+  content              ContentCompany[] // Many-to-many relation with Content
+  mentions             Mention[]        // Direct mentions in content
+  analyses             Analysis[]       // AI text analyses
+  createdAt            DateTime         @default(now())
+  updatedAt            DateTime         @updatedAt
 
   @@index([ticker])
   @@index([sector])
@@ -171,4 +175,25 @@ model ContentCompany {
   @@unique([contentId, companyId]) // Prevent duplicate relations
   @@index([contentId])
   @@index([companyId])
+}
+
+// ==========================================
+// AI ANALYSIS MODELS
+// ==========================================
+
+model Analysis {
+  id               String    @id @default(cuid())
+  text             String    // Original text input from user
+  source           String?   // Optional source name (e.g., "Twitter", "Bloomberg")
+  companyId        String    // Detected company
+  company          Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  ticker           String    // Detected ticker symbol
+  sentiment        Sentiment // AI-detected sentiment
+  reliabilityScore Int       // AI confidence score (1-10)
+  reasoning        String    // AI explanation for the analysis
+  createdAt        DateTime  @default(now())
+
+  @@index([companyId])
+  @@index([ticker])
+  @@index([createdAt])
 }

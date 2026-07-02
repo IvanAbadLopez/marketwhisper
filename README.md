@@ -1,7 +1,7 @@
 # 📈 MarketWhisper
 
-> **AI-Powered Market Intelligence Dashboard**  
-> Transform proprietary financial blog content into actionable insights using AI transcription, web scraping, and RAG technology.
+> **AI-Powered Market Intelligence Platform**  
+> Analyze financial texts with AI to detect companies, sentiment, and reliability scores. Track market intelligence in real-time.
 
 [![CI](https://github.com/IvanAbadLopez/marketwhisper/actions/workflows/ci.yml/badge.svg)](https://github.com/IvanAbadLopez/marketwhisper/actions)
 [![Next.js](https://img.shields.io/badge/Next.js-16.2.9-black)](https://nextjs.org/)
@@ -12,17 +12,34 @@
 
 ## 🎯 Project Overview
 
-**MarketWhisper** is a Master's Thesis (TFM) project that leverages exclusive access to daily financial analysis videos and special situations blog content to provide personalized market intelligence through AI-powered processing and analysis.
+**MarketWhisper** is a Master's Thesis (TFM) project that provides AI-powered market intelligence analysis through direct text input and AI analysis.
 
-### Key Features (Planned)
+### Key Features
 
-- 🎥 **Automated Video Processing**: Download and transcribe daily analysis videos using OpenAI Whisper
-- 📰 **Content Scraping**: Extract special situations articles (mergers, spinoffs, bankruptcies, etc.)
-- 🤖 **AI-Powered Insights**: RAG (Retrieval-Augmented Generation) with Google Gemini API
-- 🔍 **Semantic Search**: Natural language queries across all processed content using pgvector
-- 📊 **Sentiment Analysis**: Track bullish/bearish mentions of stocks over time
-- 💬 **AI Chat Interface**: Ask questions about market trends with context-aware responses
-- 📈 **Interactive Charts**: Visualize trends and insights with Recharts
+- 🤖 **AI Text Analysis**: Paste any financial text (news, tweets, articles) and get instant AI-powered analysis
+- 🏢 **Multi-Company Detection**: Automatically detects and analyzes multiple companies in a single text
+- 📊 **Sentiment Tracking**: BULLISH, BEARISH, or NEUTRAL sentiment for each company mentioned
+- 🎯 **Reliability Scoring**: AI confidence scores (1-10) for each analysis
+- 📈 **Aggregated Metrics**: Track average sentiment and reliability over time per company
+- 🔍 **Company Dashboard**: View all analyses, sentiment trends, and insights per ticker
+- 💬 **Local AI**: Uses Gemini AI for analysis (configurable, no external API costs)
+- 🐳 **Full Docker Stack**: PostgreSQL + Next.js ready to deploy
+- 🔐 **Multi-Auth**: Email/password, Google, GitHub authentication
+
+#### Multi-Company Analysis Example
+
+Input this text:
+```
+Apple stock rose 5% on strong iPhone sales while Microsoft fell 2% 
+due to cloud growth concerns. Tesla announced record deliveries.
+```
+
+Output:
+- ✅ **AAPL** - BULLISH (8/10) - "Strong iPhone sales indicate positive earnings"
+- ⚠️ **MSFT** - BEARISH (7/10) - "Cloud growth concerns suggest potential issues"
+- ✅ **TSLA** - BULLISH (8/10) - "Record deliveries show strong demand"
+
+See [docs/multi-company-analysis.md](docs/multi-company-analysis.md) for detailed documentation.
 
 ---
 
@@ -34,10 +51,10 @@
 | **Language** | TypeScript |
 | **Styling** | Tailwind CSS 4 + shadcn/ui |
 | **Auth** | NextAuth.js v5 (JWT) |
-| **Database** | PostgreSQL 16 + Prisma ORM + pgvector |
-| **AI/ML** | OpenAI Whisper (local) + Google Gemini API |
-| **Scraping** | Playwright (Python) |
+| **Database** | PostgreSQL 16 + Prisma 7 ORM + pgvector |
+| **AI/ML** | Google Gemini AI (flash-latest) |
 | **Deployment** | Docker Compose |
+| **Testing** | Vitest + Playwright + Testing Library |
 | **CI/CD** | GitHub Actions |
 
 ---
@@ -61,9 +78,15 @@ docker compose up
 
 **Demo credentials:**
 - Email: `demo@marketwhisper.com`
-- Password: `demo1234`
+- Password: `MarketWhisper2026!`
 
-For detailed Docker instructions, see [README.Docker.md](README.Docker.md)
+**First steps after login:**
+1. Click "Analyze Text" button in the header
+2. Paste any financial text (e.g., news about AAPL, MSFT, etc.)
+3. View results showing detected companies with sentiment and reliability
+4. Navigate to companies page to see aggregated analysis
+
+For detailed Docker instructions, see [docs/docker.md](docs/docker.md)
 
 ---
 
@@ -94,9 +117,7 @@ npm run dev
 #### Prerequisites for Local Development
 
 - Node.js 20+ (recommended via [nvm](https://github.com/nvm-sh/nvm))
-- Python 3.10+ (for scraping scripts)
 - Docker Desktop (for PostgreSQL database)
-- NVIDIA GPU (optional, for faster Whisper transcription)
 
 #### Installation
 
@@ -107,9 +128,6 @@ cd marketwhisper
 
 # Install Node.js dependencies
 npm install
-
-# Install Python dependencies
-pip install playwright whisper torch
 
 # Set up environment variables
 cp .env.example .env.local
@@ -134,17 +152,11 @@ GOOGLE_CLIENT_SECRET=""
 GITHUB_CLIENT_ID=""
 GITHUB_CLIENT_SECRET=""
 
-# Optional: AI APIs
+# Optional: AI API (or use local models)
 GEMINI_API_KEY=""
-FINNHUB_API_KEY=""
 
-# Optional: Blog credentials (for scraping)
-BLOG_ANALYSIS_URL=""
-BLOG_ANALYSIS_USER=""
-BLOG_ANALYSIS_PASSWORD=""
-BLOG_SITUATIONS_URL=""
-BLOG_SITUATIONS_USER=""
-BLOG_SITUATIONS_PASSWORD=""
+# Optional: Financial data API
+FINNHUB_API_KEY=""
 ```
 
 #### Database Setup
@@ -193,40 +205,7 @@ npm run test:e2e:ui        # Interactive mode
 npm run test:e2e:report    # View HTML report
 ```
 
-See [TESTING.md](TESTING.md) for detailed testing documentation.
-
-### Scraping Content Locally
-
-MarketWhisper uses a **local scraping approach**: you run the Python scraper on your PC, which saves content directly to the cloud database (Neon). The deployed app (on Vercel) reads from the same database.
-
-```bash
-# Install Python dependencies (one-time)
-cd scripts
-pip install -r requirements.txt
-playwright install chromium
-
-# Scrape a URL
-python scrape_url.py <URL> "<SOURCE_NAME>" --type <TYPE>
-
-# Example
-python scrape_url.py https://www.marketwatch.com/story/apple "MarketWatch" --type WEB_ARTICLE
-```
-
-**Content Types**: `WEB_ARTICLE` (default), `BLOG_POST`, `NEWS`, `SPECIAL_EVENT`, `VIDEO`
-
-The scraper automatically:
-- Extracts title, description, and body text
-- Detects stock ticker mentions (`$AAPL`, `AAPL`, etc.)
-- Saves to Neon DB (creates or updates existing content)
-- Status: `COMPLETED` after successful scrape
-
-See [scripts/README.md](scripts/README.md) for detailed scraping documentation.
-
-Visit [http://localhost:3000](http://localhost:3000) to see the app.
-
-**Demo Login**:
-- Email: `demo@marketwhisper.com`
-- Password: `demo1234`
+See [docs/testing.md](docs/testing.md) for detailed testing documentation.
 
 ---
 
@@ -235,20 +214,27 @@ Visit [http://localhost:3000](http://localhost:3000) to see the app.
 ```
 marketwhisper/
 ├── .github/workflows/    # CI/CD pipelines
+├── docs/                 # 📚 Documentation
+│   ├── testing.md        # Testing guide
+│   ├── docker.md         # Docker deployment
+│   └── multi-company-analysis.md
 ├── prisma/              # Database schema
 ├── public/              # Static assets
-├── scripts/             # Python scraping/transcription
-│   ├── download_video.py
-│   ├── download_situations.py
-│   ├── transcribe.py
-│   └── sync_all.py
+├── scripts/             # Database utilities
+│   ├── legacy/          # Archived scripts (old scraping approach)
+│   ├── seed_companies.py
+│   ├── seed_content.py
+│   └── clean_content.py
 ├── src/
 │   ├── app/             # Next.js App Router
 │   │   ├── (auth)/      # Login/Register pages
 │   │   ├── api/         # API routes
+│   │   ├── companies/   # Company pages
+│   │   ├── chat/        # AI chat interface
 │   │   └── layout.tsx   # Root layout
 │   ├── components/      # React components
-│   └── lib/             # Utilities (auth, prisma, etc.)
+│   ├── lib/             # Utilities (auth, prisma, gemini)
+│   └── types/           # TypeScript types
 └── copilot-instructions.md  # Detailed technical guide
 ```
 
@@ -259,59 +245,59 @@ marketwhisper/
 ### Core Models
 
 - **User**: Authentication and profile
-- **Video**: Daily analysis videos with metadata
-- **Transcript**: Whisper-generated transcriptions
-- **Mention**: Stock/company mentions with sentiment
-- **SpecialSituation**: Blog articles (mergers, spinoffs, etc.)
+- **Company**: Stock tickers, metadata, aggregated scores
+- **Analysis**: AI-generated analysis with sentiment and reliability
+- **Content**: Legacy content model (preserved for future use)
+- **Account/Session**: NextAuth.js tables
 
 See [prisma/schema.prisma](prisma/schema.prisma) for full schema.
 
 ---
 
-## 🤖 Python Scripts
+## 🤖 How It Works
 
-### Transcribe Video
-
-```bash
-cd scripts
-python transcribe.py --video-path ../downloads/videos/video.mp4 --model base
-```
-
-**Available models**: `tiny`, `base`, `small`, `medium`, `large-v3`
-
-### Run Full Sync
-
-```bash
-python sync_all.py
-# Downloads videos → Transcribes → Updates database
-```
+1. **User Input**: Paste financial text in the "Analyze Text" form
+2. **AI Analysis**: Gemini AI analyzes the text to detect:
+   - Companies mentioned (ticker detection)
+   - Sentiment for each company (BULLISH/BEARISH/NEUTRAL)
+   - Reliability score (1-10)
+   - Reasoning for the analysis
+3. **Storage**: Each company analysis saved to PostgreSQL
+4. **Aggregation**: Weighted averages calculated per company
+5. **Visualization**: Company cards show sentiment/reliability thermometers
 
 ---
 
 ## 📊 Current Status
 
 **✅ Completed**
-- [x] Next.js 16 project setup
-- [x] Authentication (NextAuth.js v5)
-- [x] Neon PostgreSQL database
-- [x] Prisma 7 ORM with driver adapters
-- [x] Login/Register pages
-- [x] Middleware route protection
-- [x] GitHub Actions CI/CD (lint + typecheck + test + build)
-- [x] Testing suite (Vitest + Playwright)
-- [x] Python scripts structure
-- [x] Layout & navigation (sidebar, sync button)
-**🚧 In Progress**
-- [ ] Neon database connection
-- [ ] Layout & navigation
-- [ ] Sync API with SSE
-- [ ] Video/Situations pages
+- [x] Next.js 16 project setup with App Router
+- [x] Authentication (NextAuth.js v5 - Email, Google, GitHub)
+- [x] PostgreSQL database with Prisma 7
+- [x] AI text analysis with Gemini
+- [x] Multi-company detection
+- [x] Sentiment and reliability scoring
+- [x] Company-centric UI with aggregated metrics
+- [x] Search functionality
+- [x] Docker deployment
+- [x] Testing suite (19 unit + 7 E2E tests)
+- [x] GitHub Actions CI/CD
 
-**📅 Planned**
-- [ ] Semantic search
-- [ ] AI chat interface
-- [ ] Insights dashboard
-- [ ] Deployment to Vercel
+**📅 Future Enhancements**
+- [ ] Historical trend charts
+- [ ] Semantic search across analyses
+- [ ] Enhanced AI chat interface
+- [ ] Export functionality (CSV, PDF reports)
+- [ ] Real-time collaboration features
+
+---
+
+## 📚 Documentation
+
+- [Testing Guide](docs/testing.md) - Unit and E2E testing
+- [Docker Deployment](docs/docker.md) - Container setup
+- [Multi-Company Analysis](docs/multi-company-analysis.md) - Feature documentation
+- [Copilot Instructions](copilot-instructions.md) - Technical implementation guide
 
 ---
 

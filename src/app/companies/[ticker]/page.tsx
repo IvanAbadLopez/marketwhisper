@@ -10,7 +10,8 @@ import {
   Calendar,
   ArrowLeft,
   ExternalLink,
-  MessageSquare
+  MessageSquare,
+  Trash2
 } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { redirect, useRouter } from "next/navigation";
@@ -64,12 +65,26 @@ interface Company {
   marketCap: number | null;
   logoUrl: string | null;
   website: string | null;
+  avgSentimentScore: number | null;
+  avgReliabilityScore: number | null;
+  analysisCount: number;
   _count: {
     content: number;
     mentions: number;
+    analyses: number;
   };
   content: ContentCompany[];
   mentions: Mention[];
+  analyses?: {
+    id: string;
+    text: string;
+    source: string | null;
+    ticker: string;
+    sentiment: string;
+    reliabilityScore: number;
+    reasoning: string;
+    createdAt: string;
+  }[];
 }
 
 export default function CompanyDetailPage({ params }: { params: Promise<{ ticker: string }> }) {
@@ -105,6 +120,29 @@ export default function CompanyDetailPage({ params }: { params: Promise<{ ticker
       setLoading(false);
     }
   }, [ticker]);
+
+  const handleDeleteContent = async (contentId: string, contentTitle: string | null) => {
+    if (!confirm(`Are you sure you want to delete "${contentTitle || 'this content'}"? This will also delete all associated mentions and transcripts.`)) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/content/${contentId}`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        // Refresh company data after deletion
+        await fetchCompany();
+      } else {
+        const error = await response.json();
+        alert(`Failed to delete content: ${error.message || 'Unknown error'}`);
+      }
+    } catch (error) {
+      console.error("Error deleting content:", error);
+      alert('Failed to delete content. Please try again.');
+    }
+  };
 
   useEffect(() => {
     if (status === "authenticated" && ticker) {
@@ -278,8 +316,184 @@ export default function CompanyDetailPage({ params }: { params: Promise<{ ticker
                   {company._count.mentions === 1 ? 'mention' : 'mentions'}
                 </span>
               </div>
+              {company._count.analyses > 0 && (
+                <div className="flex items-center gap-2">
+                  <TrendingUp className="w-4 h-4 text-blue-500" />
+                  <span className="font-bold text-zinc-900 dark:text-zinc-100">
+                    {company._count.analyses}
+                  </span>
+                  <span className="text-zinc-600 dark:text-zinc-400">
+                    AI {company._count.analyses === 1 ? 'analysis' : 'analyses'}
+                  </span>
+                </div>
+              )}
             </div>
           </div>
+
+          {/* AI Analyses Section */}
+          {company.analyses && company.analyses.length > 0 && (
+            <div className="mb-6">
+              <h3 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100 mb-4 flex items-center gap-2">
+                <TrendingUp className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+                AI Text Analyses
+              </h3>
+
+              {/* Aggregated Scores */}
+              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-6 mb-4">
+                <h4 className="text-sm font-semibold text-zinc-700 dark:text-zinc-300 mb-4">
+                  Overall Sentiment & Reliability
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Sentiment Score */}
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+                        Average Sentiment
+                      </span>
+                      <span className="text-sm font-bold text-zinc-900 dark:text-zinc-100">
+                        {company.avgSentimentScore !== null
+                          ? company.avgSentimentScore > 0
+                            ? `+${company.avgSentimentScore.toFixed(2)}`
+                            : company.avgSentimentScore.toFixed(2)
+                          : 'N/A'}
+                      </span>
+                    </div>
+                    <div className="w-full bg-zinc-200 dark:bg-zinc-700 rounded-full h-3">
+                      <div
+                        className={`h-3 rounded-full transition-all ${
+                          company.avgSentimentScore === null
+                            ? 'bg-zinc-300'
+                            : company.avgSentimentScore > 0.3
+                            ? 'bg-green-500'
+                            : company.avgSentimentScore < -0.3
+                            ? 'bg-red-500'
+                            : 'bg-zinc-400'
+                        }`}
+                        style={{
+                          width:
+                            company.avgSentimentScore !== null
+                              ? `${50 + company.avgSentimentScore * 50}%`
+                              : '0%',
+                        }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Reliability Score */}
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+                        Average Reliability
+                      </span>
+                      <span className="text-sm font-bold text-zinc-900 dark:text-zinc-100">
+                        {company.avgReliabilityScore?.toFixed(1) || '0'} / 10
+                      </span>
+                    </div>
+                    <div className="w-full bg-zinc-200 dark:bg-zinc-700 rounded-full h-3">
+                      <div
+                        className={`h-3 rounded-full transition-all ${
+                          company.avgReliabilityScore === null || company.avgReliabilityScore < 4
+                            ? 'bg-red-400'
+                            : company.avgReliabilityScore < 7
+                            ? 'bg-yellow-400'
+                            : 'bg-green-500'
+                        }`}
+                        style={{
+                          width:
+                            company.avgReliabilityScore !== null
+                              ? `${(company.avgReliabilityScore / 10) * 100}%`
+                              : '0%',
+                        }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Individual Analyses */}
+              <div className="space-y-4">
+                {company.analyses.map((analysis) => (
+                  <div
+                    key={analysis.id}
+                    className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg p-6"
+                  >
+                    {/* Header */}
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="flex items-center gap-3">
+                        {/* Sentiment Badge */}
+                        <div
+                          className={`px-3 py-1 rounded-full text-xs font-bold ${
+                            analysis.sentiment === 'BULLISH'
+                              ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
+                              : analysis.sentiment === 'BEARISH'
+                              ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
+                              : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-400'
+                          }`}
+                        >
+                          {analysis.sentiment}
+                        </div>
+
+                        {/* Reliability Score */}
+                        <div className="flex items-center gap-1">
+                          <span className="text-xs text-zinc-500 dark:text-zinc-400">
+                            Reliability:
+                          </span>
+                          <span
+                            className={`text-xs font-bold ${
+                              analysis.reliabilityScore < 4
+                                ? 'text-red-600 dark:text-red-400'
+                                : analysis.reliabilityScore < 7
+                                ? 'text-yellow-600 dark:text-yellow-400'
+                                : 'text-green-600 dark:text-green-400'
+                            }`}
+                          >
+                            {analysis.reliabilityScore}/10
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Date & Source */}
+                      <div className="text-right">
+                        <div className="flex items-center gap-1 text-xs text-zinc-500 dark:text-zinc-400">
+                          <Calendar className="w-3 h-3" />
+                          {new Date(analysis.createdAt).toLocaleDateString('en-US', {
+                            month: 'short',
+                            day: 'numeric',
+                            year: 'numeric',
+                          })}
+                        </div>
+                        {analysis.source && (
+                          <div className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
+                            Source: {analysis.source}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* AI Reasoning */}
+                    <div className="mb-3 p-3 bg-blue-50 dark:bg-blue-900/20 rounded border border-blue-100 dark:border-blue-800">
+                      <p className="text-xs font-medium text-blue-700 dark:text-blue-300 mb-1">
+                        AI Reasoning:
+                      </p>
+                      <p className="text-sm text-zinc-700 dark:text-zinc-300 italic">
+                        {analysis.reasoning}
+                      </p>
+                    </div>
+
+                    {/* Original Text */}
+                    <div>
+                      <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400 mb-1">
+                        Original Text:
+                      </p>
+                      <p className="text-sm text-zinc-600 dark:text-zinc-400 line-clamp-3">
+                        {analysis.text}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Content Section */}
           <div className="mb-6">
@@ -387,6 +601,14 @@ export default function CompanyDetailPage({ params }: { params: Promise<{ ticker
                           <ExternalLink className="w-3 h-3" />
                           Source
                         </a>
+                        <button
+                          onClick={() => handleDeleteContent(content.id, content.title)}
+                          className="inline-flex items-center gap-1 text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 transition-colors"
+                          title="Delete this content"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                          Delete
+                        </button>
                       </div>
                     </div>
                   </div>

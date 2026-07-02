@@ -56,7 +56,7 @@ function LoginForm() {
         <div className="bg-blue-500/10 border border-blue-500/20 text-blue-400 px-4 py-3 rounded-md mb-6 text-sm">
           <p className="font-semibold mb-1">Demo Account:</p>
           <p>Email: <code className="bg-blue-500/20 px-1.5 py-0.5 rounded">demo@marketwhisper.com</code></p>
-          <p>Password: <code className="bg-blue-500/20 px-1.5 py-0.5 rounded">demo1234</code></p>
+          <p>Password: <code className="bg-blue-500/20 px-1.5 py-0.5 rounded">MarketWhisper2026!</code></p>
         </div>
 
         {/* Error message */}
