@@ -34,10 +34,10 @@
 | **Language** | TypeScript |
 | **Styling** | Tailwind CSS 4 + shadcn/ui |
 | **Auth** | NextAuth.js v5 (JWT) |
-| **Database** | Neon PostgreSQL + Prisma ORM |
+| **Database** | PostgreSQL 16 + Prisma ORM + pgvector |
 | **AI/ML** | OpenAI Whisper (local) + Google Gemini API |
 | **Scraping** | Playwright (Python) |
-| **Deployment** | Vercel |
+| **Deployment** | Docker Compose |
 | **CI/CD** | GitHub Actions |
 
 ---
@@ -67,16 +67,36 @@ For detailed Docker instructions, see [README.Docker.md](README.Docker.md)
 
 ---
 
-### 💻 Manual Installation (Alternative)
+### 💻 Development Workflow
 
-If you prefer not to use Docker:
+For active development, you have two options:
 
-#### Prerequisites
+#### Option 1: Docker Compose (Recommended)
+
+```bash
+# Start PostgreSQL + Next.js dev server
+docker compose up
+
+# In another terminal, watch for changes
+docker compose exec web npm run dev
+```
+
+#### Option 2: Local Dev Server + Docker PostgreSQL
+
+```bash
+# Start only the database
+docker compose up db
+
+# In another terminal, run Next.js locally
+npm run dev
+```
+
+#### Prerequisites for Local Development
 
 - Node.js 20+ (recommended via [nvm](https://github.com/nvm-sh/nvm))
 - Python 3.10+ (for scraping scripts)
+- Docker Desktop (for PostgreSQL database)
 - NVIDIA GPU (optional, for faster Whisper transcription)
-- PostgreSQL database (or Neon account)
 
 #### Installation
 
@@ -96,30 +116,35 @@ cp .env.example .env.local
 # Edit .env.local with your credentials
 ```
 
-#### Configuration
+#### Configuration for Local Development
 
-Create `.env.local` with the following variables:
+If running `npm run dev` locally (not in Docker), create `.env.local`:
 
 ```env
-# Database
-DATABASE_URL="postgresql://user:pass@host/db?sslmode=require"
+# Database (connects to Docker PostgreSQL)
+DATABASE_URL="postgresql://marketwhisper:marketwhisper_dev_2026@localhost:5432/marketwhisper"
 
 # NextAuth.js
 NEXTAUTH_URL="http://localhost:3000"
-NEXTAUTH_SECRET="<generate-with-openssl-rand-base64-32>"
+NEXTAUTH_SECRET="docker-dev-secret-change-in-production-please"
 
-# OAuth (optional)
+# Optional: OAuth providers
 GOOGLE_CLIENT_ID=""
 GOOGLE_CLIENT_SECRET=""
 GITHUB_CLIENT_ID=""
 GITHUB_CLIENT_SECRET=""
 
-# AI
+# Optional: AI APIs
 GEMINI_API_KEY=""
+FINNHUB_API_KEY=""
 
-# Blog credentials (for scraping)
-BLOG_USERNAME=""
-BLOG_PASSWORD=""
+# Optional: Blog credentials (for scraping)
+BLOG_ANALYSIS_URL=""
+BLOG_ANALYSIS_USER=""
+BLOG_ANALYSIS_PASSWORD=""
+BLOG_SITUATIONS_URL=""
+BLOG_SITUATIONS_USER=""
+BLOG_SITUATIONS_PASSWORD=""
 ```
 
 #### Database Setup

@@ -1,6 +1,15 @@
 # MarketWhisper - Docker Setup
 
-Este archivo explica cómo ejecutar MarketWhisper usando Docker, sin necesidad de instalar Node.js, PostgreSQL, ni otras dependencias.
+**Docker es la forma RECOMENDADA de ejecutar MarketWhisper**, tanto para evaluación del TFM como para desarrollo local.
+
+## ¿Por Qué Docker?
+
+✅ **Zero setup**: No necesitas instalar Node.js, PostgreSQL, ni configurar bases de datos  
+✅ **Reproducible**: Funciona igual en cualquier máquina (Windows, Mac, Linux)  
+✅ **Todo incluido**: Base de datos PostgreSQL con pgvector integrada  
+✅ **Ideal para TFM**: Los evaluadores solo necesitan `docker compose up`  
+
+Este archivo explica cómo ejecutar MarketWhisper usando Docker.
 
 ## Requisitos Previos
 
