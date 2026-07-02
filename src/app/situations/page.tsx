@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { MainLayout } from "@/components/MainLayout";
+import { MainLayout } from "@/widgets/layout";
 import { TrendingUp, FileText, Building2, Globe } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { redirect, useRouter } from "next/navigation";

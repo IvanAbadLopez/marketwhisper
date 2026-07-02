@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { MainLayout } from "@/components/MainLayout";
+import { MainLayout } from "@/widgets/layout";
 import { 
   Building2, 
   TrendingUp, 

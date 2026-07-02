@@ -1,5 +1,5 @@
 import { auth } from "@/lib/auth";
-import { MainLayout } from "@/components/MainLayout";
+import { MainLayout } from "@/widgets/layout";
 import { redirect } from "next/navigation";
 import { prisma } from "@/shared";
 

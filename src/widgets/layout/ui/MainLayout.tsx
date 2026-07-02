@@ -1,7 +1,9 @@
+// Widget: Layout - Main Layout Composition
+
 import { ReactNode } from "react";
 import { User } from "next-auth";
-import { Header } from "./Header";
-import { Sidebar } from "./Sidebar";
+import { Header } from "@/widgets/header";
+import { Sidebar } from "@/widgets/sidebar";
 
 interface MainLayoutProps {
   user?: User;
@@ -11,12 +13,12 @@ interface MainLayoutProps {
 export function MainLayout({ user, children }: MainLayoutProps) {
   return (
     <div className="flex h-screen bg-white dark:bg-black overflow-hidden">
-      {/* Sidebar */}
+      {/* Sidebar Widget */}
       <Sidebar />
 
       {/* Main content area */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Header */}
+        {/* Header Widget */}
         <Header user={user} />
 
         {/* Page content */}

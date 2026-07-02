@@ -1,8 +1,10 @@
+// Widget: Header - UI Component
+
 "use client";
 
 import { signOut } from "next-auth/react";
 import { User } from "next-auth";
-import { SyncButton } from "./SyncButton";
+import { AnalyzeTextForm } from "@/features/analyze-text";
 
 interface HeaderProps {
   user?: User;
@@ -13,7 +15,7 @@ export function Header({ user }: HeaderProps) {
     <header className="w-full border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-black">
       <div className="px-6 py-4">
         <div className="flex items-center justify-between">
-          {/* Page title will be dynamic */}
+          {/* Page title */}
           <div className="flex items-center gap-4">
             <h1 className="text-xl font-semibold text-zinc-900 dark:text-zinc-100">
               Dashboard
@@ -21,8 +23,8 @@ export function Header({ user }: HeaderProps) {
           </div>
 
           <div className="flex items-center gap-4">
-            {/* Sync button */}
-            <SyncButton />
+            {/* Analysis feature */}
+            <AnalyzeTextForm />
 
             {/* User menu */}
             {user && (

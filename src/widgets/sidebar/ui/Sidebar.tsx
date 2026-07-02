@@ -1,14 +1,10 @@
+// Widget: Sidebar - UI Component
+
 "use client";
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Building2, TrendingUp } from "lucide-react";
-
-const navigation = [
-  { name: "Dashboard", href: "/", icon: Home },
-  { name: "Companies", href: "/situations", icon: Building2 },
-  { name: "Insights", href: "/insights", icon: TrendingUp },
-];
+import { navigationItems } from "../model/navigation";
 
 export function Sidebar() {
   const pathname = usePathname();
@@ -27,7 +23,7 @@ export function Sidebar() {
 
       {/* Navigation */}
       <nav className="flex-1 p-4 space-y-1">
-        {navigation.map((item) => {
+        {navigationItems.map((item) => {
           const isActive = pathname === item.href;
           const Icon = item.icon;
 
