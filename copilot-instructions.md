@@ -43,44 +43,305 @@
 - **CI/CD**: GitHub Actions (lint + type check + build on every push)
 - **Deployment**: Vercel (planned)
 
-## Project Structure
+## Architecture: Feature-Sliced Design (FSD)
+
+**MarketWhisper** follows **Feature-Sliced Design** principles for scalable and maintainable code organization.
+
+### FSD Core Principles
+
+1. **Isolation**: Each layer and slice is independent
+2. **Public API**: Explicit exports via `index.ts` files
+3. **Unidirectional flow**: Higher layers can import from lower layers, never reverse
+4. **Standardization**: Consistent structure across all features
+
+### Layer Hierarchy (Top to Bottom)
+
+```
+┌─────────────────────────────────────────┐
+│  app        (Next.js routing + config)  │  ← Application initialization
+├─────────────────────────────────────────┤
+│  widgets    (Complex UI blocks)         │  ← Header, Sidebar, AnalysisPanel
+├─────────────────────────────────────────┤
+│  features   (Business functionality)    │  ← analyze-text, auth, search
+├─────────────────────────────────────────┤
+│  entities   (Business entities)         │  ← company, analysis, user
+├─────────────────────────────────────────┤
+│  shared     (Reusable code)             │  ← ui kit, utils, api client
+└─────────────────────────────────────────┘
+```
+
+### Project Structure
 
 ```
 marketwhisper/
-├── .github/
-│   └── workflows/
-│       └── ci.yml                 # CI/CD pipeline (ESLint, TypeScript, Build)
-├── prisma/
-│   └── schema.prisma              # Database schema (User, Video, Transcript, etc.)
+├── docs/                          # Documentation
+├── prisma/                        # Database schema
 ├── public/                        # Static assets
-├── scripts/                       # Python automation scripts
-│   ├── download_video.py          # Playwright: download daily analysis videos
-│   ├── download_situations.py     # Playwright: scrape special situations blog
-│   ├── transcribe.py              # Whisper: transcribe videos to text
-│   └── sync_all.py                # Orchestrator: run all scrapers + transcription
+├── scripts/                       # Database utilities
+│   ├── seed_companies.py
+│   ├── seed_content.py
+│   └── clean_content.py
 ├── src/
-│   ├── app/
-│   │   ├── (auth)/                # Auth route group (no layout)
-│   │   │   ├── login/page.tsx     # Login page (credentials + social)
-│   │   │   └── register/page.tsx  # Registration page
+│   ├── app/                       # ⚡ LAYER 1: Next.js routing (pages only)
+│   │   ├── (auth)/
+│   │   │   ├── login/page.tsx     # Uses features/auth
+│   │   │   └── register/page.tsx
 │   │   ├── api/
-│   │   │   └── auth/
-│   │   │       ├── [...nextauth]/route.ts  # NextAuth API handler
-│   │   │       └── register/route.ts       # User registration endpoint
-│   │   ├── layout.tsx             # Root layout (SessionProvider)
-│   │   ├── page.tsx               # Homepage (placeholder, needs redesign)
-│   │   └── globals.css            # Global styles + CSS variables
-│   ├── components/
-│   │   └── ui/                    # shadcn/ui components (manually configured)
-│   ├── lib/
-│   │   ├── auth.ts                # NextAuth configuration
-│   │   ├── prisma.ts              # Prisma client (disabled until DB connected)
-│   │   └── utils.ts               # cn() utility for classnames
-│   └── middleware.ts              # Route protection (Edge Runtime compatible)
-├── .env.local                     # Local environment variables (gitignored)
-├── .env.example                   # Environment variables template
-├── .gitignore                     # Protects credentials, downloads, cookies, DB
-└── components.json                # shadcn/ui configuration
+│   │   │   ├── analyze/route.ts   # Uses features/analyze-text
+│   │   │   ├── companies/route.ts
+│   │   │   └── auth/[...nextauth]/route.ts
+│   │   ├── companies/
+│   │   │   └── [ticker]/page.tsx  # Uses entities/company + widgets
+│   │   ├── layout.tsx             # Root layout with providers
+│   │   ├── page.tsx               # Homepage
+│   │   └── globals.css
+│   │
+│   ├── widgets/                   # 🧩 LAYER 2: Self-contained UI blocks
+│   │   ├── header/
+│   │   │   ├── ui/
+│   │   │   │   ├── Header.tsx
+│   │   │   │   └── UserMenu.tsx
+│   │   │   ├── model/
+│   │   │   │   └── types.ts
+│   │   │   └── index.ts           # Public API
+│   │   ├── sidebar/
+│   │   │   ├── ui/
+│   │   │   │   ├── Sidebar.tsx
+│   │   │   │   └── NavItem.tsx
+│   │   │   └── index.ts
+│   │   ├── layout/
+│   │   │   ├── ui/
+│   │   │   │   └── MainLayout.tsx
+│   │   │   └── index.ts
+│   │   └── analysis-panel/
+│   │       ├── ui/
+│   │       │   ├── AnalysisPanel.tsx
+│   │       │   └── AnalysisResult.tsx
+│   │       ├── model/
+│   │       │   └── types.ts
+│   │       └── index.ts
+│   │
+│   ├── features/                  # ⚙️ LAYER 3: Business functionality
+│   │   ├── analyze-text/
+│   │   │   ├── ui/
+│   │   │   │   ├── AnalyzeTextForm.tsx
+│   │   │   │   └── AnalysisLoader.tsx
+│   │   │   ├── api/
+│   │   │   │   └── analyzeText.ts
+│   │   │   ├── model/
+│   │   │   │   ├── types.ts
+│   │   │   │   ├── schema.ts      # Zod validation
+│   │   │   │   └── hooks.ts
+│   │   │   └── index.ts
+│   │   ├── auth/
+│   │   │   ├── ui/
+│   │   │   │   ├── LoginForm.tsx
+│   │   │   │   ├── RegisterForm.tsx
+│   │   │   │   └── LogoutButton.tsx
+│   │   │   ├── api/
+│   │   │   │   ├── login.ts
+│   │   │   │   ├── register.ts
+│   │   │   │   └── logout.ts
+│   │   │   ├── model/
+│   │   │   │   ├── types.ts
+│   │   │   │   └── schemas.ts
+│   │   │   └── index.ts
+│   │   ├── company-search/
+│   │   │   ├── ui/
+│   │   │   │   ├── SearchBar.tsx
+│   │   │   │   └── SearchResults.tsx
+│   │   │   ├── model/
+│   │   │   │   ├── useSearch.ts
+│   │   │   │   └── types.ts
+│   │   │   └── index.ts
+│   │   └── sync-content/
+│   │       ├── ui/
+│   │       │   └── SyncButton.tsx
+│   │       ├── api/
+│   │       │   └── syncContent.ts
+│   │       └── index.ts
+│   │
+│   ├── entities/                  # 📦 LAYER 4: Business entities
+│   │   ├── company/
+│   │   │   ├── ui/
+│   │   │   │   ├── CompanyCard.tsx
+│   │   │   │   ├── CompanyInfo.tsx
+│   │   │   │   └── SentimentBadge.tsx
+│   │   │   ├── api/
+│   │   │   │   ├── getCompany.ts
+│   │   │   │   ├── getCompanies.ts
+│   │   │   │   └── updateCompany.ts
+│   │   │   ├── model/
+│   │   │   │   ├── types.ts       # Company type
+│   │   │   │   ├── hooks.ts       # useCompany, useCompanies
+│   │   │   │   └── utils.ts       # formatMarketCap, etc.
+│   │   │   └── index.ts
+│   │   ├── analysis/
+│   │   │   ├── ui/
+│   │   │   │   ├── AnalysisCard.tsx
+│   │   │   │   └── ReliabilityScore.tsx
+│   │   │   ├── api/
+│   │   │   │   └── getAnalyses.ts
+│   │   │   ├── model/
+│   │   │   │   ├── types.ts       # Analysis type
+│   │   │   │   └── hooks.ts
+│   │   │   └── index.ts
+│   │   └── user/
+│   │       ├── ui/
+│   │       │   ├── UserAvatar.tsx
+│   │       │   └── UserProfile.tsx
+│   │       ├── model/
+│   │       │   ├── types.ts
+│   │       │   └── hooks.ts
+│   │       └── index.ts
+│   │
+│   ├── shared/                    # 🔧 LAYER 5: Reusable infrastructure
+│   │   ├── ui/                    # shadcn/ui components
+│   │   │   ├── button.tsx
+│   │   │   ├── card.tsx
+│   │   │   ├── input.tsx
+│   │   │   └── ...
+│   │   ├── lib/
+│   │   │   ├── utils.ts           # cn() helper
+│   │   │   ├── formatters.ts      # Date, number formatters
+│   │   │   └── validators.ts      # Common Zod schemas
+│   │   ├── api/
+│   │   │   ├── client.ts          # Fetch wrapper
+│   │   │   ├── gemini.ts          # Gemini AI client
+│   │   │   └── prisma.ts          # Prisma client
+│   │   ├── config/
+│   │   │   ├── constants.ts       # App constants
+│   │   │   ├── env.ts             # Environment variables
+│   │   │   └── routes.ts          # Route paths
+│   │   └── types/
+│   │       ├── index.ts           # Global types
+│   │       └── next-auth.d.ts     # NextAuth types
+│   │
+│   ├── middleware.ts              # Edge middleware (route protection)
+│   └── generated/                 # Prisma client (gitignored)
+│       └── prisma/
+│
+├── .env.local                     # Environment variables (gitignored)
+├── .env.example                   # Environment template
+└── components.json                # shadcn/ui config
+```
+
+### FSD Segment Types
+
+Each slice (feature/entity) can contain these segments:
+
+- **ui/** - React components
+- **api/** - API calls, data fetching
+- **model/** - Types, hooks, stores, business logic
+- **lib/** - Utilities specific to this slice
+- **config/** - Configuration for this slice
+
+### Import Rules (Strict Enforcement)
+
+✅ **ALLOWED**:
+```typescript
+// Higher layers → Lower layers
+import { Button } from "@/shared/ui/button"           // ✅ app → shared
+import { CompanyCard } from "@/entities/company"       // ✅ features → entities
+import { useAuth } from "@/features/auth"              // ✅ widgets → features
+
+// Same layer (different slices)
+import { SearchBar } from "@/features/company-search"  // ✅ feature → feature
+```
+
+❌ **FORBIDDEN**:
+```typescript
+// Lower layers → Higher layers
+import { Header } from "@/widgets/header"              // ❌ shared → widgets
+import { AnalyzeTextForm } from "@/features/analyze"   // ❌ entities → features
+
+// Bypassing public API
+import { LoginForm } from "@/features/auth/ui/LoginForm" // ❌ Direct import
+import { LoginForm } from "@/features/auth"              // ✅ Via index.ts
+```
+
+### Public API Pattern
+
+**Every slice MUST export via `index.ts`**:
+
+```typescript
+// features/analyze-text/index.ts
+export { AnalyzeTextForm } from './ui/AnalyzeTextForm'
+export { analyzeText } from './api/analyzeText'
+export { useAnalysis } from './model/hooks'
+export type { AnalysisFormData } from './model/types'
+
+// ❌ Don't export internal utilities
+// export { validateInput } from './lib/validators'  
+```
+
+### Adapting FSD to Next.js App Router
+
+**Challenge**: Next.js requires routing in `/app`, but FSD suggests app layer for config only.
+
+**Solution**: Hybrid approach
+
+1. **`/app`** = Routing + minimal page components (composition only)
+2. **Actual logic** = Lives in features/widgets/entities
+
+**Example**:
+```typescript
+// ❌ BAD: Logic in page component
+// app/companies/[ticker]/page.tsx
+export default function CompanyPage({ params }) {
+  const [company, setCompany] = useState(null)
+  // ... fetch logic, rendering logic, etc.
+}
+
+// ✅ GOOD: Page is just composition
+// app/companies/[ticker]/page.tsx
+import { CompanyDetailWidget } from '@/widgets/company-detail'
+
+export default function CompanyPage({ params }: { params: { ticker: string } }) {
+  return <CompanyDetailWidget ticker={params.ticker} />
+}
+
+// widgets/company-detail/ui/CompanyDetailWidget.tsx
+// (Contains all logic, uses entities/company, features/company-search, etc.)
+```
+
+### Migration Strategy
+
+**Current state**: Flat structure with `/components`, `/lib`  
+**Target state**: Full FSD structure
+
+**Step-by-step migration**:
+1. Create `shared/` layer first (move `/lib`, `/components/ui`)
+2. Create `entities/` for business entities (company, analysis, user)
+3. Create `features/` for business logic (analyze-text, auth, search)
+4. Create `widgets/` for complex UI (header, sidebar, layout)
+5. Refactor `/app` pages to use widgets (composition only)
+6. Add public APIs (`index.ts`) to all slices
+7. Enforce import rules with ESLint plugin (optional)
+
+### FSD Development Rules
+
+1. **One feature = One slice**: Don't create mega-features
+2. **Entities are data-focused**: UI for displaying, not business logic
+3. **Features own business logic**: Mutations, validations, workflows
+4. **Widgets compose features + entities**: No business logic in widgets
+5. **Pages are thin**: Just route params → widget props
+6. **Always use public API**: Never bypass `index.ts`
+7. **Cross-feature communication**: Via shared state or entities, not direct imports
+
+### Testing with FSD
+
+```
+features/analyze-text/
+├── ui/
+│   ├── AnalyzeTextForm.tsx
+│   └── AnalyzeTextForm.test.tsx   # ✅ Co-located tests
+├── api/
+│   ├── analyzeText.ts
+│   └── analyzeText.test.ts        # ✅ API tests
+├── model/
+│   └── hooks.test.ts              # ✅ Hook tests
+└── index.ts
 ```
 
 ## Database Schema (Prisma)
@@ -154,6 +415,15 @@ marketwhisper/
 
 ## Code Conventions
 
+### Feature-Sliced Design (FSD)
+
+- **Always create public API**: Every feature/entity/widget MUST export via `index.ts`
+- **Respect layer hierarchy**: Never import from higher layers (e.g., entities can't import from features)
+- **Use segments consistently**: `ui/`, `api/`, `model/`, `lib/`, `config/`
+- **Keep pages thin**: App Router pages should only compose widgets, no business logic
+- **One slice = One responsibility**: Don't create mega-slices
+- **Cross-slice imports**: Only via public API, never direct file imports
+
 ### TypeScript
 - Strict mode enabled
 - No unused variables (ESLint enforced)
@@ -179,10 +449,19 @@ marketwhisper/
 - Use enums for status/type fields
 
 ### File Naming
-- Components: PascalCase (`LoginForm.tsx`)
-- Utilities/libs: camelCase (`auth.ts`, `utils.ts`)
+
+**FSD Structure**:
+- Slices: kebab-case (`analyze-text/`, `company-search/`)
+- Segments: lowercase (`ui/`, `api/`, `model/`)
+- Components: PascalCase (`AnalyzeTextForm.tsx`, `CompanyCard.tsx`)
+- Public API: Always `index.ts` (exports only)
+- Tests: Co-located with code (`AnalyzeTextForm.test.tsx`)
+
+**Other Files**:
+- Utilities/libs: camelCase (`formatters.ts`, `validators.ts`)
 - API routes: lowercase with hyphens (`[...nextauth]/route.ts`)
 - Types: PascalCase with `.ts` extension (`types.ts`)
+- Config: lowercase (`constants.ts`, `env.ts`)
 
 ## Development Rules & Testing
 

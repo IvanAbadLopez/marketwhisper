@@ -18,6 +18,13 @@ Docker deployment instructions:
 - Environment variables
 - Production deployment
 
+### [Feature-Sliced Design Migration](fsd-migration.md)
+Architecture migration guide:
+- FSD principles and layer hierarchy
+- Step-by-step migration plan (6 weeks)
+- Current flat structure → Target FSD structure
+- Benefits and best practices
+
 ### [Multi-Company Analysis](multi-company-analysis.md)
 Feature documentation for multi-company detection:
 - How the AI detects multiple companies in a single text
