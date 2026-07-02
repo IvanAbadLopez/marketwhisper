@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
-import { Header } from "@/components/Header";
+import { Header } from "@/widgets/header";
 
 // Mock next-auth/react
 vi.mock("next-auth/react", () => ({
