@@ -1,0 +1,65 @@
+version: '3.9'
+
+services:
+  # PostgreSQL Database
+  db:
+    image: pgvector/pgvector:pg16
+    container_name: marketwhisper-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: marketwhisper
+      POSTGRES_PASSWORD: marketwhisper_dev_2026
+      POSTGRES_DB: marketwhisper
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./scripts/init-db.sh:/docker-entrypoint-initdb.d/init-db.sh
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U marketwhisper"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Next.js Web Application
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: marketwhisper-web
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      # Database
+      DATABASE_URL: postgresql://marketwhisper:marketwhisper_dev_2026@db:5432/marketwhisper
+      
+      # NextAuth.js
+      NEXTAUTH_URL: http://localhost:3000
+      NEXTAUTH_SECRET: docker-dev-secret-change-in-production-please
+      
+      # Optional: OAuth (leave empty for demo mode)
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      GITHUB_CLIENT_ID: ${GITHUB_CLIENT_ID:-}
+      GITHUB_CLIENT_SECRET: ${GITHUB_CLIENT_SECRET:-}
+      
+      # Optional: Blog credentials (for scraping)
+      BLOG_ANALYSIS_URL: ${BLOG_ANALYSIS_URL:-}
+      BLOG_ANALYSIS_USER: ${BLOG_ANALYSIS_USER:-}
+      BLOG_ANALYSIS_PASSWORD: ${BLOG_ANALYSIS_PASSWORD:-}
+      BLOG_SITUATIONS_URL: ${BLOG_SITUATIONS_URL:-}
+      BLOG_SITUATIONS_USER: ${BLOG_SITUATIONS_USER:-}
+      BLOG_SITUATIONS_PASSWORD: ${BLOG_SITUATIONS_PASSWORD:-}
+      
+      # Optional: APIs
+      FINNHUB_API_KEY: ${FINNHUB_API_KEY:-}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+    depends_on:
+      db:
+        condition: service_healthy
+    command: sh -c "npx prisma db push && node server.js"
+
+volumes:
+  postgres_data:
+    driver: local
