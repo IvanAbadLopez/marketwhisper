@@ -1,8 +1,8 @@
 # Feature-Sliced Design (FSD) - Migration Guide
 
-**Status**: 📋 Planning  
+**Status**: � In Progress - Step 1 Complete!  
 **Target**: Q3 2026  
-**Current**: Flat structure → **Goal**: Full FSD architecture
+**Current**: Step 1 ✅ → Step 2 (Next)
 
 ---
 
@@ -233,17 +233,23 @@ Make pages thin - only composition of widgets:
 ## 🔍 Migration Checklist
 
 ### Pre-Migration
-- [ ] Backup current codebase (git commit)
-- [ ] All tests passing (19 unit + 7 E2E)
-- [ ] Build successful (`npm run build`)
-- [ ] Document current structure
+- [x] Backup current codebase (git commit)
+- [x] All tests passing (19 unit + 7 E2E)
+- [x] Build successful (`npm run build`)
+- [x] Document current structure
 
 ### During Migration
-- [ ] Step 1: `shared/` layer ✅
-- [ ] Step 2: `entities/` layer ✅
-- [ ] Step 3: `features/` layer ✅
-- [ ] Step 4: `widgets/` layer ✅
-- [ ] Step 5: Refactor `app/` pages ✅
+- [x] **Step 1: `shared/` layer ✅ (Commit: ceffc0f)**
+  - Created `src/shared/` with api/, lib/, config/
+  - Moved utils.ts, gemini.ts, prisma.ts
+  - Created constants.ts, env.ts
+  - Public API via index.ts
+  - 16 files updated
+  - Build ✓ | Tests ✓ 15/15
+- [ ] Step 2: `entities/` layer
+- [ ] Step 3: `features/` layer
+- [ ] Step 4: `widgets/` layer
+- [ ] Step 5: Refactor `app/` pages
 
 ### Post-Migration
 - [ ] All tests passing
