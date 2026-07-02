@@ -2,22 +2,12 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { 
-  Home, 
-  Video, 
-  FileText, 
-  Search, 
-  TrendingUp,
-  MessageSquare 
-} from "lucide-react";
+import { Home, Building2, TrendingUp } from "lucide-react";
 
 const navigation = [
   { name: "Dashboard", href: "/", icon: Home },
-  { name: "Videos", href: "/videos", icon: Video },
-  { name: "Situations", href: "/situations", icon: FileText },
-  { name: "Search", href: "/search", icon: Search },
+  { name: "Companies", href: "/situations", icon: Building2 },
   { name: "Insights", href: "/insights", icon: TrendingUp },
-  { name: "AI Chat", href: "/chat", icon: MessageSquare },
 ];
 
 export function Sidebar() {
