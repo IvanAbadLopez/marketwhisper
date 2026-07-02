@@ -8,7 +8,7 @@ vi.mock("@/lib/auth", () => ({
 }));
 
 // Mock prisma module
-vi.mock("@/lib/prisma", () => ({
+vi.mock("@/shared", () => ({
   prisma: {
     content: {
       findUnique: vi.fn(),
@@ -44,7 +44,7 @@ describe("DELETE /api/content/[id]", () => {
 
   it("returns 404 if content does not exist", async () => {
     const { auth } = await import("@/lib/auth");
-    const { prisma } = await import("@/lib/prisma");
+    const { prisma } = await import("@/shared");
 
     vi.mocked(auth).mockResolvedValue({
       user: { id: "user1", email: "test@example.com" },
@@ -65,7 +65,7 @@ describe("DELETE /api/content/[id]", () => {
 
   it("deletes content and related records successfully", async () => {
     const { auth } = await import("@/lib/auth");
-    const { prisma } = await import("@/lib/prisma");
+    const { prisma } = await import("@/shared");
 
     vi.mocked(auth).mockResolvedValue({
       user: { id: "user1", email: "test@example.com" },

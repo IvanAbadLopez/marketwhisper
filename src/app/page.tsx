@@ -1,7 +1,7 @@
 import { auth } from "@/lib/auth";
 import { MainLayout } from "@/components/MainLayout";
 import { redirect } from "next/navigation";
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/shared";
 
 export default async function Home() {
   const session = await auth();

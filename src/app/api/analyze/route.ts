@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
-import { analyzeText } from '@/lib/gemini';
-import { prisma } from '@/lib/prisma';
+import { analyzeText, prisma } from '@/shared';
 
 /**
  * POST /api/analyze

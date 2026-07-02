@@ -1,0 +1,43 @@
+/**
+ * Environment variables with type safety
+ * @module shared/config
+ */
+
+function getEnvVar(key: string, defaultValue?: string): string {
+  const value = process.env[key];
+  if (!value && !defaultValue) {
+    throw new Error(`Missing required environment variable: ${key}`);
+  }
+  return value || defaultValue || "";
+}
+
+function getOptionalEnvVar(key: string): string | undefined {
+  return process.env[key];
+}
+
+export const env = {
+  // Database
+  DATABASE_URL: getEnvVar("DATABASE_URL"),
+
+  // NextAuth
+  NEXTAUTH_URL: getEnvVar("NEXTAUTH_URL", "http://localhost:3000"),
+  NEXTAUTH_SECRET: getEnvVar("NEXTAUTH_SECRET"),
+
+  // OAuth (optional)
+  GOOGLE_CLIENT_ID: getOptionalEnvVar("GOOGLE_CLIENT_ID"),
+  GOOGLE_CLIENT_SECRET: getOptionalEnvVar("GOOGLE_CLIENT_SECRET"),
+  GITHUB_CLIENT_ID: getOptionalEnvVar("GITHUB_CLIENT_ID"),
+  GITHUB_CLIENT_SECRET: getOptionalEnvVar("GITHUB_CLIENT_SECRET"),
+
+  // AI APIs
+  GEMINI_API_KEY: getOptionalEnvVar("GEMINI_API_KEY"),
+  GEMINI_MODEL: getEnvVar("GEMINI_MODEL", "gemini-1.5-flash-latest"),
+
+  // Node Environment
+  NODE_ENV: getEnvVar("NODE_ENV", "development"),
+
+  // Feature Flags
+  IS_PRODUCTION: process.env.NODE_ENV === "production",
+  IS_DEVELOPMENT: process.env.NODE_ENV === "development",
+  IS_TEST: process.env.NODE_ENV === "test",
+} as const;
