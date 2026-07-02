@@ -45,13 +45,7 @@ Shell script to initialize PostgreSQL with pgvector extension (used in Docker).
 bash init-db.sh
 ```
 
-## 📦 Legacy Scripts
-
-**Note**: The `/legacy` subfolder contains archived scripts from the original architecture (web scraping, video downloading, transcription). These are kept for reference only.
-
-See [legacy/README.md](legacy/README.md) for details on archived scripts.
-
-## 🔧 Setup (One-time)
+##  Setup (One-time)
 
 ### 1. Install Python Dependencies
 

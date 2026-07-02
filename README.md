@@ -221,7 +221,6 @@ marketwhisper/
 ├── prisma/              # Database schema
 ├── public/              # Static assets
 ├── scripts/             # Database utilities
-│   ├── legacy/          # Archived scripts (old scraping approach)
 │   ├── seed_companies.py
 │   ├── seed_content.py
 │   └── clean_content.py
