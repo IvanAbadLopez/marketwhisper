@@ -44,18 +44,45 @@
 
 ## 🚀 Getting Started
 
-### Prerequisites
+### 🐳 Quick Start with Docker (Recommended)
+
+**The easiest way to run MarketWhisper is using Docker:**
+
+```bash
+# Clone the repository
+git clone https://github.com/IvanAbadLopez/marketwhisper.git
+cd marketwhisper
+
+# Start the application
+docker compose up
+```
+
+🎉 **That's it!** Open http://localhost:3000 in your browser.
+
+**Demo credentials:**
+- Email: `demo@marketwhisper.com`
+- Password: `demo1234`
+
+For detailed Docker instructions, see [README.Docker.md](README.Docker.md)
+
+---
+
+### 💻 Manual Installation (Alternative)
+
+If you prefer not to use Docker:
+
+#### Prerequisites
 
 - Node.js 20+ (recommended via [nvm](https://github.com/nvm-sh/nvm))
 - Python 3.10+ (for scraping scripts)
 - NVIDIA GPU (optional, for faster Whisper transcription)
 - PostgreSQL database (or Neon account)
 
-### Installation
+#### Installation
 
 ```bash
 # Clone the repository
-git clone git@github.com:IvanAbadLopez/marketwhisper.git
+git clone https://github.com/IvanAbadLopez/marketwhisper.git
 cd marketwhisper
 
 # Install Node.js dependencies
@@ -69,7 +96,7 @@ cp .env.example .env.local
 # Edit .env.local with your credentials
 ```
 
-### Configuration
+#### Configuration
 
 Create `.env.local` with the following variables:
 
@@ -95,7 +122,7 @@ BLOG_USERNAME=""
 BLOG_PASSWORD=""
 ```
 
-### Database Setup
+#### Database Setup
 
 ```bash
 # Generate Prisma Client
