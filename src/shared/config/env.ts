@@ -33,6 +33,10 @@ export const env = {
   GEMINI_API_KEY: getOptionalEnvVar("GEMINI_API_KEY"),
   GEMINI_MODEL: getEnvVar("GEMINI_MODEL", "gemini-1.5-flash-latest"),
 
+  // Enrichment Services
+  OLLAMA_URL: getEnvVar("OLLAMA_URL", "http://localhost:11434"),
+  ENRICHMENT_SERVICE_URL: getEnvVar("ENRICHMENT_SERVICE_URL", "http://localhost:8001"),
+
   // Node Environment
   NODE_ENV: getEnvVar("NODE_ENV", "development"),
 

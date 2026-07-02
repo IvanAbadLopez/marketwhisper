@@ -9,13 +9,15 @@
 import { Building2, TrendingUp, TrendingDown, Minus } from "lucide-react";
 import { Company } from "../model/types";
 import { formatMarketCap, getSentimentColor, getReliabilityColor, getSentimentLabel } from "../model/utils";
+import { EnrichButton } from "@/features/enrich-company";
 
 interface CompanyCardProps {
   company: Company;
   onClick?: (ticker: string) => void;
+  onEnrich?: () => void;
 }
 
-export function CompanyCard({ company, onClick }: CompanyCardProps) {
+export function CompanyCard({ company, onClick, onEnrich }: CompanyCardProps) {
   const sentimentLabel = getSentimentLabel(company.avgSentimentScore);
   
   const SentimentIcon = sentimentLabel === "BULLISH" 
@@ -26,12 +28,14 @@ export function CompanyCard({ company, onClick }: CompanyCardProps) {
 
   return (
     <div
-      onClick={() => onClick?.(company.ticker)}
-      className="bg-white dark:bg-zinc-900 rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow cursor-pointer border border-zinc-200 dark:border-zinc-800"
+      className="bg-white dark:bg-zinc-900 rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow border border-zinc-200 dark:border-zinc-800"
     >
       {/* Header */}
       <div className="flex items-start justify-between mb-4">
-        <div className="flex items-center gap-3">
+        <div 
+          className="flex items-center gap-3 flex-1 cursor-pointer"
+          onClick={() => onClick?.(company.ticker)}
+        >
           <div className="w-12 h-12 bg-zinc-100 dark:bg-zinc-800 rounded-lg flex items-center justify-center">
             <Building2 className="w-6 h-6 text-zinc-600 dark:text-zinc-400" />
           </div>
@@ -44,10 +48,20 @@ export function CompanyCard({ company, onClick }: CompanyCardProps) {
             </p>
           </div>
         </div>
+        <div onClick={(e) => e.stopPropagation()}>
+          <EnrichButton 
+            ticker={company.ticker}
+            variant="compact"
+            onSuccess={onEnrich}
+          />
+        </div>
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 gap-4 mb-4">
+      <div 
+        className="grid grid-cols-2 gap-4 mb-4 cursor-pointer"
+        onClick={() => onClick?.(company.ticker)}
+      >
         <div>
           <p className="text-xs text-zinc-500 dark:text-zinc-500">Sector</p>
           <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
@@ -63,7 +77,10 @@ export function CompanyCard({ company, onClick }: CompanyCardProps) {
       </div>
 
       {/* Sentiment & Reliability Indicators */}
-      <div className="space-y-3 mb-4">
+      <div 
+        className="space-y-3 mb-4 cursor-pointer"
+        onClick={() => onClick?.(company.ticker)}
+      >
         {/* Sentiment */}
         <div>
           <div className="flex items-center justify-between mb-1">
@@ -117,7 +134,10 @@ export function CompanyCard({ company, onClick }: CompanyCardProps) {
       </div>
 
       {/* Footer */}
-      <div className="flex items-center justify-between text-xs text-zinc-600 dark:text-zinc-400 border-t border-zinc-200 dark:border-zinc-800 pt-3">
+      <div 
+        className="flex items-center justify-between text-xs text-zinc-600 dark:text-zinc-400 border-t border-zinc-200 dark:border-zinc-800 pt-3 cursor-pointer"
+        onClick={() => onClick?.(company.ticker)}
+      >
         <span>{company._count?.analyses || company.analysisCount || 0} analyses</span>
         <span>{company._count?.content || 0} articles</span>
       </div>

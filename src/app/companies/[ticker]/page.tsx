@@ -15,6 +15,8 @@ import {
 } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { redirect, useRouter } from "next/navigation";
+import { EnrichButton } from "@/features/enrich-company";
+import { EnrichmentDisplay } from "@/entities/company/ui/EnrichmentDisplay";
 
 interface Mention {
   id: string;
@@ -84,6 +86,17 @@ interface Company {
     reliabilityScore: number;
     reasoning: string;
     createdAt: string;
+  }[];
+  enrichments?: {
+    id: string;
+    ticker: string;
+    financialData?: any;
+    priceData?: any;
+    newsHeadlines?: any[];
+    recommendations?: any[];
+    aiAnalysis: string | null;
+    ollamaModel: string | null;
+    createdAt: Date;
   }[];
 }
 
@@ -328,6 +341,26 @@ export default function CompanyDetailPage({ params }: { params: Promise<{ ticker
                 </div>
               )}
             </div>
+          </div>
+
+          {/* Enrichment Section */}
+          <div className="mb-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">
+                Public Financial Data
+              </h3>
+              <EnrichButton 
+                ticker={ticker}
+                onSuccess={fetchCompany}
+                variant="default"
+              />
+            </div>
+            <EnrichmentDisplay 
+              enrichment={company.enrichments && company.enrichments.length > 0 
+                ? company.enrichments[0] 
+                : null
+              } 
+            />
           </div>
 
           {/* AI Analyses Section */}

@@ -1,0 +1,69 @@
+/**
+ * Company Enrichment Types
+ * @module features/enrich-company/model
+ */
+
+export interface CompanyInfo {
+  ticker: string;
+  name: string | null;
+  sector: string | null;
+  industry: string | null;
+  description: string | null;
+  website: string | null;
+  employees: number | null;
+  marketCap: number | null;
+}
+
+export interface FinancialMetrics {
+  revenue: number | null;
+  netIncome: number | null;
+  eps: number | null;
+  peRatio: number | null;
+  debtToEquity: number | null;
+  dividendYield: number | null;
+  profitMargins: number | null;
+}
+
+export interface PriceData {
+  currentPrice: number | null;
+  previousClose: number | null;
+  dayChange: number | null;
+  dayChangePercent: number | null;
+  fiftyTwoWeekHigh: number | null;
+  fiftyTwoWeekLow: number | null;
+  volume: number | null;
+  avgVolume: number | null;
+}
+
+export interface NewsItem {
+  title: string;
+  publisher: string | null;
+  link: string | null;
+  publishedAt: string | null;
+}
+
+export interface Recommendation {
+  period: string;
+  strongBuy: number;
+  buy: number;
+  hold: number;
+  sell: number;
+  strongSell: number;
+}
+
+export interface EnrichmentResult {
+  success: boolean;
+  ticker: string;
+  enrichmentId: string;
+  companyInfo?: CompanyInfo;
+  financials?: FinancialMetrics;
+  price?: PriceData;
+  newsCount: number;
+  recommendationsCount: number;
+  aiAnalysis: string;
+  timestamp: string;
+}
+
+export interface EnrichmentError {
+  error: string;
+}

@@ -66,6 +66,12 @@ export async function GET(
             createdAt: "desc",
           },
         },
+        enrichments: {
+          orderBy: {
+            createdAt: "desc",
+          },
+          take: 1, // Only get the latest enrichment
+        },
       },
     });
 
