@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { MainLayout } from "@/components/MainLayout";
-import { TrendingUp, FileText, Building2, Globe, Search } from "lucide-react";
+import { TrendingUp, FileText, Building2, Globe } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { redirect, useRouter } from "next/navigation";
+import { SearchBar, useCompanySearch } from "@/features/company-search";
 
 interface ContentSummary {
   id: string;
@@ -118,21 +119,8 @@ export default function SituationsPage() {
     return "bg-green-500 dark:bg-green-600";
   };
 
-  // Filter companies based on search query
-  const filteredCompanies = useMemo(() => {
-    if (!searchQuery.trim()) return companies;
-
-    const query = searchQuery.toLowerCase();
-    return companies.filter((company) => {
-      return (
-        company.ticker.toLowerCase().includes(query) ||
-        company.name.toLowerCase().includes(query) ||
-        company.sector?.toLowerCase().includes(query) ||
-        company.industry?.toLowerCase().includes(query) ||
-        company.description?.toLowerCase().includes(query)
-      );
-    });
-  }, [companies, searchQuery]);
+  // Use company search feature (FSD)
+  const filteredCompanies = useCompanySearch(companies, searchQuery);
 
   if (status === "loading" || loading) {
     return (
@@ -161,31 +149,11 @@ export default function SituationsPage() {
 
           {/* Search Bar */}
           {companies.length > 0 && (
-            <div className="mb-6">
-              <div className="relative max-w-2xl">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-400" />
-                <input
-                  type="text"
-                  placeholder="Search by ticker, company name, sector, industry..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 dark:placeholder-zinc-600 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
-                />
-                {searchQuery && (
-                  <button
-                    onClick={() => setSearchQuery("")}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300"
-                  >
-                    ✕
-                  </button>
-                )}
-              </div>
-              {searchQuery && (
-                <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
-                  Found {filteredCompanies.length} {filteredCompanies.length === 1 ? 'company' : 'companies'}
-                </p>
-              )}
-            </div>
+            <SearchBar 
+              value={searchQuery}
+              onChange={setSearchQuery}
+              resultsCount={filteredCompanies.length}
+            />
           )}
 
           {companies.length === 0 ? (
