@@ -1,8 +1,8 @@
 # Feature-Sliced Design (FSD) - Migration Guide
 
-**Status**: 🟢 In Progress - Step 2 Complete!  
+**Status**: 🟢 In Progress - Step 3 Complete!  
 **Target**: Q3 2026  
-**Current**: Step 2 ✅ → Step 3 (Next)
+**Current**: Step 3 ✅ → Step 4 (Next)
 
 ---
 
@@ -157,7 +157,59 @@ Extract business entities (company, analysis, user):
 
 ---
 
-### Step 3: Create `features/` Layer (Week 3-4)
+### ✅ Step 3: Create `features/` Layer (COMPLETED - Week 3-4)
+
+**Commit**: ebedd76
+
+Extract business features (analyze-text, auth, search):
+
+**Structure Created**:
+```
+src/features/
+  analyze-text/
+    api/
+      analyzeText.ts    # API client para análisis de texto
+    model/
+      types.ts          # AnalysisFormData, AnalysisResponse
+    ui/
+      AnalyzeTextForm.tsx # Formulario de análisis (extraído de SyncButton)
+    index.ts            # Public API
+    
+  auth/
+    api/
+      register.ts       # API client para registro
+    model/
+      types.ts          # LoginFormData, RegisterFormData
+    ui/
+      LoginForm.tsx     # Formulario de login (extraído de página)
+      RegisterForm.tsx  # Formulario de registro (extraído de página)
+    index.ts
+    
+  company-search/
+    model/
+      types.ts          # SearchFilters, SearchableItem
+      useCompanySearch.ts # Hook personalizado de búsqueda
+    ui/
+      SearchBar.tsx     # Componente de barra de búsqueda
+    index.ts
+```
+
+**Completed Actions**:
+- ✅ Created `features/analyze-text/` with form, API client, types
+- ✅ Created `features/auth/` with LoginForm, RegisterForm, API
+- ✅ Created `features/company-search/` with SearchBar, useCompanySearch hook
+- ✅ Refactored SyncButton to re-export AnalyzeTextForm
+- ✅ Refactored login/register pages to use auth features
+- ✅ Refactored situations page to use search feature
+- ✅ All features have Public API via index.ts
+- ✅ Build compiles successfully
+- ✅ 15/15 tests passing
+
+**Files**: 13 new files, 4 modified (760 insertions, 602 deletions)
+
+---
+
+### ⏳ Step 4: Create `widgets/` Layer (Week 5)
 
 Extract business features (analyze-text, auth, search):
 
