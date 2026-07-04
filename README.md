@@ -22,7 +22,7 @@
 - 🎯 **Reliability Scoring**: AI confidence scores (1-10) for each analysis
 - 📈 **Aggregated Metrics**: Track average sentiment and reliability over time per company
 - 🔍 **Company Dashboard**: View all analyses, sentiment trends, and insights per ticker
-- 💬 **Local AI**: Uses Gemini AI for analysis (configurable, no external API costs)
+- 💬 **Local AI**: Uses Ollama for analysis (100% local, no external API costs)
 - 🐳 **Full Docker Stack**: PostgreSQL + Next.js ready to deploy
 - 🔐 **Multi-Auth**: Email/password, Google, GitHub authentication
 
@@ -52,7 +52,7 @@ See [docs/multi-company-analysis.md](docs/multi-company-analysis.md) for detaile
 | **Styling** | Tailwind CSS 4 + shadcn/ui |
 | **Auth** | NextAuth.js v5 (JWT) |
 | **Database** | PostgreSQL 16 + Prisma 7 ORM + pgvector |
-| **AI/ML** | Google Gemini AI (flash-latest) |
+| **AI/ML** | Ollama (llama3.1:8b) - Local LLM |
 | **Deployment** | Docker Compose |
 | **Testing** | Vitest + Playwright + Testing Library |
 | **CI/CD** | GitHub Actions |
@@ -153,7 +153,7 @@ GITHUB_CLIENT_ID=""
 GITHUB_CLIENT_SECRET=""
 
 # Optional: AI API (or use local models)
-GEMINI_API_KEY=""
+# No AI API keys needed - Ollama runs locally!
 
 # Optional: Financial data API
 FINNHUB_API_KEY=""
@@ -232,7 +232,7 @@ marketwhisper/
 │   │   ├── chat/        # AI chat interface
 │   │   └── layout.tsx   # Root layout
 │   ├── components/      # React components
-│   ├── lib/             # Utilities (auth, prisma, gemini)
+│   ├── lib/             # Utilities (auth, prisma, ollama)
 │   └── types/           # TypeScript types
 └── copilot-instructions.md  # Detailed technical guide
 ```
@@ -256,7 +256,7 @@ See [prisma/schema.prisma](prisma/schema.prisma) for full schema.
 ## 🤖 How It Works
 
 1. **User Input**: Paste financial text in the "Analyze Text" form
-2. **AI Analysis**: Gemini AI analyzes the text to detect:
+2. **AI Analysis**: Ollama (local LLM) analyzes the text to detect:
    - Companies mentioned (ticker detection)
    - Sentiment for each company (BULLISH/BEARISH/NEUTRAL)
    - Reliability score (1-10)
@@ -273,7 +273,7 @@ See [prisma/schema.prisma](prisma/schema.prisma) for full schema.
 - [x] Next.js 16 project setup with App Router
 - [x] Authentication (NextAuth.js v5 - Email, Google, GitHub)
 - [x] PostgreSQL database with Prisma 7
-- [x] AI text analysis with Gemini
+- [x] AI text analysis with Ollama (local)
 - [x] Multi-company detection
 - [x] Sentiment and reliability scoring
 - [x] Company-centric UI with aggregated metrics

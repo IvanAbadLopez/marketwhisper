@@ -35,7 +35,7 @@
 ### AI & Processing
 - **Transcription**: OpenAI Whisper (local, open-source, GPU-accelerated)
 - **Scraping**: Playwright (Python scripts)
-- **AI Model**: Google Gemini API (planned for RAG/insights)
+- **AI Model**: Ollama (llama3.1:8b) - Local LLM
 - **Charts**: Recharts + lightweight-charts
 
 ### DevOps
@@ -207,7 +207,7 @@ marketwhisper/
 │   │   │   └── validators.ts      # Common Zod schemas
 │   │   ├── api/
 │   │   │   ├── client.ts          # Fetch wrapper
-│   │   │   ├── gemini.ts          # Gemini AI client
+│   │   │   ├── ollama.ts          # Ollama AI client (local)
 │   │   │   └── prisma.ts          # Prisma client
 │   │   ├── config/
 │   │   │   ├── constants.ts       # App constants
@@ -530,8 +530,8 @@ GOOGLE_CLIENT_SECRET=""
 GITHUB_CLIENT_ID=""
 GITHUB_CLIENT_SECRET=""
 
-# Google Gemini API (for RAG/insights)
-GEMINI_API_KEY=""
+# Ollama - Local LLM (no API key needed)
+OLLAMA_URL="http://localhost:11434"
 
 # Blog credentials (for scraping scripts)
 BLOG_USERNAME=""
@@ -582,14 +582,14 @@ BLOG_PASSWORD=""
    - Detail page: `/situations/[id]` (article content, timeline)
 
 7. **Implement Semantic Search**
-   - Generate embeddings with Gemini API
+   - Generate embeddings with Ollama (local)
    - Store in pgvector
    - Search page: `/search` (natural language queries)
    - Results: videos + situations ranked by relevance
 
 8. **Add AI Chat Interface**
    - `/chat` page with message history
-   - RAG: query embeddings → retrieve relevant context → Gemini API
+   - RAG: query embeddings → retrieve relevant context → Ollama API
    - Streaming responses (Server-Sent Events)
 
 9. **Build Insights Page**

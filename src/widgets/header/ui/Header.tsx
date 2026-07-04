@@ -4,7 +4,6 @@
 
 import { signOut } from "next-auth/react";
 import { User } from "next-auth";
-import { AnalyzeTextForm } from "@/features/analyze-text";
 
 interface HeaderProps {
   user?: User;
@@ -23,9 +22,6 @@ export function Header({ user }: HeaderProps) {
           </div>
 
           <div className="flex items-center gap-4">
-            {/* Analysis feature */}
-            <AnalyzeTextForm />
-
             {/* User menu */}
             {user && (
               <div className="flex items-center gap-3 pl-4 border-l border-zinc-200 dark:border-zinc-800">

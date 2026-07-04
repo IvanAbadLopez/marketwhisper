@@ -1,10 +1,10 @@
 /**
- * Google Gemini AI Client
+ * Ollama AI Client (Local LLM)
  * Handles text analysis for company detection, sentiment, and reliability scoring
  * Supports multiple company detection in a single text
  */
 
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { env } from '@/shared/config/env';
 
 export interface AnalysisResult {
   ticker: string;
@@ -22,27 +22,41 @@ interface RawCompanyAnalysis {
   reasoning?: string;
 }
 
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY || '';
-const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-flash-latest';
+interface OllamaResponse {
+  model: string;
+  created_at: string;
+  response: string;
+  done: boolean;
+}
+
+const OLLAMA_URL = env.OLLAMA_URL;
+const OLLAMA_MODEL = 'llama3.1:8b'; // Default model, can be configured
 
 /**
  * Analyze text to extract ALL companies mentioned, with individual sentiment and reliability
  * Returns an array of analysis results (one per company detected)
  */
 export async function analyzeText(text: string): Promise<AnalysisResult[]> {
-  if (!GEMINI_API_KEY) {
-    throw new Error('GEMINI_API_KEY is not configured. Please set it in your environment variables.');
-  }
-
-  const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
-  const model = genAI.getGenerativeModel({ model: GEMINI_MODEL });
-
   const prompt = buildAnalysisPrompt(text);
 
   try {
-    const result = await model.generateContent(prompt);
-    const response = result.response;
-    const responseText = response.text();
+    const response = await fetch(`${OLLAMA_URL}/api/generate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: OLLAMA_MODEL,
+        prompt,
+        stream: false,
+        format: 'json',
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Ollama API error: ${response.statusText}`);
+    }
+
+    const data: OllamaResponse = await response.json();
+    const responseText = data.response;
     
     // Parse the JSON response from the model
     const parsed = JSON.parse(responseText);
@@ -61,10 +75,10 @@ export async function analyzeText(text: string): Promise<AnalysisResult[]> {
       }))
       .filter((result: AnalysisResult) => result.ticker && result.reliabilityScore > 0);
   } catch (error) {
-    console.error('Gemini analysis error:', error);
+    console.error('Ollama analysis error:', error);
     throw new Error(
       error instanceof Error 
-        ? `AI analysis failed: ${error.message}` 
+        ? `AI analysis failed: ${error.message}. Ensure Ollama service is running.` 
         : 'AI analysis failed'
     );
   }
@@ -160,17 +174,14 @@ function normalizeScore(score: number | string): number {
 }
 
 /**
- * Check if Gemini API is available (health check)
+ * Check if Ollama service is available (health check)
  */
-export async function checkGeminiHealth(): Promise<boolean> {
+export async function checkOllamaHealth(): Promise<boolean> {
   try {
-    if (!GEMINI_API_KEY) return false;
-    
-    const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
-    const model = genAI.getGenerativeModel({ model: GEMINI_MODEL });
-    
-    await model.generateContent('Test');
-    return true;
+    const response = await fetch(`${OLLAMA_URL}/api/tags`, {
+      method: 'GET',
+    });
+    return response.ok;
   } catch {
     return false;
   }

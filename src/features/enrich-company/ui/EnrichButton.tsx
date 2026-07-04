@@ -2,13 +2,14 @@
 
 /**
  * Enrich Company Button
- * Triggers public financial data fetch and AI analysis
+ * Triggers a background public financial data fetch + AI analysis job,
+ * then polls for completion.
  * @module features/enrich-company/ui
  */
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Sparkles, Loader2 } from "lucide-react";
-import { enrichCompany } from "../api/enrichCompany";
+import { enrichCompany, getEnrichmentStatus } from "../api/enrichCompany";
 
 interface EnrichButtonProps {
   ticker: string;
@@ -17,35 +18,86 @@ interface EnrichButtonProps {
   className?: string;
 }
 
+/** Poll interval for checking background job status (ms) */
+const POLL_INTERVAL = 3000;
+/** Safety cap on polling attempts (~5 min at 3s each) */
+const MAX_POLLS = 100;
+
+type JobState = "idle" | "pending" | "processing" | "success" | "error";
+
 export function EnrichButton({
   ticker,
   onSuccess,
   variant = "default",
   className = "",
 }: EnrichButtonProps) {
-  const [loading, setLoading] = useState(false);
+  const [state, setState] = useState<JobState>("idle");
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Cleanup any pending timer on unmount
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
+  }, []);
+
+  const loading = state === "pending" || state === "processing";
+  const success = state === "success";
+
+  const pollStatus = (enrichmentId: string, attempt = 0) => {
+    timerRef.current = setTimeout(async () => {
+      try {
+        const result = await getEnrichmentStatus(ticker, enrichmentId);
+
+        if (result.status === "COMPLETED") {
+          setState("success");
+          setTimeout(() => onSuccess?.(), 1000);
+          return;
+        }
+
+        if (result.status === "FAILED") {
+          setState("error");
+          setError(result.errorMessage || "Enrichment failed");
+          return;
+        }
+
+        // Still PENDING or PROCESSING
+        setState(result.status === "PROCESSING" ? "processing" : "pending");
+
+        if (attempt + 1 >= MAX_POLLS) {
+          setState("error");
+          setError("Enrichment timed out. Please try again later.");
+          return;
+        }
+
+        pollStatus(enrichmentId, attempt + 1);
+      } catch (err: any) {
+        setState("error");
+        setError(err.message || "Failed to check enrichment status");
+      }
+    }, POLL_INTERVAL);
+  };
 
   const handleEnrich = async () => {
-    setLoading(true);
+    setState("pending");
     setError(null);
-    setSuccess(false);
 
     try {
-      await enrichCompany(ticker);
-      setSuccess(true);
-      
-      // Call success callback after short delay
-      setTimeout(() => {
-        onSuccess?.();
-      }, 1500);
+      const job = await enrichCompany(ticker);
+      pollStatus(job.enrichmentId);
     } catch (err: any) {
+      setState("error");
       setError(err.message || "Failed to enrich company");
-    } finally {
-      setLoading(false);
     }
   };
+
+  const statusLabel =
+    state === "pending"
+      ? "Queued..."
+      : state === "processing"
+      ? "Analyzing..."
+      : "Enriching...";
 
   if (variant === "compact") {
     return (
@@ -60,7 +112,10 @@ export function EnrichButton({
         title={error || (success ? "Enriched successfully!" : "Fetch public financial data and AI analysis")}
       >
         {loading ? (
-          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+          <>
+            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            <span>{state === "processing" ? "Analyzing" : "Queued"}</span>
+          </>
         ) : success ? (
           <>
             <Sparkles className="h-3.5 w-3.5" />
@@ -90,7 +145,7 @@ export function EnrichButton({
         {loading ? (
           <>
             <Loader2 className="h-4 w-4 animate-spin" />
-            <span>Enriching...</span>
+            <span>{statusLabel}</span>
           </>
         ) : success ? (
           <>
@@ -114,7 +169,8 @@ export function EnrichButton({
 
       {loading && (
         <p className="text-sm text-zinc-400">
-          Fetching financial data and generating AI analysis... This may take 20-30 seconds.
+          Running in the background — you can keep browsing. Fetching financial
+          data and generating AI analysis...
         </p>
       )}
     </div>

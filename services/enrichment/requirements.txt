@@ -3,3 +3,4 @@ uvicorn[standard]==0.32.1
 yfinance==0.2.51
 pydantic==2.10.5
 python-dotenv==1.0.1
+tenacity==9.0.0

@@ -21,7 +21,7 @@ src/
 │   └── SyncButton.tsx
 ├── lib/                    # All utilities flat
 │   ├── auth.ts
-│   ├── gemini.ts
+│   ├── ollama.ts
 │   └── utils.ts
 └── types/
 ```
@@ -50,7 +50,7 @@ Move all reusable infrastructure to `shared/`:
 2. Move `lib/utils.ts` → `shared/lib/utils.ts`
 3. Move `components/ui/*` → `shared/ui/*` (shadcn components)
 4. Create `shared/api/client.ts` (fetch wrapper)
-5. Move `lib/gemini.ts` → `shared/api/gemini.ts`
+5. Move `lib/ollama.ts` → `shared/api/ollama.ts`
 6. Move `lib/prisma.ts` → `shared/api/prisma.ts`
 7. Create `shared/config/constants.ts`
 8. Create `shared/config/env.ts`
@@ -60,7 +60,7 @@ Move all reusable infrastructure to `shared/`:
 ```bash
 # Before
 src/lib/utils.ts
-src/lib/gemini.ts
+src/lib/ollama.ts
 src/lib/prisma.ts
 src/components/ui/button.tsx
 src/components/ui/card.tsx
@@ -68,7 +68,7 @@ src/components/ui/card.tsx
 
 # After
 src/shared/lib/utils.ts
-src/shared/api/gemini.ts
+src/shared/api/ollama.ts
 src/shared/api/prisma.ts
 src/shared/ui/button.tsx
 src/shared/ui/card.tsx
@@ -457,7 +457,7 @@ Make pages thin - only composition of widgets:
 ### During Migration
 - [x] **Step 1: `shared/` layer ✅ (Commit: ceffc0f)**
   - Created `src/shared/` with api/, lib/, config/
-  - Moved utils.ts, gemini.ts, prisma.ts
+  - Moved utils.ts, ollama.ts, prisma.ts
   - Created constants.ts, env.ts
   - Public API via index.ts
   - 16 files updated

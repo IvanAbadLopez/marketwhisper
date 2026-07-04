@@ -11,6 +11,15 @@ import yfinance as yf
 from datetime import datetime
 import logging
 import urllib3
+import json
+import time
+from tenacity import (
+    retry,
+    stop_after_attempt,
+    wait_exponential,
+    retry_if_exception_type,
+    before_sleep_log,
+)
 
 # Disable SSL warnings for corporate proxy with self-signed certificates
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
@@ -18,6 +27,11 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+
+class RateLimitError(Exception):
+    """Raised when Yahoo Finance returns a rate limit response (HTTP 429 or HTML instead of JSON)."""
+    pass
 
 app = FastAPI(
     title="MarketWhisper Enrichment Service",
@@ -99,6 +113,66 @@ async def health_check():
     """Health check endpoint"""
     return {"status": "healthy", "service": "enrichment", "timestamp": datetime.now().isoformat()}
 
+
+@retry(
+    retry=retry_if_exception_type(RateLimitError),
+    stop=stop_after_attempt(4),  # 1 initial attempt + 3 retries
+    wait=wait_exponential(multiplier=2, min=2, max=8),  # waits: 2s, 4s, 8s
+    before_sleep=before_sleep_log(logger, logging.WARNING),
+    reraise=True,
+)
+def fetch_ticker_info(ticker: str) -> Dict[str, Any]:
+    """
+    Fetch ticker info from Yahoo Finance with retry on rate limiting.
+
+    Retries up to 3 times with exponential backoff (2s, 4s, 8s) when a rate
+    limit is detected. Non-rate-limit errors (404, invalid ticker) are raised
+    immediately without retry.
+
+    Args:
+        ticker: Stock ticker symbol
+
+    Returns:
+        Raw info dict from yfinance
+
+    Raises:
+        RateLimitError: When Yahoo Finance rate limit is hit (triggers retry)
+        HTTPException: For non-retryable errors (404, invalid ticker)
+    """
+    # Disable SSL verification for corporate proxy
+    import requests
+    session = requests.Session()
+    session.verify = False
+
+    logger.info(f"[YFINANCE] Fetching info for {ticker}")
+    stock = yf.Ticker(ticker.upper(), session=session)
+
+    try:
+        info = stock.info
+    except json.JSONDecodeError as e:
+        # HTML instead of JSON => almost always rate limiting. Retryable.
+        logger.warning(f"[RATE LIMIT?] JSON decode error for {ticker}: {str(e)}")
+        raise RateLimitError(f"Yahoo Finance returned invalid response for {ticker} (likely rate limited)")
+    except Exception as e:
+        error_msg = str(e)
+        if "429" in error_msg or "too many requests" in error_msg.lower():
+            logger.warning(f"[RATE LIMIT DETECTED] HTTP 429 for {ticker}")
+            raise RateLimitError(f"Yahoo Finance rate limit (429) for {ticker}")
+        if "404" in error_msg or "not found" in error_msg.lower():
+            logger.warning(f"[TICKER NOT FOUND] {ticker} returned 404")
+            raise HTTPException(
+                status_code=404,
+                detail=f"Ticker {ticker} not found in Yahoo Finance. Please verify the ticker symbol.",
+            )
+        # Unknown error - not retryable
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to fetch data from Yahoo Finance for {ticker}. Error: {error_msg}",
+        )
+
+    return info
+
+
 @app.get("/api/enrich/{ticker}", response_model=EnrichmentResponse)
 async def enrich_company(ticker: str):
     """
@@ -110,21 +184,30 @@ async def enrich_company(ticker: str):
     Returns:
         EnrichmentResponse with company info, financials, price, news, and recommendations
     """
-    logger.info(f"Enriching company: {ticker}")
+    start_time = time.time()
+    logger.info(f"[ENRICH START] Ticker: {ticker} | Time: {datetime.now().isoformat()}")
     
     try:
-        # Fetch data from yfinance
-        # Disable SSL verification for corporate proxy
-        import requests
-        session = requests.Session()
-        session.verify = False
+        # Fetch data from yfinance with automatic retry on rate limiting
+        try:
+            info = fetch_ticker_info(ticker)
+            elapsed = time.time() - start_time
+            logger.info(f"[YFINANCE SUCCESS] {ticker} fetched in {elapsed:.2f}s | Data points: {len(info)}")
+        except RateLimitError as e:
+            # All retries exhausted - still rate limited
+            elapsed = time.time() - start_time
+            logger.error(f"[RATE LIMIT] {ticker} still rate limited after retries ({elapsed:.2f}s): {str(e)}")
+            raise HTTPException(
+                status_code=429,
+                detail=f"Yahoo Finance rate limit exceeded after 3 retries. Please try again in a few minutes. Ticker: {ticker}",
+            )
         
-        stock = yf.Ticker(ticker.upper(), session=session)
-        info = stock.info
-        
-        # Check if ticker is valid
-        if not info or 'symbol' not in info:
-            raise HTTPException(status_code=404, detail=f"Ticker {ticker} not found")
+        # Check if ticker is valid (info dict has meaningful data)
+        if not info or len(info) < 5 or 'symbol' not in info:
+            raise HTTPException(
+                status_code=404, 
+                detail=f"Ticker {ticker} not found or returned empty data. The ticker may be invalid or delisted."
+            )
         
         # Extract company info
         company_info = CompanyInfo(
@@ -203,6 +286,15 @@ async def enrich_company(ticker: str):
         except Exception as e:
             logger.warning(f"Failed to fetch recommendations for {ticker}: {e}")
         
+        total_elapsed = time.time() - start_time
+        logger.info(
+            f"[ENRICH COMPLETE] {ticker} | "
+            f"Total time: {total_elapsed:.2f}s | "
+            f"News: {len(news_items)} | "
+            f"Recommendations: {len(recommendations_list)} | "
+            f"Success: True"
+        )
+        
         return EnrichmentResponse(
             success=True,
             ticker=ticker.upper(),
@@ -215,10 +307,23 @@ async def enrich_company(ticker: str):
         )
         
     except HTTPException:
+        # Re-raise HTTP exceptions as-is (they have proper status codes)
         raise
     except Exception as e:
-        logger.error(f"Error enriching {ticker}: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to fetch data for {ticker}: {str(e)}")
+        error_msg = str(e)
+        logger.error(f"Unexpected error enriching {ticker}: {error_msg}", exc_info=True)
+        
+        # Check if it's a JSON parsing error (common when rate limited)
+        if "Expecting value" in error_msg or "JSONDecodeError" in str(type(e).__name__):
+            raise HTTPException(
+                status_code=429,
+                detail=f"Yahoo Finance rate limit exceeded or service unavailable. Please try again later. Ticker: {ticker}"
+            )
+        
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to fetch data for {ticker}. The ticker may be invalid or Yahoo Finance is unavailable."
+        )
 
 if __name__ == "__main__":
     import uvicorn

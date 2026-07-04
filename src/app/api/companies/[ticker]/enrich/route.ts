@@ -4,8 +4,8 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
+import { after } from "next/server";
 import { auth } from "@/lib/auth";
-import { prisma } from "@/shared/api/prisma";
 import { env } from "@/shared/config/env";
 
 interface YFinanceData {
@@ -154,28 +154,130 @@ async function fetchYFinanceData(ticker: string): Promise<YFinanceData> {
     const response = await fetch(`${enrichmentUrl}/api/enrich/${ticker.toUpperCase()}`);
     
     if (!response.ok) {
-      if (response.status === 404) {
-        throw new Error(`Ticker ${ticker} not found in Yahoo Finance`);
+      // Try to parse error details from response
+      let errorDetail = response.statusText;
+      try {
+        const errorData = await response.json();
+        if (errorData.detail) {
+          errorDetail = errorData.detail;
+        }
+      } catch {
+        // If can't parse JSON, use statusText
       }
-      throw new Error(`Enrichment service error: ${response.statusText}`);
+
+      if (response.status === 404) {
+        throw new Error(`Ticker ${ticker} not found in Yahoo Finance. Please verify the ticker symbol.`);
+      }
+      if (response.status === 429) {
+        throw new Error(`Yahoo Finance rate limit exceeded. Please wait a few minutes before trying again.`);
+      }
+      throw new Error(`Enrichment service error: ${errorDetail}`);
     }
 
     const data: YFinanceData = await response.json();
     return data;
-  } catch (error) {
+  } catch (error: any) {
     console.error("Failed to fetch yfinance data:", error);
     throw error;
   }
 }
 
 /**
+ * Process enrichment in the background: fetch financial data, generate AI
+ * analysis and update the enrichment record with the final result.
+ * Runs after the HTTP response is sent (via Next.js `after()`).
+ */
+async function processEnrichment(
+  enrichmentId: string,
+  companyId: string,
+  ticker: string
+): Promise<void> {
+  const { prisma } = await import("@/shared/api/prisma");
+
+  try {
+    // Mark as processing
+    await prisma.companyEnrichment.update({
+      where: { id: enrichmentId },
+      data: { status: "PROCESSING" },
+    });
+
+    // 1. Fetch financial data from yfinance (via enrichment service, with retries)
+    console.log(`[Enrich:${enrichmentId}] Fetching yfinance data for ${ticker}...`);
+    const yfinanceData = await fetchYFinanceData(ticker);
+
+    if (!yfinanceData.success) {
+      throw new Error("Failed to fetch financial data");
+    }
+
+    // 2. Update company metadata from yfinance (more accurate than user-provided data)
+    if (yfinanceData.companyInfo) {
+      const { name, sector, industry, description, website, marketCap } = yfinanceData.companyInfo;
+      const company = await prisma.company.findUnique({ where: { id: companyId } });
+      if (company) {
+        await prisma.company.update({
+          where: { id: companyId },
+          data: {
+            name: name || company.name,
+            sector: sector || company.sector,
+            industry: industry || company.industry,
+            description: description || company.description,
+            website: website || company.website,
+            marketCap: marketCap || company.marketCap,
+          },
+        });
+      }
+    }
+
+    // 3. Generate AI analysis with Ollama
+    console.log(`[Enrich:${enrichmentId}] Generating Ollama analysis for ${ticker}...`);
+    const prompt = generateAnalysisPrompt(ticker, yfinanceData);
+    const aiAnalysis = await generateOllamaAnalysis(prompt);
+
+    // 4. Store final result and mark as completed
+    await prisma.companyEnrichment.update({
+      where: { id: enrichmentId },
+      data: {
+        status: "COMPLETED",
+        financialData: yfinanceData.financials as any,
+        priceData: yfinanceData.price as any,
+        newsHeadlines: yfinanceData.news as any,
+        recommendations: yfinanceData.recommendations as any,
+        aiAnalysis,
+        ollamaModel: "llama3.1:8b",
+        errorMessage: null,
+      },
+    });
+
+    console.log(`[Enrich:${enrichmentId}] Successfully enriched ${ticker}`);
+  } catch (error: any) {
+    console.error(`[Enrich:${enrichmentId}] Failed to enrich ${ticker}:`, error);
+    // Mark as failed with the error message so the UI can surface it
+    try {
+      await prisma.companyEnrichment.update({
+        where: { id: enrichmentId },
+        data: {
+          status: "FAILED",
+          errorMessage: error?.message || "Failed to enrich company",
+        },
+      });
+    } catch (updateError) {
+      console.error(`[Enrich:${enrichmentId}] Could not mark as FAILED:`, updateError);
+    }
+  }
+}
+
+/**
  * POST /api/companies/[ticker]/enrich
- * Enrich company with public financial data and AI analysis
+ * Kicks off a background enrichment job and returns immediately with the
+ * enrichment id. Poll GET /api/companies/[ticker]/enrich/[id] for status.
  */
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ ticker: string }> }
 ) {
+  // Lazy load prisma to avoid database connection during build
+  const { prisma } = await import("@/shared/api/prisma");
+
   try {
     // 1. Check authentication
     const session = await auth();
@@ -197,67 +299,28 @@ export async function POST(
       );
     }
 
-    // 3. Fetch financial data from yfinance (via enrichment service)
-    console.log(`[Enrich] Fetching yfinance data for ${ticker}...`);
-    const yfinanceData = await fetchYFinanceData(ticker);
-
-    if (!yfinanceData.success) {
-      return NextResponse.json(
-        { error: "Failed to fetch financial data" },
-        { status: 500 }
-      );
-    }
-
-    // 4. Update company metadata from yfinance (more accurate than user-provided data)
-    if (yfinanceData.companyInfo) {
-      const { name, sector, industry, description, website, marketCap } = yfinanceData.companyInfo;
-      await prisma.company.update({
-        where: { id: company.id },
-        data: {
-          name: name || company.name,
-          sector: sector || company.sector,
-          industry: industry || company.industry,
-          description: description || company.description,
-          website: website || company.website,
-          marketCap: marketCap || company.marketCap,
-        },
-      });
-    }
-
-    // 5. Generate AI analysis with Ollama
-    console.log(`[Enrich] Generating Ollama analysis for ${ticker}...`);
-    const prompt = generateAnalysisPrompt(ticker, yfinanceData);
-    const aiAnalysis = await generateOllamaAnalysis(prompt);
-
-    // 6. Store enrichment in database
+    // 3. Create a PENDING enrichment record
     const enrichment = await prisma.companyEnrichment.create({
       data: {
         companyId: company.id,
         ticker: ticker.toUpperCase(),
-        financialData: yfinanceData.financials as any,
-        priceData: yfinanceData.price as any,
-        newsHeadlines: yfinanceData.news as any,
-        recommendations: yfinanceData.recommendations as any,
-        aiAnalysis,
-        ollamaModel: "llama3.1:8b",
+        status: "PENDING",
       },
     });
 
-    console.log(`[Enrich] Successfully enriched ${ticker} with ID ${enrichment.id}`);
+    // 4. Kick off the heavy work in the background (runs after the response)
+    after(() => processEnrichment(enrichment.id, company.id, ticker));
 
-    return NextResponse.json({
-      success: true,
-      ticker: ticker.toUpperCase(),
-      enrichmentId: enrichment.id,
-      companyInfo: yfinanceData.companyInfo,
-      financials: yfinanceData.financials,
-      price: yfinanceData.price,
-      newsCount: yfinanceData.news?.length || 0,
-      recommendationsCount: yfinanceData.recommendations?.length || 0,
-      aiAnalysis,
-      timestamp: enrichment.createdAt,
-    });
-
+    // 5. Respond immediately so the UI can start polling
+    return NextResponse.json(
+      {
+        success: true,
+        ticker: ticker.toUpperCase(),
+        enrichmentId: enrichment.id,
+        status: "PENDING",
+      },
+      { status: 202 }
+    );
   } catch (error: any) {
     console.error("[Enrich] Error:", error);
     return NextResponse.json(

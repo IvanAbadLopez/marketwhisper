@@ -18,7 +18,7 @@ Implementado el sistema de **detección y análisis múltiple de empresas** en u
 
 ## 🔧 Archivos Modificados
 
-### 1. `src/lib/gemini.ts`
+### 1. `src/shared/api/ollama.ts`
 **Cambios principales:**
 - ✅ Tipo de retorno cambiado de `AnalysisResult` → `AnalysisResult[]`
 - ✅ Prompt modificado para detectar TODAS las empresas

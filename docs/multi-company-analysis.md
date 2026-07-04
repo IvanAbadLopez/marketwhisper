@@ -41,7 +41,7 @@ inventario mientras AMD subió 5% tras ganar contratos con grandes clientes clou
 
 **Texto de entrada:**
 ```
-Google presentó Gemini 2.0, su modelo de IA más avanzado con capacidades 
+Google presentó su modelo de IA más avanzado con capacidades 
 multimodales que supera a GPT-4 en varios benchmarks.
 ```
 
@@ -98,7 +98,7 @@ multimodales que supera a GPT-4 en varios benchmarks.
 
 1. **Usuario introduce texto** → SyncButton component
 2. **POST /api/analyze** → Endpoint recibe texto
-3. **Gemini AI analiza** → Detecta TODAS las empresas mencionadas
+3. **Ollama AI analiza** → Detecta TODAS las empresas mencionadas
 4. **Para cada empresa detectada:**
    - Busca o crea Company en DB
    - Crea registro Analysis individual
@@ -170,6 +170,6 @@ model Analysis {
 
 **Fecha de Implementación**: 2026-07-02  
 **Archivos Modificados**:
-- `src/lib/gemini.ts` - Prompt multi-empresa y array response (migrado de Ollama)
+- `src/shared/api/ollama.ts` - Prompt multi-empresa y array response (migrado de Gemini a Ollama local)
 - `src/app/api/analyze/route.ts` - Loop sobre resultados múltiples
 - `src/components/SyncButton.tsx` - UI para mostrar lista de análisis

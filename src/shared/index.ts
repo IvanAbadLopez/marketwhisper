@@ -9,8 +9,8 @@ export { cn } from "./lib/utils";
 
 // ===== API =====
 export { prisma } from "./api/prisma";
-export { analyzeText } from "./api/gemini";
-export type { AnalysisResult } from "./api/gemini";
+export { analyzeText } from "./api/ollama";
+export type { AnalysisResult } from "./api/ollama";
 
 // ===== CONFIG =====
 export * from "./config/constants";

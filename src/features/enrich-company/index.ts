@@ -4,5 +4,10 @@
  */
 
 export { EnrichButton } from "./ui/EnrichButton";
-export { enrichCompany } from "./api/enrichCompany";
-export type { EnrichmentResult } from "./model/types";
+export { enrichCompany, getEnrichmentStatus } from "./api/enrichCompany";
+export type {
+  EnrichmentResult,
+  EnrichmentJobStarted,
+  EnrichmentStatusResult,
+  EnrichmentStatus,
+} from "./model/types";

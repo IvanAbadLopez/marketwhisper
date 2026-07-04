@@ -64,6 +64,31 @@ export interface EnrichmentResult {
   timestamp: string;
 }
 
+export type EnrichmentStatus = "PENDING" | "PROCESSING" | "COMPLETED" | "FAILED";
+
+/** Response of POST /enrich - background job accepted */
+export interface EnrichmentJobStarted {
+  success: boolean;
+  ticker: string;
+  enrichmentId: string;
+  status: EnrichmentStatus;
+}
+
+/** Response of GET /enrich/[id] - current status of a background job */
+export interface EnrichmentStatusResult {
+  enrichmentId: string;
+  ticker: string;
+  status: EnrichmentStatus;
+  errorMessage: string | null;
+  aiAnalysis: string | null;
+  financials: FinancialMetrics | null;
+  price: PriceData | null;
+  news: NewsItem[] | null;
+  recommendations: Recommendation[] | null;
+  ollamaModel: string | null;
+  updatedAt: string;
+}
+
 export interface EnrichmentError {
   error: string;
 }

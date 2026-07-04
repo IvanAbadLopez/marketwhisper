@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Analyze text with Gemini AI - returns array of all companies detected
+    // Analyze text with Ollama AI - returns array of all companies detected
     const aiResults = await analyzeText(text);
 
     // Check if AI detected any companies

@@ -26,6 +26,10 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        DATABASE_URL: postgresql://marketwhisper:marketwhisper_dev_2026@db:5432/marketwhisper
+        NEXTAUTH_URL: http://localhost:3000
+        NEXTAUTH_SECRET: docker-dev-secret-change-in-production-please
     container_name: marketwhisper-web
     restart: unless-stopped
     ports:
@@ -41,10 +45,6 @@ services:
       NEXTAUTH_URL: http://localhost:3000
       NEXTAUTH_SECRET: docker-dev-secret-change-in-production-please
       AUTH_TRUST_HOST: "true"
-      
-      # Google Gemini AI
-      GEMINI_API_KEY: "AQ.Ab8RN6Kldiz538tbI4b386HdN2uC0A6iGwvA215gv6Dju8AC5w"
-      GEMINI_MODEL: "gemini-flash-latest"
       
       # Optional: OAuth (leave empty for demo mode)
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
