@@ -1,14 +1,14 @@
 /**
- * Enrichment Status Endpoint
- * Returns the current status/result of a background enrichment job.
+ * Finnhub Enrichment Status Endpoint
+ * Returns the current status/result of a background Finnhub enrichment job.
  */
 
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 
 /**
- * GET /api/companies/[ticker]/enrich/[id]
- * Poll the status of a background enrichment job.
+ * GET /api/companies/[ticker]/enrich-finnhub/[id]
+ * Poll the status of a background Finnhub enrichment job.
  */
 export async function GET(
   request: NextRequest,
@@ -30,9 +30,9 @@ export async function GET(
       where: { id },
     });
 
-    if (!enrichment || enrichment.ticker !== ticker.toUpperCase()) {
+    if (!enrichment || enrichment.ticker !== ticker.toUpperCase() || enrichment.source !== "FINNHUB") {
       return NextResponse.json(
-        { error: "Enrichment not found" },
+        { error: "Finnhub enrichment not found" },
         { status: 404 }
       );
     }
@@ -53,9 +53,9 @@ export async function GET(
       updatedAt: enrichment.updatedAt,
     });
   } catch (error: any) {
-    console.error("[Enrich Status] Error:", error);
+    console.error("[Finnhub Enrich Status] Error:", error);
     return NextResponse.json(
-      { error: error.message || "Failed to fetch enrichment status" },
+      { error: error.message || "Failed to fetch Finnhub enrichment status" },
       { status: 500 }
     );
   }

@@ -70,7 +70,7 @@ export async function GET(
           orderBy: {
             createdAt: "desc",
           },
-          take: 1, // Only get the latest enrichment
+          take: 10, // Get latest enrichments (both Yahoo and Finnhub)
         },
       },
     });

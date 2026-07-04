@@ -512,6 +512,62 @@ describe('POST /api/sync', () => {
 4. Update documentation if needed
 5. Create PR (CI will run tests)
 
+### Internationalization (i18n) Requirements ⚠️
+
+**MANDATORY**: All user-facing text MUST be internationalized.
+
+**Rules**:
+- ✅ **Never hardcode text in UI components** - Always use `useTranslations()` from `next-intl`
+- ✅ **Add translations for both locales** - Every text added to `src/messages/en.json` MUST have a Spanish translation in `src/messages/es.json`
+- ✅ **Organize by namespace** - Group related translations (e.g., `nav`, `auth`, `analyze`, `company`, `common`)
+- ✅ **Use descriptive keys** - Keys should be clear: `auth.login.title`, not `t1`
+
+**Supported Locales**:
+- English (`en`) - Default
+- Spanish (`es`)
+
+**Usage Example**:
+```typescript
+// ❌ WRONG - Hardcoded text
+<button>Analyze Text</button>
+
+// ✅ CORRECT - Using translations
+import { useTranslations } from 'next-intl';
+
+function MyComponent() {
+  const t = useTranslations('analyze');
+  return <button>{t('submitButton')}</button>;
+}
+```
+
+**Message Files**:
+```json
+// src/messages/en.json
+{
+  "analyze": {
+    "submitButton": "Analyze Text",
+    "placeholder": "Paste your text here..."
+  }
+}
+
+// src/messages/es.json
+{
+  "analyze": {
+    "submitButton": "Analizar Texto",
+    "placeholder": "Pega tu texto aquí..."
+  }
+}
+```
+
+**Dynamic Content** (AI-generated):
+- Ollama/Gemini analysis output should be generated directly in the user's locale by passing the `locale` parameter to the AI prompt
+- No need to translate programmatically - generate in the target language from the start
+
+**Locale Switching**:
+- Available via `LocaleSwitcher` component in the header
+- Persisted in `NEXT_LOCALE` cookie
+- Automatically revalidates page on change
+
 ## Environment Variables
 
 Required in `.env.local`:

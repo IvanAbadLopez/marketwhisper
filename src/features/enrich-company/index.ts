@@ -10,4 +10,5 @@ export type {
   EnrichmentJobStarted,
   EnrichmentStatusResult,
   EnrichmentStatus,
+  EnrichmentSource,
 } from "./model/types";

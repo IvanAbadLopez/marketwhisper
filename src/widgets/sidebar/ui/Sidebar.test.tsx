@@ -8,6 +8,22 @@ vi.mock("next/navigation", () => ({
   usePathname: () => mockUsePathname(),
 }));
 
+// Mock next-intl
+vi.mock("next-intl", () => ({
+  useTranslations: () => (key: string) => {
+    const translations: Record<string, string> = {
+      'sidebar.appName': 'MarketWhisper',
+      'sidebar.version': 'MarketWhisper v0.1.0',
+      'sidebar.tagline': 'AI-Powered Market Intelligence',
+      'nav.dashboard': 'Dashboard',
+      'nav.analyze': 'Analyze',
+      'nav.companies': 'Companies',
+      'nav.insights': 'Insights',
+    };
+    return translations[key] || key;
+  },
+}));
+
 describe("Sidebar Component", () => {
   it("renders all navigation items", () => {
     render(<Sidebar />);

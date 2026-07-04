@@ -1,10 +1,12 @@
 import { auth } from "@/lib/auth";
 import { MainLayout } from "@/widgets/layout";
 import { redirect } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 import { prisma } from "@/shared";
 
 export default async function Home() {
   const session = await auth();
+  const t = await getTranslations('dashboard');
 
   if (!session?.user) {
     redirect("/login");
@@ -28,10 +30,10 @@ export default async function Home() {
           {/* Welcome section */}
           <div>
             <h2 className="text-3xl font-bold text-zinc-900 dark:text-zinc-100 mb-2">
-              Welcome back, {session.user.name?.split(" ")[0] || "User"}!
+              {t('welcomeBack', { name: session.user.name?.split(" ")[0] || 'User' })}
             </h2>
             <p className="text-zinc-600 dark:text-zinc-400">
-              Your AI-powered market intelligence dashboard
+              {t('subtitle')}
             </p>
           </div>
 
@@ -41,7 +43,7 @@ export default async function Home() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400">
-                    Videos Analyzed
+                    {t('videosAnalyzed')}
                   </p>
                   <p className="text-3xl font-bold text-zinc-900 dark:text-zinc-100 mt-2">
                     {videoCount}
@@ -57,7 +59,7 @@ export default async function Home() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400">
-                    Content Items
+                    {t('contentItems')}
                   </p>
                   <p className="text-3xl font-bold text-zinc-900 dark:text-zinc-100 mt-2">
                     {articleCount}
@@ -73,7 +75,7 @@ export default async function Home() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400">
-                    Stock Mentions
+                    {t('stockMentions')}
                   </p>
                   <p className="text-3xl font-bold text-zinc-900 dark:text-zinc-100 mt-2">
                     {mentionCount}

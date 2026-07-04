@@ -15,8 +15,10 @@ import {
 } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { redirect, useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { EnrichButton } from "@/features/enrich-company";
 import { EnrichmentDisplay } from "@/entities/company/ui/EnrichmentDisplay";
+import { EnrichmentTabs } from "@/entities/company/ui/EnrichmentTabs";
 
 interface Mention {
   id: string;
@@ -90,6 +92,7 @@ interface Company {
   enrichments?: {
     id: string;
     ticker: string;
+    source: "YAHOO" | "FINNHUB";
     financialData?: any;
     priceData?: any;
     newsHeadlines?: any[];
@@ -103,6 +106,8 @@ interface Company {
 export default function CompanyDetailPage({ params }: { params: Promise<{ ticker: string }> }) {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const t = useTranslations('company.detail');
+  const tCommon = useTranslations('common');
   const [ticker, setTicker] = useState<string>("");
   const [company, setCompany] = useState<Company | null>(null);
   const [loading, setLoading] = useState(true);
@@ -135,7 +140,7 @@ export default function CompanyDetailPage({ params }: { params: Promise<{ ticker
   }, [ticker]);
 
   const handleDeleteContent = async (contentId: string, contentTitle: string | null) => {
-    if (!confirm(`Are you sure you want to delete "${contentTitle || 'this content'}"? This will also delete all associated mentions and transcripts.`)) {
+    if (!confirm(t('deleteConfirm', { title: contentTitle || t('untitled') }))) {
       return;
     }
 
@@ -188,7 +193,7 @@ export default function CompanyDetailPage({ params }: { params: Promise<{ ticker
       <MainLayout user={session?.user}>
         <div className="p-8">
           <div className="max-w-6xl mx-auto text-center">
-            <p className="text-zinc-600 dark:text-zinc-400">Loading...</p>
+            <p className="text-zinc-600 dark:text-zinc-400">{tCommon('loading')}</p>
           </div>
         </div>
       </MainLayout>
@@ -205,15 +210,15 @@ export default function CompanyDetailPage({ params }: { params: Promise<{ ticker
               className="mb-6 flex items-center gap-2 text-blue-600 dark:text-blue-400 hover:underline"
             >
               <ArrowLeft className="w-4 h-4" />
-              Back
+              {t('back')}
             </button>
             <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg p-12 text-center">
               <div className="text-6xl mb-4">❌</div>
               <h2 className="text-xl font-semibold text-zinc-900 dark:text-zinc-100 mb-2">
-                Company Not Found
+                {t('notFound')}
               </h2>
               <p className="text-zinc-600 dark:text-zinc-400">
-                The company {ticker.toUpperCase()} does not exist in our database.
+                {t('notFoundDesc', { ticker: ticker.toUpperCase() })}
               </p>
             </div>
           </div>
@@ -232,7 +237,7 @@ export default function CompanyDetailPage({ params }: { params: Promise<{ ticker
             className="mb-6 flex items-center gap-2 text-blue-600 dark:text-blue-400 hover:underline"
           >
             <ArrowLeft className="w-4 h-4" />
-            Back to Companies
+            {t('backButton')}
           </button>
 
           {/* Company Header */}
@@ -269,7 +274,7 @@ export default function CompanyDetailPage({ params }: { params: Promise<{ ticker
                 <div className="p-4 bg-zinc-50 dark:bg-zinc-800 rounded-lg">
                   <div className="flex items-center gap-2 mb-1">
                     <TrendingUp className="w-4 h-4 text-zinc-500" />
-                    <span className="text-xs text-zinc-500 dark:text-zinc-400">Sector</span>
+                    <span className="text-xs text-zinc-500 dark:text-zinc-400">{t('sector')}</span>
                   </div>
                   <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
                     {company.sector}
@@ -278,7 +283,7 @@ export default function CompanyDetailPage({ params }: { params: Promise<{ ticker
               )}
               {company.industry && (
                 <div className="p-4 bg-zinc-50 dark:bg-zinc-800 rounded-lg">
-                  <span className="text-xs text-zinc-500 dark:text-zinc-400 block mb-1">Industry</span>
+                  <span className="text-xs text-zinc-500 dark:text-zinc-400 block mb-1">{t('industry')}</span>
                   <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
                     {company.industry}
                   </p>
@@ -286,7 +291,7 @@ export default function CompanyDetailPage({ params }: { params: Promise<{ ticker
               )}
               {company.marketCap && (
                 <div className="p-4 bg-zinc-50 dark:bg-zinc-800 rounded-lg">
-                  <span className="text-xs text-zinc-500 dark:text-zinc-400 block mb-1">Market Cap</span>
+                  <span className="text-xs text-zinc-500 dark:text-zinc-400 block mb-1">{t('marketCap')}</span>
                   <p className="text-lg font-bold text-zinc-900 dark:text-zinc-100">
                     {formatMarketCap(company.marketCap)}
                   </p>
@@ -294,7 +299,7 @@ export default function CompanyDetailPage({ params }: { params: Promise<{ ticker
               )}
               {company.website && (
                 <div className="p-4 bg-zinc-50 dark:bg-zinc-800 rounded-lg">
-                  <span className="text-xs text-zinc-500 dark:text-zinc-400 block mb-1">Website</span>
+                  <span className="text-xs text-zinc-500 dark:text-zinc-400 block mb-1">{t('website')}</span>
                   <a
                     href={company.website}
                     target="_blank"
@@ -302,7 +307,7 @@ export default function CompanyDetailPage({ params }: { params: Promise<{ ticker
                     className="flex items-center gap-1 text-sm font-semibold text-blue-600 dark:text-blue-400 hover:underline"
                   >
                     <Globe className="w-4 h-4" />
-                    Visit
+                    {t('visit')}
                     <ExternalLink className="w-3 h-3" />
                   </a>
                 </div>
@@ -317,7 +322,7 @@ export default function CompanyDetailPage({ params }: { params: Promise<{ ticker
                   {company._count.content}
                 </span>
                 <span className="text-zinc-600 dark:text-zinc-400">
-                  {company._count.content === 1 ? 'article' : 'articles'}
+                  {company._count.content === 1 ? t('article') : t('articles')}
                 </span>
               </div>
               <div className="flex items-center gap-2">
@@ -326,7 +331,7 @@ export default function CompanyDetailPage({ params }: { params: Promise<{ ticker
                   {company._count.mentions}
                 </span>
                 <span className="text-zinc-600 dark:text-zinc-400">
-                  {company._count.mentions === 1 ? 'mention' : 'mentions'}
+                  {company._count.mentions === 1 ? t('mention') : t('mentions')}
                 </span>
               </div>
               {company._count.analyses > 0 && (
@@ -336,30 +341,23 @@ export default function CompanyDetailPage({ params }: { params: Promise<{ ticker
                     {company._count.analyses}
                   </span>
                   <span className="text-zinc-600 dark:text-zinc-400">
-                    AI {company._count.analyses === 1 ? 'analysis' : 'analyses'}
+                    AI {company._count.analyses === 1 ? t('aiAnalysis') : t('aiAnalyses')}
                   </span>
                 </div>
               )}
             </div>
           </div>
 
-          {/* Enrichment Section */}
+          {/* Enrichment Section with Tabs */}
           <div className="mb-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">
-                Public Financial Data
-              </h3>
-              <EnrichButton 
-                ticker={ticker}
-                onSuccess={fetchCompany}
-                variant="default"
-              />
-            </div>
-            <EnrichmentDisplay 
-              enrichment={company.enrichments && company.enrichments.length > 0 
-                ? company.enrichments[0] 
-                : null
-              } 
+            <h3 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100 mb-4">
+              {t('financialData')}
+            </h3>
+            <EnrichmentTabs
+              ticker={ticker}
+              yahooEnrichment={company.enrichments?.find(e => e.source === "YAHOO") || null}
+              finnhubEnrichment={company.enrichments?.find(e => e.source === "FINNHUB") || null}
+              onRefresh={fetchCompany}
             />
           </div>
 
@@ -368,20 +366,20 @@ export default function CompanyDetailPage({ params }: { params: Promise<{ ticker
             <div className="mb-6">
               <h3 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100 mb-4 flex items-center gap-2">
                 <TrendingUp className="w-6 h-6 text-blue-600 dark:text-blue-400" />
-                AI Text Analyses
+                {t('aiTextAnalyses')}
               </h3>
 
               {/* Aggregated Scores */}
               <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-6 mb-4">
                 <h4 className="text-sm font-semibold text-zinc-700 dark:text-zinc-300 mb-4">
-                  Overall Sentiment & Reliability
+                  {t('overallSentiment')}
                 </h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {/* Sentiment Score */}
                   <div>
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
-                        Average Sentiment
+                        {t('averageSentiment')}
                       </span>
                       <span className="text-sm font-bold text-zinc-900 dark:text-zinc-100">
                         {company.avgSentimentScore !== null
@@ -416,7 +414,7 @@ export default function CompanyDetailPage({ params }: { params: Promise<{ ticker
                   <div>
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
-                        Average Reliability
+                        {t('averageReliability')}
                       </span>
                       <span className="text-sm font-bold text-zinc-900 dark:text-zinc-100">
                         {company.avgReliabilityScore?.toFixed(1) || '0'} / 10
@@ -469,7 +467,7 @@ export default function CompanyDetailPage({ params }: { params: Promise<{ ticker
                         {/* Reliability Score */}
                         <div className="flex items-center gap-1">
                           <span className="text-xs text-zinc-500 dark:text-zinc-400">
-                            Reliability:
+                            {t('reliability')}:
                           </span>
                           <span
                             className={`text-xs font-bold ${
@@ -497,7 +495,7 @@ export default function CompanyDetailPage({ params }: { params: Promise<{ ticker
                         </div>
                         {analysis.source && (
                           <div className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
-                            Source: {analysis.source}
+                            {t('source')}: {analysis.source}
                           </div>
                         )}
                       </div>
@@ -506,7 +504,7 @@ export default function CompanyDetailPage({ params }: { params: Promise<{ ticker
                     {/* AI Reasoning */}
                     <div className="mb-3 p-3 bg-blue-50 dark:bg-blue-900/20 rounded border border-blue-100 dark:border-blue-800">
                       <p className="text-xs font-medium text-blue-700 dark:text-blue-300 mb-1">
-                        AI Reasoning:
+                        {t('aiReasoning')}
                       </p>
                       <p className="text-sm text-zinc-700 dark:text-zinc-300 italic">
                         {analysis.reasoning}
@@ -516,7 +514,7 @@ export default function CompanyDetailPage({ params }: { params: Promise<{ ticker
                     {/* Original Text */}
                     <div>
                       <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400 mb-1">
-                        Original Text:
+                        {t('originalText')}
                       </p>
                       <p className="text-sm text-zinc-600 dark:text-zinc-400 line-clamp-3">
                         {analysis.text}
@@ -531,11 +529,11 @@ export default function CompanyDetailPage({ params }: { params: Promise<{ ticker
           {/* Content Section */}
           <div className="mb-6">
             <h3 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100 mb-4">
-              Related Content
+              {t('relatedContent')}
             </h3>
             {company.content.length === 0 ? (
               <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg p-8 text-center">
-                <p className="text-zinc-600 dark:text-zinc-400">No content found for this company.</p>
+                <p className="text-zinc-600 dark:text-zinc-400">{t('noContent')}</p>
               </div>
             ) : (
               <div className="space-y-4">
@@ -547,7 +545,7 @@ export default function CompanyDetailPage({ params }: { params: Promise<{ ticker
                     {/* Header */}
                     <div className="flex items-start justify-between mb-3">
                       <h4 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100 flex-1">
-                        {content.title || "Untitled"}
+                        {content.title || t('untitled')}
                       </h4>
                       <span className={`px-2 py-1 text-xs font-medium rounded ${getTypeBadgeColor(content.contentType)}`}>
                         {content.contentType}

@@ -4,12 +4,16 @@
 
 import { signOut } from "next-auth/react";
 import { User } from "next-auth";
+import { useTranslations } from "next-intl";
+import { LocaleSwitcher } from "@/features/switch-locale";
 
 interface HeaderProps {
   user?: User;
 }
 
 export function Header({ user }: HeaderProps) {
+  const t = useTranslations('header');
+  
   return (
     <header className="w-full border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-black">
       <div className="px-6 py-4">
@@ -22,6 +26,9 @@ export function Header({ user }: HeaderProps) {
           </div>
 
           <div className="flex items-center gap-4">
+            {/* Locale Switcher */}
+            <LocaleSwitcher />
+
             {/* User menu */}
             {user && (
               <div className="flex items-center gap-3 pl-4 border-l border-zinc-200 dark:border-zinc-800">
@@ -51,7 +58,7 @@ export function Header({ user }: HeaderProps) {
                   onClick={() => signOut({ callbackUrl: "/login" })}
                   className="px-3 py-1.5 text-sm font-medium text-zinc-700 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-md transition-colors"
                 >
-                  Logout
+                  {t('logout')}
                 </button>
               </div>
             )}

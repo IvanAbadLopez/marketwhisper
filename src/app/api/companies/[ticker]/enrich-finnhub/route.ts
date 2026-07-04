@@ -1,6 +1,6 @@
 /**
- * Enrich Company API Endpoint
- * Fetches public financial data from Yahoo Finance and generates AI analysis with Ollama
+ * Enrich Company with Finnhub API Endpoint
+ * Fetches public financial data from Finnhub and generates AI analysis with Ollama
  */
 
 import { NextRequest, NextResponse } from "next/server";
@@ -8,7 +8,7 @@ import { after } from "next/server";
 import { auth } from "@/lib/auth";
 import { env } from "@/shared/config/env";
 
-interface YFinanceData {
+interface FinnhubData {
   success: boolean;
   ticker: string;
   companyInfo?: {
@@ -40,20 +40,6 @@ interface YFinanceData {
     volume: number | null;
     avgVolume: number | null;
   };
-  news?: Array<{
-    title: string;
-    publisher: string | null;
-    link: string | null;
-    publishedAt: string | null;
-  }>;
-  recommendations?: Array<{
-    period: string;
-    strongBuy: number;
-    buy: number;
-    hold: number;
-    sell: number;
-    strongSell: number;
-  }>;
 }
 
 interface OllamaResponse {
@@ -64,48 +50,37 @@ interface OllamaResponse {
 }
 
 /**
- * Generate AI analysis prompt from financial data
+ * Generate AI analysis prompt from Finnhub data
  */
-function generateAnalysisPrompt(ticker: string, data: YFinanceData): string {
-  const { companyInfo, financials, price, news, recommendations } = data;
+function generateAnalysisPrompt(ticker: string, data: FinnhubData): string {
+  const { companyInfo, financials, price } = data;
 
-  let prompt = `You are a financial analyst AI. Analyze the following data for ${ticker} (${companyInfo?.name || "Unknown Company"}) and provide a comprehensive investment analysis.
+  let prompt = `You are a financial analyst AI. Analyze the following data for ${ticker} (${companyInfo?.name || "Unknown Company"}) sourced from Finnhub and provide a comprehensive investment analysis.
 
 **Company Overview:**
 - Sector: ${companyInfo?.sector || "N/A"}
 - Industry: ${companyInfo?.industry || "N/A"}
 - Market Cap: ${companyInfo?.marketCap ? `$${(companyInfo.marketCap / 1e9).toFixed(2)}B` : "N/A"}
-- Employees: ${companyInfo?.employees?.toLocaleString() || "N/A"}
+- Website: ${companyInfo?.website || "N/A"}
 
 **Financial Metrics:**
-- Revenue: ${financials?.revenue ? `$${(financials.revenue / 1e9).toFixed(2)}B` : "N/A"}
-- Net Income: ${financials?.netIncome ? `$${(financials.netIncome / 1e9).toFixed(2)}B` : "N/A"}
 - EPS: ${financials?.eps?.toFixed(2) || "N/A"}
 - P/E Ratio: ${financials?.peRatio?.toFixed(2) || "N/A"}
-- Debt/Equity: ${financials?.debtToEquity?.toFixed(2) || "N/A"}
+- Dividend Yield: ${financials?.dividendYield ? `${(financials.dividendYield * 100).toFixed(2)}%` : "N/A"}
 - Profit Margin: ${financials?.profitMargins ? `${(financials.profitMargins * 100).toFixed(2)}%` : "N/A"}
 
-**Current Price & Performance:**
-- Current Price: $${price?.currentPrice?.toFixed(2) || "N/A"}
-- Day Change: ${price?.dayChange ? `$${price.dayChange.toFixed(2)} (${price.dayChangePercent?.toFixed(2)}%)` : "N/A"}
+**52-Week Performance:**
 - 52-Week High: $${price?.fiftyTwoWeekHigh?.toFixed(2) || "N/A"}
 - 52-Week Low: $${price?.fiftyTwoWeekLow?.toFixed(2) || "N/A"}
-
-**Recent News Headlines:**
-${news && news.length > 0 ? news.slice(0, 5).map((n, i) => `${i + 1}. ${n.title} (${n.publisher || "Unknown"})`).join("\n") : "No recent news available."}
-
-**Analyst Recommendations (Recent):**
-${recommendations && recommendations.length > 0 ? recommendations.slice(-1).map(r => `Strong Buy: ${r.strongBuy}, Buy: ${r.buy}, Hold: ${r.hold}, Sell: ${r.sell}, Strong Sell: ${r.strongSell}`).join("\n") : "No analyst recommendations available."}
 
 **Your Task:**
 Provide a structured analysis with the following sections:
 1. **Executive Summary** (2-3 sentences)
-2. **Financial Health** (assess profitability, debt levels, valuation)
+2. **Financial Health** (assess profitability, valuation)
 3. **Market Position** (competitive advantages, sector trends)
-4. **Recent Developments** (based on news headlines)
-5. **Investment Outlook** (bullish, bearish, or neutral with reasoning)
+4. **Investment Outlook** (bullish, bearish, or neutral with reasoning)
 
-Keep your analysis concise, objective, and data-driven. Focus on actionable insights.`;
+Keep your analysis concise, objective, and data-driven. Focus on actionable insights based on the available Finnhub metrics.`;
 
   return prompt;
 }
@@ -123,11 +98,11 @@ async function generateOllamaAnalysis(prompt: string, model: string = "llama3.1:
       body: JSON.stringify({
         model,
         prompt,
-        stream: false, // Get complete response at once
+        stream: false,
         options: {
-          temperature: 0.7, // Balanced creativity/accuracy
+          temperature: 0.7,
           top_p: 0.9,
-          num_predict: 1000, // Max tokens for response
+          num_predict: 1000,
         }
       }),
     });
@@ -145,16 +120,15 @@ async function generateOllamaAnalysis(prompt: string, model: string = "llama3.1:
 }
 
 /**
- * Fetch financial data from enrichment service (Python FastAPI + yfinance)
+ * Fetch financial data from enrichment service (Python FastAPI + Finnhub)
  */
-async function fetchYFinanceData(ticker: string): Promise<YFinanceData> {
+async function fetchFinnhubData(ticker: string): Promise<FinnhubData> {
   const enrichmentUrl = env.ENRICHMENT_SERVICE_URL;
   
   try {
-    const response = await fetch(`${enrichmentUrl}/api/enrich/${ticker.toUpperCase()}`);
+    const response = await fetch(`${enrichmentUrl}/api/enrich-finnhub/${ticker.toUpperCase()}`);
     
     if (!response.ok) {
-      // Try to parse error details from response
       let errorDetail = response.statusText;
       try {
         const errorData = await response.json();
@@ -166,26 +140,27 @@ async function fetchYFinanceData(ticker: string): Promise<YFinanceData> {
       }
 
       if (response.status === 404) {
-        throw new Error(`Ticker ${ticker} not found in Yahoo Finance. Please verify the ticker symbol.`);
+        throw new Error(`Ticker ${ticker} not found in Finnhub. Please verify the ticker symbol.`);
       }
       if (response.status === 429) {
-        throw new Error(`Yahoo Finance rate limit exceeded. Please wait a few minutes before trying again.`);
+        throw new Error(`Finnhub rate limit exceeded. Please wait a few minutes before trying again.`);
+      }
+      if (response.status === 503) {
+        throw new Error(`Finnhub service unavailable. FINNHUB_API_KEY may not be configured.`);
       }
       throw new Error(`Enrichment service error: ${errorDetail}`);
     }
 
-    const data: YFinanceData = await response.json();
+    const data: FinnhubData = await response.json();
     return data;
   } catch (error: any) {
-    console.error("Failed to fetch yfinance data:", error);
+    console.error("Failed to fetch Finnhub data:", error);
     throw error;
   }
 }
 
 /**
- * Process enrichment in the background: fetch financial data, generate AI
- * analysis and update the enrichment record with the final result.
- * Runs after the HTTP response is sent (via Next.js `after()`).
+ * Process Finnhub enrichment in the background
  */
 async function processEnrichment(
   enrichmentId: string,
@@ -201,17 +176,17 @@ async function processEnrichment(
       data: { status: "PROCESSING" },
     });
 
-    // 1. Fetch financial data from yfinance (via enrichment service, with retries)
-    console.log(`[Enrich:${enrichmentId}] Fetching yfinance data for ${ticker}...`);
-    const yfinanceData = await fetchYFinanceData(ticker);
+    // 1. Fetch financial data from Finnhub (via enrichment service)
+    console.log(`[Enrich-Finnhub:${enrichmentId}] Fetching Finnhub data for ${ticker}...`);
+    const finnhubData = await fetchFinnhubData(ticker);
 
-    if (!yfinanceData.success) {
-      throw new Error("Failed to fetch financial data");
+    if (!finnhubData.success) {
+      throw new Error("Failed to fetch financial data from Finnhub");
     }
 
-    // 2. Update company metadata from yfinance (more accurate than user-provided data)
-    if (yfinanceData.companyInfo) {
-      const { name, sector, industry, description, website, marketCap } = yfinanceData.companyInfo;
+    // 2. Update company metadata from Finnhub if available
+    if (finnhubData.companyInfo) {
+      const { name, sector, industry, website, marketCap } = finnhubData.companyInfo;
       const company = await prisma.company.findUnique({ where: { id: companyId } });
       if (company) {
         await prisma.company.update({
@@ -220,7 +195,6 @@ async function processEnrichment(
             name: name || company.name,
             sector: sector || company.sector,
             industry: industry || company.industry,
-            description: description || company.description,
             website: website || company.website,
             marketCap: marketCap || company.marketCap,
           },
@@ -229,8 +203,8 @@ async function processEnrichment(
     }
 
     // 3. Generate AI analysis with Ollama
-    console.log(`[Enrich:${enrichmentId}] Generating Ollama analysis for ${ticker}...`);
-    const prompt = generateAnalysisPrompt(ticker, yfinanceData);
+    console.log(`[Enrich-Finnhub:${enrichmentId}] Generating Ollama analysis for ${ticker}...`);
+    const prompt = generateAnalysisPrompt(ticker, finnhubData);
     const aiAnalysis = await generateOllamaAnalysis(prompt);
 
     // 4. Store final result and mark as completed
@@ -238,44 +212,39 @@ async function processEnrichment(
       where: { id: enrichmentId },
       data: {
         status: "COMPLETED",
-        financialData: yfinanceData.financials as any,
-        priceData: yfinanceData.price as any,
-        newsHeadlines: yfinanceData.news as any,
-        recommendations: yfinanceData.recommendations as any,
+        financialData: finnhubData.financials as any,
+        priceData: finnhubData.price as any,
         aiAnalysis,
         ollamaModel: "llama3.1:8b",
         errorMessage: null,
       },
     });
 
-    console.log(`[Enrich:${enrichmentId}] Successfully enriched ${ticker}`);
+    console.log(`[Enrich-Finnhub:${enrichmentId}] Successfully enriched ${ticker}`);
   } catch (error: any) {
-    console.error(`[Enrich:${enrichmentId}] Failed to enrich ${ticker}:`, error);
-    // Mark as failed with the error message so the UI can surface it
+    console.error(`[Enrich-Finnhub:${enrichmentId}] Failed to enrich ${ticker}:`, error);
     try {
       await prisma.companyEnrichment.update({
         where: { id: enrichmentId },
         data: {
           status: "FAILED",
-          errorMessage: error?.message || "Failed to enrich company",
+          errorMessage: error?.message || "Failed to enrich company with Finnhub",
         },
       });
     } catch (updateError) {
-      console.error(`[Enrich:${enrichmentId}] Could not mark as FAILED:`, updateError);
+      console.error(`[Enrich-Finnhub:${enrichmentId}] Could not mark as FAILED:`, updateError);
     }
   }
 }
 
 /**
- * POST /api/companies/[ticker]/enrich
- * Kicks off a background enrichment job and returns immediately with the
- * enrichment id. Poll GET /api/companies/[ticker]/enrich/[id] for status.
+ * POST /api/companies/[ticker]/enrich-finnhub
+ * Kicks off a background Finnhub enrichment job
  */
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ ticker: string }> }
 ) {
-  // Lazy load prisma to avoid database connection during build
   const { prisma } = await import("@/shared/api/prisma");
 
   try {
@@ -299,34 +268,34 @@ export async function POST(
       );
     }
 
-    // 3. Create a PENDING enrichment record
+    // 3. Create a PENDING enrichment record with source=FINNHUB
     const enrichment = await prisma.companyEnrichment.create({
       data: {
         companyId: company.id,
         ticker: ticker.toUpperCase(),
-        source: "YAHOO",
+        source: "FINNHUB",
         status: "PENDING",
       },
     });
 
-    // 4. Kick off the heavy work in the background (runs after the response)
+    // 4. Kick off the heavy work in the background
     after(() => processEnrichment(enrichment.id, company.id, ticker));
 
-    // 5. Respond immediately so the UI can start polling
+    // 5. Respond immediately
     return NextResponse.json(
       {
         success: true,
         ticker: ticker.toUpperCase(),
         enrichmentId: enrichment.id,
         status: "PENDING",
-        source: "YAHOO",
+        source: "FINNHUB",
       },
       { status: 202 }
     );
   } catch (error: any) {
-    console.error("[Enrich] Error:", error);
+    console.error("[Enrich-Finnhub] Error:", error);
     return NextResponse.json(
-      { error: error.message || "Failed to enrich company" },
+      { error: error.message || "Failed to enrich company with Finnhub" },
       { status: 500 }
     );
   }

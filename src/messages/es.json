@@ -1,0 +1,186 @@
+{
+  "common": {
+    "loading": "Cargando...",
+    "error": "Error",
+    "success": "Éxito",
+    "cancel": "Cancelar",
+    "save": "Guardar",
+    "delete": "Eliminar",
+    "edit": "Editar",
+    "close": "Cerrar",
+    "or": "O"
+  },
+  "nav": {
+    "dashboard": "Panel",
+    "analyze": "Analizar",
+    "companies": "Empresas",
+    "insights": "Análisis"
+  },
+  "sidebar": {
+    "appName": "MarketWhisper",
+    "version": "MarketWhisper v0.1.0",
+    "tagline": "Inteligencia de Mercado con IA"
+  },
+  "header": {
+    "logout": "Cerrar Sesión"
+  },
+  "auth": {
+    "login": {
+      "title": "MarketWhisper",
+      "subtitle": "Tu Centro de Inteligencia de Mercado",
+      "demoAccount": "Cuenta Demo:",
+      "demoEmail": "Email:",
+      "demoPassword": "Contraseña:",
+      "emailLabel": "Email",
+      "emailPlaceholder": "tu@ejemplo.com",
+      "passwordLabel": "Contraseña",
+      "passwordPlaceholder": "••••••••",
+      "submitButton": "Iniciar Sesión",
+      "submitting": "Iniciando sesión...",
+      "invalidCredentials": "Email o contraseña inválidos",
+      "forgotPassword": "¿Olvidaste tu contraseña?",
+      "noAccount": "¿No tienes una cuenta?",
+      "signUpLink": "Regístrate",
+      "continueWith": "O continúa con",
+      "googleButton": "Continuar con Google",
+      "githubButton": "Continuar con GitHub"
+    },
+    "register": {
+      "title": "MarketWhisper",
+      "subtitle": "Crea tu cuenta",
+      "nameLabel": "Nombre",
+      "namePlaceholder": "Juan Pérez",
+      "emailLabel": "Email",
+      "emailPlaceholder": "tu@ejemplo.com",
+      "passwordLabel": "Contraseña",
+      "passwordPlaceholder": "••••••••",
+      "confirmPasswordLabel": "Confirmar Contraseña",
+      "confirmPasswordPlaceholder": "••••••••",
+      "submitButton": "Crear Cuenta",
+      "submitting": "Creando cuenta...",
+      "passwordMismatch": "Las contraseñas no coinciden",
+      "passwordTooShort": "La contraseña debe tener al menos 8 caracteres",
+      "registrationFailed": "Registro fallido",
+      "registrationSuccess": "Registro exitoso pero el inicio de sesión falló. Por favor inicia sesión.",
+      "genericError": "Algo salió mal. Por favor intenta de nuevo.",
+      "hasAccount": "¿Ya tienes una cuenta?",
+      "signInLink": "Inicia sesión"
+    }
+  },
+  "analyze": {
+    "title": "Análisis de Texto con IA",
+    "description": "Pega cualquier texto sobre empresas o acciones y deja que nuestra IA lo analice en busca de sentimiento y confiabilidad",
+    "textLabel": "Texto a Analizar",
+    "textPlaceholder": "Pega cualquier texto sobre una empresa o acción aquí (ej. artículo de noticias, análisis, tweet)...",
+    "sourceLabel": "Fuente (opcional)",
+    "sourcePlaceholder": "ej. Twitter, Bloomberg, Reddit",
+    "analyzeButton": "Analizar con IA",
+    "analyzing": "Analizando...",
+    "clearButton": "Limpiar",
+    "errorNoText": "Por favor proporciona texto para analizar",
+    "errorGeneric": "El análisis falló",
+    "resultTitle": "Resultado del Análisis",
+    "companiesDetected": "Empresas Detectadas",
+    "companyLabel": "Empresa",
+    "sentimentLabel": "Sentimiento",
+    "reliabilityLabel": "Confiabilidad",
+    "reasoningLabel": "Razonamiento",
+    "viewCompanyProfile": "Ver Perfil",
+    "noCompaniesFound": "No se detectaron empresas en el texto",
+    "sentiment": {
+      "bullish": "ALCISTA",
+      "bearish": "BAJISTA",
+      "neutral": "NEUTRAL"
+    }
+  },
+  "company": {
+    "search": {
+      "placeholder": "Buscar empresas...",
+      "resultsCount": "{count} empresas encontradas",
+      "noResults": "No hay empresas que coincidan con tu búsqueda",
+      "clearSearch": "Limpiar búsqueda"
+    },
+    "card": {
+      "marketCap": "Capitalización",
+      "sector": "Sector",
+      "industry": "Industria",
+      "analyses": "{count} análisis",
+      "analysis": "{count} análisis",
+      "mentions": "{count} menciones",
+      "avgSentiment": "Sentimiento Promedio",
+      "avgReliability": "Confiabilidad Promedio",
+      "recentActivity": "Actividad Reciente",
+      "reliability": "Confiabilidad",
+      "sentiment": "Sentimiento"
+    },
+    "detail": {
+      "backButton": "← Volver a Empresas",
+      "back": "Volver",
+      "notFound": "Empresa No Encontrada",
+      "notFoundDesc": "La empresa {ticker} no existe en nuestra base de datos.",
+      "overview": "Resumen",
+      "analysisHistory": "Historial de Análisis",
+      "noAnalyses": "Aún no hay análisis para esta empresa",
+      "analysisDate": "Fecha de Análisis",
+      "source": "Fuente",
+      "deleteConfirm": "¿Estás seguro de que quieres eliminar \"{title}\"? Esto también eliminará todas las menciones y transcripciones asociadas.",
+      "sector": "Sector",
+      "industry": "Industria",
+      "marketCap": "Capitalización",
+      "website": "Sitio Web",
+      "visit": "Visitar",
+      "articles": "artículos",
+      "article": "artículo",
+      "mentions": "menciones",
+      "mention": "mención",
+      "aiAnalyses": "análisis IA",
+      "aiAnalysis": "análisis IA",
+      "financialData": "Datos Financieros y Análisis IA",
+      "aiTextAnalyses": "Análisis de Texto con IA",
+      "overallSentiment": "Sentimiento y Confiabilidad General",
+      "averageSentiment": "Sentimiento Promedio",
+      "averageReliability": "Confiabilidad Promedio",
+      "reliability": "Confiabilidad",
+      "aiReasoning": "Razonamiento IA:",
+      "originalText": "Texto Original:",
+      "relatedContent": "Contenido Relacionado",
+      "noContent": "No se encontró contenido para esta empresa.",
+      "untitled": "Sin título"
+    }
+  },
+  "dashboard": {
+    "welcomeBack": "¡Bienvenido de nuevo, {name}!",
+    "welcomeUser": "¡Bienvenido de nuevo, Usuario!",
+    "subtitle": "Tu panel de inteligencia de mercado con IA",
+    "videosAnalyzed": "Videos Analizados",
+    "contentItems": "Elementos de Contenido",
+    "stockMentions": "Menciones de Acciones",
+    "gettingStarted": "Primeros Pasos",
+    "getStartedTitle": "¿Listo para analizar tu primer texto?",
+    "getStartedDesc": "Usa nuestro análisis con IA para detectar empresas y sentimiento",
+    "analyzeButton": "Comenzar a Analizar"
+  },
+  "situations": {
+    "title": "Empresas Rastreadas",
+    "subtitle": "Inteligencia recopilada de todas tus fuentes de contenido",
+    "noCompanies": "Aún No Hay Empresas",
+    "noCompaniesDesc": "Añade contenido para comenzar a rastrear empresas",
+    "noResults": "No Se Encontraron Empresas",
+    "noResultsDesc": "No hay empresas que coincidan con tu búsqueda \"{query}\"",
+    "clearSearch": "Limpiar Búsqueda",
+    "trackingCount": "Rastreando {count} {plural}",
+    "company": "empresa",
+    "companies": "empresas"
+  },
+  "insights": {
+    "title": "Análisis de Mercado",
+    "subtitle": "Rastrea predicciones, tendencias de sentimiento y análisis de rendimiento",
+    "comingSoon": "Análisis Próximamente",
+    "comingSoonDesc": "Compara predicciones de IA con datos reales del mercado de Finnhub",
+    "features": "Funciones: Tendencias de sentimiento, menciones de tickers, precisión de predicciones"
+  },
+  "analyzePage": {
+    "title": "Análisis de Texto con IA",
+    "subtitle": "Pega cualquier texto sobre empresas o acciones para obtener análisis de sentimiento y puntuaciones de confiabilidad con IA"
+  }
+}

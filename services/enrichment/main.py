@@ -1,6 +1,6 @@
 """
 MarketWhisper - Company Enrichment Service
-FastAPI microservice that fetches public financial data from Yahoo Finance (yfinance)
+FastAPI microservice that fetches public financial data from Yahoo Finance (yfinance) and Finnhub
 """
 
 from fastapi import FastAPI, HTTPException
@@ -8,6 +8,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Optional, List, Dict, Any
 import yfinance as yf
+import finnhub
+import os
 from datetime import datetime
 import logging
 import urllib3
@@ -27,6 +29,15 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+# Finnhub API client (initialized if API key is set)
+FINNHUB_API_KEY = os.getenv("FINNHUB_API_KEY")
+finnhub_client = None
+if FINNHUB_API_KEY:
+    finnhub_client = finnhub.Client(api_key=FINNHUB_API_KEY)
+    logger.info("Finnhub client initialized")
+else:
+    logger.warning("FINNHUB_API_KEY not set - Finnhub endpoints will return 503")
 
 
 class RateLimitError(Exception):
@@ -111,7 +122,15 @@ class EnrichmentResponse(BaseModel):
 @app.get("/health")
 async def health_check():
     """Health check endpoint"""
-    return {"status": "healthy", "service": "enrichment", "timestamp": datetime.now().isoformat()}
+    return {
+        "status": "healthy",
+        "service": "enrichment",
+        "timestamp": datetime.now().isoformat(),
+        "providers": {
+            "yahoo_finance": True,
+            "finnhub": finnhub_client is not None
+        }
+    }
 
 
 @retry(
@@ -324,6 +343,125 @@ async def enrich_company(ticker: str):
             status_code=500,
             detail=f"Failed to fetch data for {ticker}. The ticker may be invalid or Yahoo Finance is unavailable."
         )
+
+
+@app.get("/api/enrich-finnhub/{ticker}", response_model=EnrichmentResponse)
+async def enrich_company_finnhub(ticker: str):
+    """
+    Fetch comprehensive public data for a company from Finnhub
+    
+    Args:
+        ticker: Stock ticker symbol (e.g., AAPL, MSFT, GOOGL)
+    
+    Returns:
+        EnrichmentResponse with company info, financials (from metrics), and price data
+    """
+    if not finnhub_client:
+        raise HTTPException(
+            status_code=503,
+            detail="Finnhub service unavailable. FINNHUB_API_KEY not configured."
+        )
+    
+    start_time = time.time()
+    logger.info(f"[FINNHUB START] Ticker: {ticker} | Time: {datetime.now().isoformat()}")
+    
+    try:
+        ticker_upper = ticker.upper()
+        
+        # 1. Fetch company profile
+        try:
+            profile = finnhub_client.company_profile2(symbol=ticker_upper)
+            if not profile or 'name' not in profile:
+                raise HTTPException(
+                    status_code=404,
+                    detail=f"Ticker {ticker} not found in Finnhub. Please verify the ticker symbol."
+                )
+            logger.info(f"[FINNHUB] Profile fetched for {ticker_upper}")
+        except Exception as e:
+            error_msg = str(e)
+            logger.error(f"[FINNHUB] Profile fetch failed for {ticker}: {error_msg}")
+            if "429" in error_msg or "rate limit" in error_msg.lower():
+                raise HTTPException(
+                    status_code=429,
+                    detail=f"Finnhub rate limit exceeded. Please try again later."
+                )
+            raise HTTPException(
+                status_code=500,
+                detail=f"Failed to fetch profile from Finnhub for {ticker}. Error: {error_msg}"
+            )
+        
+        # 2. Fetch basic financial metrics
+        try:
+            metrics = finnhub_client.company_basic_financials(ticker_upper, 'all')
+            metric_data = metrics.get('metric', {}) if metrics else {}
+            logger.info(f"[FINNHUB] Metrics fetched for {ticker_upper}: {len(metric_data)} data points")
+        except Exception as e:
+            logger.warning(f"[FINNHUB] Metrics fetch failed for {ticker}: {e}")
+            metric_data = {}
+        
+        # Extract company info
+        company_info = CompanyInfo(
+            ticker=ticker_upper,
+            name=profile.get('name'),
+            sector=profile.get('finnhubIndustry'),  # Finnhub uses 'finnhubIndustry'
+            industry=profile.get('finnhubIndustry'),
+            description=None,  # Finnhub profile2 doesn't include description
+            website=profile.get('weburl'),
+            employees=None,  # Not available in profile2
+            marketCap=int(profile.get('marketCapitalization', 0) * 1e6) if profile.get('marketCapitalization') else None
+        )
+        
+        # Extract financial metrics (map Finnhub fields to our schema)
+        financials = FinancialMetrics(
+            revenue=None,  # Not directly available in basic metrics
+            netIncome=None,  # Not directly available in basic metrics
+            eps=metric_data.get('epsBasic'),  # Basic EPS
+            peRatio=metric_data.get('peBasicExclExtraTTM'),  # P/E ratio trailing 12 months
+            debtToEquity=None,  # Not in basic metrics
+            dividendYield=metric_data.get('dividendYieldIndicatedAnnual'),
+            profitMargins=metric_data.get('netProfitMarginTTM')  # Net profit margin TTM
+        )
+        
+        # Extract price data (use 52-week high/low from metrics)
+        price = PriceData(
+            currentPrice=None,  # Would need quote endpoint (not requested)
+            previousClose=None,
+            dayChange=None,
+            dayChangePercent=None,
+            fiftyTwoWeekHigh=metric_data.get('52WeekHigh'),
+            fiftyTwoWeekLow=metric_data.get('52WeekLow'),
+            volume=None,
+            avgVolume=None
+        )
+        
+        total_elapsed = time.time() - start_time
+        logger.info(
+            f"[FINNHUB COMPLETE] {ticker_upper} | "
+            f"Total time: {total_elapsed:.2f}s | "
+            f"Success: True"
+        )
+        
+        return EnrichmentResponse(
+            success=True,
+            ticker=ticker_upper,
+            companyInfo=company_info,
+            financials=financials,
+            price=price,
+            news=[],  # News not requested
+            recommendations=[],  # Recommendations not available in Finnhub free tier
+            timestamp=datetime.now()
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        error_msg = str(e)
+        logger.error(f"[FINNHUB] Unexpected error enriching {ticker}: {error_msg}", exc_info=True)
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to fetch data from Finnhub for {ticker}. Error: {error_msg}"
+        )
+
 
 if __name__ == "__main__":
     import uvicorn

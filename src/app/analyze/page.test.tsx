@@ -21,6 +21,29 @@ vi.mock("next/navigation", () => ({
   usePathname: vi.fn(() => "/analyze"),
 }));
 
+// Mock next-intl (required by layout/components)
+vi.mock("next-intl", () => ({
+  useLocale: vi.fn(() => 'en'),
+  useTranslations: vi.fn(() => (key: string) => key),
+}));
+
+vi.mock("next-intl/server", () => ({
+  getLocale: vi.fn(() => Promise.resolve('en')),
+  getMessages: vi.fn(() => Promise.resolve({})),
+  getTranslations: vi.fn(() => Promise.resolve((key: string) => {
+    const translations: Record<string, string> = {
+      'title': 'AI Text Analysis',
+      'subtitle': 'Paste any text about companies or stocks to get AI-powered sentiment analysis and reliability scores',
+    };
+    return translations[key] || key;
+  })),
+}));
+
+// Mock LocaleSwitcher feature
+vi.mock("@/features/switch-locale", () => ({
+  LocaleSwitcher: () => <div data-testid="locale-switcher">EN | ES</div>,
+}));
+
 // Mock AnalyzeTextForm
 vi.mock("@/features/analyze-text", () => ({
   AnalyzeTextForm: () => <div data-testid="analyze-form">Analyze Form</div>

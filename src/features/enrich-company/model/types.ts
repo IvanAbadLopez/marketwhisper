@@ -3,6 +3,8 @@
  * @module features/enrich-company/model
  */
 
+export type EnrichmentSource = "YAHOO" | "FINNHUB";
+
 export interface CompanyInfo {
   ticker: string;
   name: string | null;
@@ -72,12 +74,14 @@ export interface EnrichmentJobStarted {
   ticker: string;
   enrichmentId: string;
   status: EnrichmentStatus;
+  source: EnrichmentSource;
 }
 
 /** Response of GET /enrich/[id] - current status of a background job */
 export interface EnrichmentStatusResult {
   enrichmentId: string;
   ticker: string;
+  source: EnrichmentSource;
   status: EnrichmentStatus;
   errorMessage: string | null;
   aiAnalysis: string | null;

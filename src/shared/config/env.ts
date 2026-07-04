@@ -33,6 +33,9 @@ export const env = {
   GEMINI_API_KEY: getOptionalEnvVar("GEMINI_API_KEY"),
   GEMINI_MODEL: getEnvVar("GEMINI_MODEL", "gemini-1.5-flash-latest"),
 
+  // Financial Data APIs
+  FINNHUB_API_KEY: getOptionalEnvVar("FINNHUB_API_KEY"),
+
   // Enrichment Services
   OLLAMA_URL: getEnvVar("OLLAMA_URL", "http://localhost:11434"),
   ENRICHMENT_SERVICE_URL: getEnvVar("ENRICHMENT_SERVICE_URL", "http://localhost:8001"),

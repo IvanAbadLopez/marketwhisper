@@ -7,6 +7,7 @@ import type {
   EnrichmentJobStarted,
   EnrichmentStatusResult,
   EnrichmentError,
+  EnrichmentSource,
 } from "../model/types";
 
 /**
@@ -14,9 +15,14 @@ import type {
  * Use `getEnrichmentStatus` to poll for completion.
  */
 export async function enrichCompany(
-  ticker: string
+  ticker: string,
+  source: EnrichmentSource = "YAHOO"
 ): Promise<EnrichmentJobStarted> {
-  const response = await fetch(`/api/companies/${ticker}/enrich`, {
+  const endpoint = source === "FINNHUB" 
+    ? `/api/companies/${ticker}/enrich-finnhub`
+    : `/api/companies/${ticker}/enrich`;
+
+  const response = await fetch(endpoint, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
   });
@@ -35,11 +41,14 @@ export async function enrichCompany(
  */
 export async function getEnrichmentStatus(
   ticker: string,
-  enrichmentId: string
+  enrichmentId: string,
+  source: EnrichmentSource = "YAHOO"
 ): Promise<EnrichmentStatusResult> {
-  const response = await fetch(
-    `/api/companies/${ticker}/enrich/${enrichmentId}`
-  );
+  const endpoint = source === "FINNHUB"
+    ? `/api/companies/${ticker}/enrich-finnhub/${enrichmentId}`
+    : `/api/companies/${ticker}/enrich/${enrichmentId}`;
+
+  const response = await fetch(endpoint);
 
   const data = await response.json();
 

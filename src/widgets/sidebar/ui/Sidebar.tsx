@@ -4,10 +4,12 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { navigationItems } from "../model/navigation";
 
 export function Sidebar() {
   const pathname = usePathname();
+  const t = useTranslations();
 
   return (
     <aside className="w-64 bg-zinc-50 dark:bg-zinc-950 border-r border-zinc-200 dark:border-zinc-800 flex flex-col">
@@ -16,7 +18,7 @@ export function Sidebar() {
         <Link href="/" className="flex items-center gap-2">
           <span className="text-2xl">🎧</span>
           <span className="text-xl font-bold text-zinc-900 dark:text-zinc-100">
-            MarketWhisper
+            {t('sidebar.appName')}
           </span>
         </Link>
       </div>
@@ -29,7 +31,7 @@ export function Sidebar() {
 
           return (
             <Link
-              key={item.name}
+              key={item.nameKey}
               href={item.href}
               className={`
                 flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition-colors
@@ -41,7 +43,7 @@ export function Sidebar() {
               `}
             >
               <Icon className="w-5 h-5" />
-              <span>{item.name}</span>
+              <span>{t(item.nameKey)}</span>
             </Link>
           );
         })}
@@ -50,10 +52,10 @@ export function Sidebar() {
       {/* Footer info */}
       <div className="p-4 border-t border-zinc-200 dark:border-zinc-800">
         <p className="text-xs text-zinc-500 dark:text-zinc-400">
-          MarketWhisper v0.1.0
+          {t('sidebar.version')}
         </p>
         <p className="text-xs text-zinc-400 dark:text-zinc-500 mt-1">
-          AI-Powered Market Intelligence
+          {t('sidebar.tagline')}
         </p>
       </div>
     </aside>

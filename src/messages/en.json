@@ -1,0 +1,186 @@
+{
+  "common": {
+    "loading": "Loading...",
+    "error": "Error",
+    "success": "Success",
+    "cancel": "Cancel",
+    "save": "Save",
+    "delete": "Delete",
+    "edit": "Edit",
+    "close": "Close",
+    "or": "OR"
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "analyze": "Analyze",
+    "companies": "Companies",
+    "insights": "Insights"
+  },
+  "sidebar": {
+    "appName": "MarketWhisper",
+    "version": "MarketWhisper v0.1.0",
+    "tagline": "AI-Powered Market Intelligence"
+  },
+  "header": {
+    "logout": "Logout"
+  },
+  "auth": {
+    "login": {
+      "title": "MarketWhisper",
+      "subtitle": "Your Market Intelligence Hub",
+      "demoAccount": "Demo Account:",
+      "demoEmail": "Email:",
+      "demoPassword": "Password:",
+      "emailLabel": "Email",
+      "emailPlaceholder": "you@example.com",
+      "passwordLabel": "Password",
+      "passwordPlaceholder": "••••••••",
+      "submitButton": "Sign In",
+      "submitting": "Signing in...",
+      "invalidCredentials": "Invalid email or password",
+      "forgotPassword": "Forgot password?",
+      "noAccount": "Don't have an account?",
+      "signUpLink": "Sign up",
+      "continueWith": "Or continue with",
+      "googleButton": "Continue with Google",
+      "githubButton": "Continue with GitHub"
+    },
+    "register": {
+      "title": "MarketWhisper",
+      "subtitle": "Create your account",
+      "nameLabel": "Name",
+      "namePlaceholder": "John Doe",
+      "emailLabel": "Email",
+      "emailPlaceholder": "you@example.com",
+      "passwordLabel": "Password",
+      "passwordPlaceholder": "••••••••",
+      "confirmPasswordLabel": "Confirm Password",
+      "confirmPasswordPlaceholder": "••••••••",
+      "submitButton": "Create Account",
+      "submitting": "Creating account...",
+      "passwordMismatch": "Passwords do not match",
+      "passwordTooShort": "Password must be at least 8 characters",
+      "registrationFailed": "Registration failed",
+      "registrationSuccess": "Registration successful but login failed. Please sign in.",
+      "genericError": "Something went wrong. Please try again.",
+      "hasAccount": "Already have an account?",
+      "signInLink": "Sign in"
+    }
+  },
+  "analyze": {
+    "title": "AI Text Analysis",
+    "description": "Paste any text about companies or stocks and let our AI analyze it for sentiment and reliability",
+    "textLabel": "Text to Analyze",
+    "textPlaceholder": "Paste any text about a company or stock here (e.g., news article, analysis, tweet)...",
+    "sourceLabel": "Source (optional)",
+    "sourcePlaceholder": "e.g., Twitter, Bloomberg, Reddit",
+    "analyzeButton": "Analyze with AI",
+    "analyzing": "Analyzing...",
+    "clearButton": "Clear",
+    "errorNoText": "Please provide text to analyze",
+    "errorGeneric": "Analysis failed",
+    "resultTitle": "Analysis Result",
+    "companiesDetected": "Companies Detected",
+    "companyLabel": "Company",
+    "sentimentLabel": "Sentiment",
+    "reliabilityLabel": "Reliability",
+    "reasoningLabel": "Reasoning",
+    "viewCompanyProfile": "View Profile",
+    "noCompaniesFound": "No companies were detected in the text",
+    "sentiment": {
+      "bullish": "BULLISH",
+      "bearish": "BEARISH",
+      "neutral": "NEUTRAL"
+    }
+  },
+  "company": {
+    "search": {
+      "placeholder": "Search companies...",
+      "resultsCount": "{count} companies found",
+      "noResults": "No companies match your search",
+      "clearSearch": "Clear search"
+    },
+    "card": {
+      "marketCap": "Market Cap",
+      "sector": "Sector",
+      "industry": "Industry",
+      "analyses": "{count} analyses",
+      "analysis": "{count} analysis",
+      "mentions": "{count} mentions",
+      "avgSentiment": "Avg. Sentiment",
+      "avgReliability": "Avg. Reliability",
+      "recentActivity": "Recent Activity",
+      "reliability": "Reliability",
+      "sentiment": "Sentiment"
+    },
+    "detail": {
+      "backButton": "← Back to Companies",
+      "back": "Back",
+      "notFound": "Company Not Found",
+      "notFoundDesc": "The company {ticker} does not exist in our database.",
+      "overview": "Overview",
+      "analysisHistory": "Analysis History",
+      "noAnalyses": "No analyses yet for this company",
+      "analysisDate": "Analysis Date",
+      "source": "Source",
+      "deleteConfirm": "Are you sure you want to delete \"{title}\"? This will also delete all associated mentions and transcripts.",
+      "sector": "Sector",
+      "industry": "Industry",
+      "marketCap": "Market Cap",
+      "website": "Website",
+      "visit": "Visit",
+      "articles": "articles",
+      "article": "article",
+      "mentions": "mentions",
+      "mention": "mention",
+      "aiAnalyses": "AI analyses",
+      "aiAnalysis": "AI analysis",
+      "financialData": "Financial Data & AI Analysis",
+      "aiTextAnalyses": "AI Text Analyses",
+      "overallSentiment": "Overall Sentiment & Reliability",
+      "averageSentiment": "Average Sentiment",
+      "averageReliability": "Average Reliability",
+      "reliability": "Reliability",
+      "aiReasoning": "AI Reasoning:",
+      "originalText": "Original Text:",
+      "relatedContent": "Related Content",
+      "noContent": "No content found for this company.",
+      "untitled": "Untitled"
+    }
+  },
+  "dashboard": {
+    "welcomeBack": "Welcome back, {name}!",
+    "welcomeUser": "Welcome back, User!",
+    "subtitle": "Your AI-powered market intelligence dashboard",
+    "videosAnalyzed": "Videos Analyzed",
+    "contentItems": "Content Items",
+    "stockMentions": "Stock Mentions",
+    "gettingStarted": "Getting Started",
+    "getStartedTitle": "Ready to analyze your first text?",
+    "getStartedDesc": "Use our AI-powered analysis to detect companies and sentiment",
+    "analyzeButton": "Start Analyzing"
+  },
+  "situations": {
+    "title": "Companies Tracked",
+    "subtitle": "Intelligence gathered across all your content sources",
+    "noCompanies": "No Companies Yet",
+    "noCompaniesDesc": "Add content to start tracking companies",
+    "noResults": "No Companies Found",
+    "noResultsDesc": "No companies match your search \"{query}\"",
+    "clearSearch": "Clear Search",
+    "trackingCount": "Tracking {count} {plural}",
+    "company": "company",
+    "companies": "companies"
+  },
+  "insights": {
+    "title": "Market Insights",
+    "subtitle": "Track predictions, sentiment trends, and performance analysis",
+    "comingSoon": "Insights Coming Soon",
+    "comingSoonDesc": "Compare AI predictions against real market data from Finnhub",
+    "features": "Features: Sentiment trends, ticker mentions, prediction accuracy"
+  },
+  "analyzePage": {
+    "title": "AI Text Analysis",
+    "subtitle": "Paste any text about companies or stocks to get AI-powered sentiment analysis and reliability scores"
+  }
+}
