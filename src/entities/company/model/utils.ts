@@ -3,7 +3,7 @@
  * @module entities/company
  */
 
-import { MARKET_CAP_UNITS } from "@/shared";
+import { MARKET_CAP_UNITS } from "@/shared/config/constants";
 
 /**
  * Format market cap to human-readable string (T, B, M)
