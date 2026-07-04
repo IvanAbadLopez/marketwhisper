@@ -85,7 +85,7 @@ export async function analyzeText(text: string): Promise<AnalysisResult[]> {
 }
 
 /**
- * Build the analysis prompt for Gemini to detect multiple companies
+ * Build the analysis prompt for Ollama to detect multiple companies
  */
 function buildAnalysisPrompt(text: string): string {
   return `You are a financial analyst AI. Analyze the following text and extract information about ALL companies mentioned.

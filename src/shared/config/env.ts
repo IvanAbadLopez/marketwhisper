@@ -29,10 +29,6 @@ export const env = {
   GITHUB_CLIENT_ID: getOptionalEnvVar("GITHUB_CLIENT_ID"),
   GITHUB_CLIENT_SECRET: getOptionalEnvVar("GITHUB_CLIENT_SECRET"),
 
-  // AI APIs
-  GEMINI_API_KEY: getOptionalEnvVar("GEMINI_API_KEY"),
-  GEMINI_MODEL: getEnvVar("GEMINI_MODEL", "gemini-1.5-flash-latest"),
-
   // Financial Data APIs
   FINNHUB_API_KEY: getOptionalEnvVar("FINNHUB_API_KEY"),
 
