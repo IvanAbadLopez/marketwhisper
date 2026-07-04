@@ -128,6 +128,19 @@ export function AnalyzeTextForm() {
             </button>
           </div>
 
+          {/* Loading Message */}
+          {analyzing && (
+            <div className="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+              <div className="flex items-center gap-3">
+                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600 dark:border-blue-400"></div>
+                <div className="text-sm text-blue-700 dark:text-blue-300">
+                  <div className="font-medium">Analyzing with local AI (Ollama)...</div>
+                  <div className="text-xs mt-1 text-blue-600 dark:text-blue-400">This may take 20-60 seconds depending on text length and number of companies mentioned.</div>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Error Message */}
           {error && (
             <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-sm text-red-700 dark:text-red-300">

@@ -7,6 +7,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { after } from "next/server";
 import { auth } from "@/lib/auth";
 import { env } from "@/shared/config/env";
+import { translateToSpanish } from "@/shared/api/translate";
 
 interface YFinanceData {
   success: boolean;
@@ -65,6 +66,7 @@ interface OllamaResponse {
 
 /**
  * Generate AI analysis prompt from financial data
+ * Always in English for better AI quality - translation happens at UI layer
  */
 function generateAnalysisPrompt(ticker: string, data: YFinanceData): string {
   const { companyInfo, financials, price, news, recommendations } = data;
@@ -98,7 +100,7 @@ ${news && news.length > 0 ? news.slice(0, 5).map((n, i) => `${i + 1}. ${n.title}
 ${recommendations && recommendations.length > 0 ? recommendations.slice(-1).map(r => `Strong Buy: ${r.strongBuy}, Buy: ${r.buy}, Hold: ${r.hold}, Sell: ${r.sell}, Strong Sell: ${r.strongSell}`).join("\n") : "No analyst recommendations available."}
 
 **Your Task:**
-Provide a structured analysis with the following sections:
+Provide a structured analysis in ENGLISH with the following sections:
 1. **Executive Summary** (2-3 sentences)
 2. **Financial Health** (assess profitability, debt levels, valuation)
 3. **Market Position** (competitive advantages, sector trends)
@@ -233,7 +235,11 @@ async function processEnrichment(
     const prompt = generateAnalysisPrompt(ticker, yfinanceData);
     const aiAnalysis = await generateOllamaAnalysis(prompt);
 
-    // 4. Store final result and mark as completed
+    // 4. Translate AI analysis to Spanish
+    console.log(`[Enrich:${enrichmentId}] Translating analysis to Spanish...`);
+    const aiAnalysisEs = await translateToSpanish(aiAnalysis);
+
+    // 5. Store final result and mark as completed
     await prisma.companyEnrichment.update({
       where: { id: enrichmentId },
       data: {
@@ -243,6 +249,7 @@ async function processEnrichment(
         newsHeadlines: yfinanceData.news as any,
         recommendations: yfinanceData.recommendations as any,
         aiAnalysis,
+        aiAnalysisEs, // Store Spanish translation
         ollamaModel: "llama3.1:8b",
         errorMessage: null,
       },

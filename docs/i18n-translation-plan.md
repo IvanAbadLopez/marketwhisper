@@ -128,7 +128,7 @@ Dos opciones:
 | 3 | Envolver `app/layout.tsx` con `NextIntlClientProvider` | `src/app/layout.tsx` |
 | 4 | Feature `switch-locale` + `LocaleSwitcher` en el Header | `src/features/switch-locale/*`, `src/widgets/header/ui/Header.tsx` |
 | 5 | Sustituir textos por `useTranslations()` en widgets/features/entities | Múltiples `ui/*.tsx` |
-| 6 | Generar `es.json` con Ollama/Gemini + revisión manual | `src/messages/es.json` |
+| 6 | Generar `es.json` con Ollama + revisión manual | `src/messages/es.json` |
 | 7 | Modificar llamadas a Ollama para aceptar `locale` como parámetro | `src/shared/api/ollama.ts` (o similar) |
 | 8 | Pasar `locale` desde componentes que usan análisis IA | Componentes que llaman a `analyzeText()` |
 | 9 | Tests: unit del `LocaleSwitcher` + e2e de cambio de idioma | `*.test.tsx`, `e2e/*.spec.ts` |
@@ -157,7 +157,7 @@ Organizar el JSON por *namespaces* (ej. `nav`, `auth`, `analyze`, `company`, `co
 |---------|-------|------|
 | `next-intl` | Gratis (npm) | ~1 dependencia |
 | Ollama | Gratis (ya instalado) | Sin dependencias extra, ya está en Docker |
-| Ollama/Gemini (para generar `es.json` una vez) | Gratis | Solo en desarrollo, no en runtime |
+| Ollama (para generar `es.json` una vez) | Gratis | Solo en desarrollo, no en runtime |
 
 **Coste total en producción: 0 €** (todo self-hosted / free tier).
 **RAM adicional: 0 GB** (Ollama ya está corriendo).

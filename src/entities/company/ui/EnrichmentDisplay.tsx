@@ -7,6 +7,7 @@
  */
 
 import { useState } from "react";
+import { useLocale } from "next-intl";
 import { 
   TrendingUp, 
   TrendingDown, 
@@ -56,6 +57,7 @@ interface EnrichmentData {
     strongSell: number;
   }>;
   aiAnalysis: string | null;
+  aiAnalysisEs: string | null;
   ollamaModel: string | null;
   createdAt: Date;
 }
@@ -65,6 +67,7 @@ interface EnrichmentDisplayProps {
 }
 
 export function EnrichmentDisplay({ enrichment }: EnrichmentDisplayProps) {
+  const locale = useLocale();
   const [showFullAnalysis, setShowFullAnalysis] = useState(false);
   const [showFinancials, setShowFinancials] = useState(false);
   const [showNews, setShowNews] = useState(false);
@@ -81,7 +84,7 @@ export function EnrichmentDisplay({ enrichment }: EnrichmentDisplayProps) {
     );
   }
 
-  const { priceData, financialData, newsHeadlines, recommendations, aiAnalysis, createdAt } = enrichment;
+  const { priceData, financialData, newsHeadlines, recommendations, aiAnalysis, aiAnalysisEs, createdAt } = enrichment;
 
   const formatCurrency = (value: number | null | undefined, compact = true) => {
     if (value === null || value === undefined) return "N/A";
@@ -173,7 +176,9 @@ export function EnrichmentDisplay({ enrichment }: EnrichmentDisplayProps) {
           </div>
 
           <div className={`prose prose-invert max-w-none ${showFullAnalysis ? "" : "line-clamp-4"}`}>
-            <p className="text-sm text-zinc-300 whitespace-pre-wrap">{aiAnalysis}</p>
+            <p className="text-sm text-zinc-300 whitespace-pre-wrap">
+              {locale === 'es' && aiAnalysisEs ? aiAnalysisEs : aiAnalysis}
+            </p>
           </div>
         </div>
       )}

@@ -15,7 +15,7 @@ import {
 } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { redirect, useRouter } from "next/navigation";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 import { EnrichButton } from "@/features/enrich-company";
 import { EnrichmentDisplay } from "@/entities/company/ui/EnrichmentDisplay";
 import { EnrichmentTabs } from "@/entities/company/ui/EnrichmentTabs";
@@ -87,6 +87,7 @@ interface Company {
     sentiment: string;
     reliabilityScore: number;
     reasoning: string;
+    reasoningEs: string | null;
     createdAt: string;
   }[];
   enrichments?: {
@@ -98,6 +99,7 @@ interface Company {
     newsHeadlines?: any[];
     recommendations?: any[];
     aiAnalysis: string | null;
+    aiAnalysisEs: string | null;
     ollamaModel: string | null;
     createdAt: Date;
   }[];
@@ -108,6 +110,7 @@ export default function CompanyDetailPage({ params }: { params: Promise<{ ticker
   const router = useRouter();
   const t = useTranslations('company.detail');
   const tCommon = useTranslations('common');
+  const locale = useLocale();
   const [ticker, setTicker] = useState<string>("");
   const [company, setCompany] = useState<Company | null>(null);
   const [loading, setLoading] = useState(true);
@@ -507,7 +510,9 @@ export default function CompanyDetailPage({ params }: { params: Promise<{ ticker
                         {t('aiReasoning')}
                       </p>
                       <p className="text-sm text-zinc-700 dark:text-zinc-300 italic">
-                        {analysis.reasoning}
+                        {locale === 'es' && analysis.reasoningEs 
+                          ? analysis.reasoningEs 
+                          : analysis.reasoning}
                       </p>
                     </div>
 

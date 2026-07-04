@@ -19,6 +19,7 @@ interface EnrichmentData {
   newsHeadlines?: any[];
   recommendations?: any[];
   aiAnalysis: string | null;
+  aiAnalysisEs: string | null;
   ollamaModel: string | null;
   createdAt: Date;
 }

@@ -170,6 +170,6 @@ model Analysis {
 
 **Fecha de Implementación**: 2026-07-02  
 **Archivos Modificados**:
-- `src/shared/api/ollama.ts` - Prompt multi-empresa y array response (migrado de Gemini a Ollama local)
+- `src/shared/api/ollama.ts` - Prompt multi-empresa y array response
 - `src/app/api/analyze/route.ts` - Loop sobre resultados múltiples
 - `src/components/SyncButton.tsx` - UI para mostrar lista de análisis

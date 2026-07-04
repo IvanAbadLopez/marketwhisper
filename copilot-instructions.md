@@ -560,7 +560,7 @@ function MyComponent() {
 ```
 
 **Dynamic Content** (AI-generated):
-- Ollama/Gemini analysis output should be generated directly in the user's locale by passing the `locale` parameter to the AI prompt
+- Ollama analysis output should be generated directly in the user's locale by passing the `locale` parameter to the AI prompt
 - No need to translate programmatically - generate in the target language from the start
 
 **Locale Switching**:

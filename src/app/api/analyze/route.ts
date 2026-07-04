@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { analyzeText, prisma } from '@/shared';
+import { translateToSpanish } from '@/shared/api/translate';
 
 /**
  * POST /api/analyze
@@ -44,59 +45,61 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Process each detected company
-    const analyses = [];
-    const companies = [];
+    // Process each detected company in parallel for better performance
+    const results = await Promise.all(
+      aiResults.map(async (aiResult) => {
+        // Find or create company
+        let company = await prisma.company.findUnique({
+          where: { ticker: aiResult.ticker },
+        });
 
-    for (const aiResult of aiResults) {
-      // Find or create company
-      let company = await prisma.company.findUnique({
-        where: { ticker: aiResult.ticker },
-      });
+        if (!company) {
+          // Create new company with AI-detected data
+          company = await prisma.company.create({
+            data: {
+              ticker: aiResult.ticker,
+              name: aiResult.companyName,
+              analysisCount: 0,
+            },
+          });
+        }
 
-      if (!company) {
-        // Create new company with AI-detected data
-        company = await prisma.company.create({
+        // Create analysis record
+        const analysis = await prisma.analysis.create({
           data: {
+            text,
+            source: source || null,
+            companyId: company.id,
             ticker: aiResult.ticker,
-            name: aiResult.companyName,
-            analysisCount: 0,
+            sentiment: aiResult.sentiment,
+            reliabilityScore: aiResult.reliabilityScore,
+            reasoning: aiResult.reasoning,
+            reasoningEs: await translateToSpanish(aiResult.reasoning), // Translate once and store
+          },
+          include: {
+            company: true,
           },
         });
-      }
 
-      // Create analysis record
-      const analysis = await prisma.analysis.create({
-        data: {
-          text,
-          source: source || null,
-          companyId: company.id,
-          ticker: aiResult.ticker,
-          sentiment: aiResult.sentiment,
-          reliabilityScore: aiResult.reliabilityScore,
-          reasoning: aiResult.reasoning,
-        },
-        include: {
-          company: true,
-        },
-      });
+        // Recalculate company aggregates
+        await updateCompanyAggregates(company.id);
 
-      // Recalculate company aggregates
-      await updateCompanyAggregates(company.id);
-
-      // Fetch updated company data
-      const updatedCompany = await prisma.company.findUnique({
-        where: { id: company.id },
-        include: {
-          _count: {
-            select: { analyses: true },
+        // Fetch updated company data
+        const updatedCompany = await prisma.company.findUnique({
+          where: { id: company.id },
+          include: {
+            _count: {
+              select: { analyses: true },
+            },
           },
-        },
-      });
+        });
 
-      analyses.push(analysis);
-      companies.push(updatedCompany);
-    }
+        return { analysis, company: updatedCompany };
+      })
+    );
+
+    const analyses = results.map(r => r.analysis);
+    const companies = results.map(r => r.company);
 
     return NextResponse.json({
       success: true,
