@@ -36,7 +36,7 @@ describe('LocaleSwitcher', () => {
     
     const enButton = screen.getByRole('button', { name: /switch to english/i });
     
-    expect(enButton).toHaveClass('bg-white/10');
+    expect(enButton).toHaveClass('bg-blue-600');
     expect(enButton).toHaveClass('text-white');
   });
 
@@ -46,7 +46,7 @@ describe('LocaleSwitcher', () => {
     const esButton = screen.getByRole('button', { name: /switch to español/i });
     
     expect(esButton).not.toBeDisabled();
-    expect(esButton).toHaveClass('text-gray-400');
+    expect(esButton).toHaveClass('text-zinc-600');
   });
 
   it('disables current locale button', () => {
