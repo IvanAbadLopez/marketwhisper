@@ -7,6 +7,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { after } from "next/server";
 import { auth } from "@/lib/auth";
 import { env } from "@/shared/config/env";
+import { translateToSpanish } from "@/shared/api/translate";
 
 interface FinnhubData {
   success: boolean;
@@ -55,7 +56,7 @@ interface OllamaResponse {
 function generateAnalysisPrompt(ticker: string, data: FinnhubData): string {
   const { companyInfo, financials, price } = data;
 
-  let prompt = `You are a financial analyst AI. Analyze the following data for ${ticker} (${companyInfo?.name || "Unknown Company"}) sourced from Finnhub and provide a comprehensive investment analysis.
+  const prompt = `You are a financial analyst AI. Analyze the following data for ${ticker} (${companyInfo?.name || "Unknown Company"}) sourced from Finnhub and provide a comprehensive investment analysis.
 
 **Company Overview:**
 - Sector: ${companyInfo?.sector || "N/A"}
@@ -83,6 +84,13 @@ Provide a structured analysis with the following sections:
 Keep your analysis concise, objective, and data-driven. Focus on actionable insights based on the available Finnhub metrics.`;
 
   return prompt;
+}
+
+/**
+ * Normalize ticker by removing special characters like $
+ */
+function normalizeTicker(ticker: string): string {
+  return ticker.replace(/^\$/, '').trim().toUpperCase();
 }
 
 /**
@@ -124,9 +132,10 @@ async function generateOllamaAnalysis(prompt: string, model: string = "llama3.1:
  */
 async function fetchFinnhubData(ticker: string): Promise<FinnhubData> {
   const enrichmentUrl = env.ENRICHMENT_SERVICE_URL;
+  const normalizedTicker = normalizeTicker(ticker);
   
   try {
-    const response = await fetch(`${enrichmentUrl}/api/enrich-finnhub/${ticker.toUpperCase()}`);
+    const response = await fetch(`${enrichmentUrl}/api/enrich-finnhub/${normalizedTicker}`);
     
     if (!response.ok) {
       let errorDetail = response.statusText;
@@ -153,7 +162,7 @@ async function fetchFinnhubData(ticker: string): Promise<FinnhubData> {
 
     const data: FinnhubData = await response.json();
     return data;
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Failed to fetch Finnhub data:", error);
     throw error;
   }
@@ -207,28 +216,33 @@ async function processEnrichment(
     const prompt = generateAnalysisPrompt(ticker, finnhubData);
     const aiAnalysis = await generateOllamaAnalysis(prompt);
 
-    // 4. Store final result and mark as completed
+    // 4. Translate AI analysis to Spanish
+    console.log(`[Enrich-Finnhub:${enrichmentId}] Translating analysis to Spanish...`);
+    const aiAnalysisEs = await translateToSpanish(aiAnalysis);
+
+    // 5. Store final result and mark as completed
     await prisma.companyEnrichment.update({
       where: { id: enrichmentId },
       data: {
         status: "COMPLETED",
-        financialData: finnhubData.financials as any,
-        priceData: finnhubData.price as any,
+        financialData: finnhubData.financials,
+        priceData: finnhubData.price,
         aiAnalysis,
+        aiAnalysisEs,
         ollamaModel: "llama3.1:8b",
         errorMessage: null,
       },
     });
 
     console.log(`[Enrich-Finnhub:${enrichmentId}] Successfully enriched ${ticker}`);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error(`[Enrich-Finnhub:${enrichmentId}] Failed to enrich ${ticker}:`, error);
     try {
       await prisma.companyEnrichment.update({
         where: { id: enrichmentId },
         data: {
           status: "FAILED",
-          errorMessage: error?.message || "Failed to enrich company with Finnhub",
+          errorMessage: error instanceof Error ? error.message : "Failed to enrich company with Finnhub",
         },
       });
     } catch (updateError) {
@@ -292,10 +306,11 @@ export async function POST(
       },
       { status: 202 }
     );
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("[Enrich-Finnhub] Error:", error);
+    const message = error instanceof Error ? error.message : "Failed to enrich company with Finnhub";
     return NextResponse.json(
-      { error: error.message || "Failed to enrich company with Finnhub" },
+      { error: message },
       { status: 500 }
     );
   }

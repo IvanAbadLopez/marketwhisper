@@ -7,6 +7,7 @@
 "use client";
 
 import { TrendingUp, TrendingDown, Minus, Calendar, FileText } from "lucide-react";
+import { useMemo } from "react";
 import { Analysis } from "../model/types";
 
 interface AnalysisCardProps {
@@ -15,11 +16,11 @@ interface AnalysisCardProps {
 }
 
 export function AnalysisCard({ analysis, showCompany = false }: AnalysisCardProps) {
-  const getSentimentIcon = () => {
+  const SentimentIcon = useMemo(() => {
     if (analysis.sentiment === "BULLISH") return TrendingUp;
     if (analysis.sentiment === "BEARISH") return TrendingDown;
     return Minus;
-  };
+  }, [analysis.sentiment]);
 
   const getSentimentColor = () => {
     if (analysis.sentiment === "BULLISH") return "text-green-600 dark:text-green-400";
@@ -32,8 +33,6 @@ export function AnalysisCard({ analysis, showCompany = false }: AnalysisCardProp
     if (analysis.reliabilityScore >= 5) return "text-yellow-600 dark:text-yellow-400";
     return "text-red-600 dark:text-red-400";
   };
-
-  const SentimentIcon = getSentimentIcon();
 
   return (
     <div className="bg-white dark:bg-zinc-900 rounded-lg shadow-md p-4 border border-zinc-200 dark:border-zinc-800">

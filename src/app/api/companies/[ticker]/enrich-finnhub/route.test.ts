@@ -1,0 +1,150 @@
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { POST } from "./route";
+import { NextRequest } from "next/server";
+
+// Mock auth module
+vi.mock("@/lib/auth", () => ({
+  auth: vi.fn(),
+}));
+
+// Mock prisma module
+vi.mock("@/shared/api/prisma", () => ({
+  prisma: {
+    company: {
+      findUnique: vi.fn(),
+    },
+    companyEnrichment: {
+      create: vi.fn(),
+    },
+  },
+}));
+
+// Mock Next.js after function (used for background processing)
+vi.mock("next/server", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("next/server")>();
+  return {
+    ...actual,
+    after: vi.fn(() => {
+      // Don't execute the background function in tests
+      // In real code, this runs after the response is sent
+    }),
+  };
+});
+
+describe("POST /api/companies/[ticker]/enrich-finnhub", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("returns 401 if user is not authenticated", async () => {
+    const { auth } = await import("@/lib/auth");
+    vi.mocked(auth).mockResolvedValue(null as unknown as Awaited<ReturnType<typeof auth>>);
+
+    const request = new NextRequest("http://localhost:3000/api/companies/AAPL/enrich-finnhub", {
+      method: "POST",
+    });
+    const params = Promise.resolve({ ticker: "AAPL" });
+
+    const response = await POST(request, { params });
+    const data = await response.json();
+
+    expect(response.status).toBe(401);
+    expect(data.error).toBe("Unauthorized");
+  });
+
+  it("returns 404 if company does not exist", async () => {
+    const { auth } = await import("@/lib/auth");
+    const { prisma } = await import("@/shared/api/prisma");
+
+    vi.mocked(auth).mockResolvedValue({
+      user: { id: "user1", email: "test@example.com" },
+      expires: "2026-12-31",
+    } as unknown as Awaited<ReturnType<typeof auth>>);
+
+    vi.mocked(prisma.company.findUnique).mockResolvedValue(null);
+
+    const request = new NextRequest("http://localhost:3000/api/companies/INVALID/enrich-finnhub", {
+      method: "POST",
+    });
+    const params = Promise.resolve({ ticker: "INVALID" });
+
+    const response = await POST(request, { params });
+    const data = await response.json();
+
+    expect(response.status).toBe(404);
+    expect(data.error).toContain("Company with ticker INVALID not found");
+  });
+
+  it("creates enrichment record and returns 202 for valid request", async () => {
+    const { auth } = await import("@/lib/auth");
+    const { prisma } = await import("@/shared/api/prisma");
+
+    vi.mocked(auth).mockResolvedValue({
+      user: { id: "user1", email: "test@example.com" },
+      expires: "2026-12-31",
+    } as unknown as Awaited<ReturnType<typeof auth>>);
+
+    const mockCompany = {
+      id: "company1",
+      ticker: "AAPL",
+      name: "Apple Inc.",
+      description: "Technology company",
+      sector: "Technology",
+      industry: "Consumer Electronics",
+      marketCap: 3000000000000,
+      logoUrl: null,
+      website: "https://apple.com",
+      avgSentimentScore: null,
+      avgReliabilityScore: null,
+      analysisCount: 0,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+
+    const mockEnrichment = {
+      id: "enrichment1",
+      companyId: "company1",
+      ticker: "AAPL",
+      source: "FINNHUB" as const,
+      status: "PENDING" as const,
+      errorMessage: null,
+      financialData: null,
+      priceData: null,
+      newsHeadlines: null,
+      recommendations: null,
+      aiAnalysis: null,
+      aiAnalysisEs: null,
+      ollamaModel: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+
+    vi.mocked(prisma.company.findUnique).mockResolvedValue(mockCompany);
+    vi.mocked(prisma.companyEnrichment.create).mockResolvedValue(mockEnrichment);
+
+    const request = new NextRequest("http://localhost:3000/api/companies/AAPL/enrich-finnhub", {
+      method: "POST",
+    });
+    const params = Promise.resolve({ ticker: "AAPL" });
+
+    const response = await POST(request, { params });
+    const data = await response.json();
+
+    expect(response.status).toBe(202);
+    expect(data.success).toBe(true);
+    expect(data.ticker).toBe("AAPL");
+    expect(data.enrichmentId).toBe("enrichment1");
+    expect(data.status).toBe("PENDING");
+    expect(data.source).toBe("FINNHUB");
+
+    // Verify enrichment was created with correct source
+    expect(prisma.companyEnrichment.create).toHaveBeenCalledWith({
+      data: {
+        companyId: "company1",
+        ticker: "AAPL",
+        source: "FINNHUB",
+        status: "PENDING",
+      },
+    });
+  });
+});

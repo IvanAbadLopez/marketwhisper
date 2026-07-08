@@ -3,7 +3,7 @@
  * @module features/enrich-company/model
  */
 
-export type EnrichmentSource = "YAHOO" | "FINNHUB";
+export type EnrichmentSource = "FINNHUB";
 
 export interface CompanyInfo {
   ticker: string;

@@ -45,6 +45,7 @@ export async function GET(
       status: enrichment.status,
       errorMessage: enrichment.errorMessage,
       aiAnalysis: enrichment.aiAnalysis,
+      aiAnalysisEs: enrichment.aiAnalysisEs,
       financials: enrichment.financialData,
       price: enrichment.priceData,
       news: enrichment.newsHeadlines,
@@ -52,10 +53,11 @@ export async function GET(
       ollamaModel: enrichment.ollamaModel,
       updatedAt: enrichment.updatedAt,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("[Finnhub Enrich Status] Error:", error);
+    const message = error instanceof Error ? error.message : "Failed to fetch Finnhub enrichment status";
     return NextResponse.json(
-      { error: error.message || "Failed to fetch Finnhub enrichment status" },
+      { error: message },
       { status: 500 }
     );
   }

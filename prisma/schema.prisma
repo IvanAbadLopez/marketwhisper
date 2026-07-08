@@ -157,7 +157,7 @@ model Company {
   content              ContentCompany[] // Many-to-many relation with Content
   mentions             Mention[]        // Direct mentions in content
   analyses             Analysis[]       // AI text analyses
-  enrichments          CompanyEnrichment[] // Public data enrichments (yfinance + Ollama)
+  enrichments          CompanyEnrichment[] // Public data enrichments (Finnhub + Ollama)
   createdAt            DateTime         @default(now())
   updatedAt            DateTime         @updatedAt
 
@@ -209,7 +209,7 @@ model CompanyEnrichment {
   companyId       String
   company         Company           @relation(fields: [companyId], references: [id], onDelete: Cascade)
   ticker          String            // Ticker symbol for reference
-  source          EnrichmentSource  @default(YAHOO) // Data source (Yahoo Finance or Finnhub)
+  source          EnrichmentSource  @default(FINNHUB) // Data source (Finnhub)
   // Processing status (for background enrichment)
   status          EnrichmentStatus  @default(PENDING)
   errorMessage    String?           // Error detail if status is FAILED
@@ -234,7 +234,6 @@ model CompanyEnrichment {
 }
 
 enum EnrichmentSource {
-  YAHOO       // Yahoo Finance
   FINNHUB     // Finnhub
 }
 

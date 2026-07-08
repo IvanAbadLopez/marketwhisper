@@ -11,7 +11,7 @@ CREATE TYPE "ContentStatus" AS ENUM ('PENDING', 'DOWNLOADING', 'TRANSCRIBING', '
 CREATE TYPE "Sentiment" AS ENUM ('BULLISH', 'BEARISH', 'NEUTRAL');
 
 -- CreateEnum
-CREATE TYPE "EnrichmentSource" AS ENUM ('YAHOO', 'FINNHUB');
+CREATE TYPE "EnrichmentSource" AS ENUM ('FINNHUB');
 
 -- CreateEnum
 CREATE TYPE "EnrichmentStatus" AS ENUM ('PENDING', 'PROCESSING', 'COMPLETED', 'FAILED');
@@ -149,6 +149,7 @@ CREATE TABLE "Analysis" (
     "sentiment" "Sentiment" NOT NULL,
     "reliabilityScore" INTEGER NOT NULL,
     "reasoning" TEXT NOT NULL,
+    "reasoningEs" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "Analysis_pkey" PRIMARY KEY ("id")
@@ -159,7 +160,7 @@ CREATE TABLE "CompanyEnrichment" (
     "id" TEXT NOT NULL,
     "companyId" TEXT NOT NULL,
     "ticker" TEXT NOT NULL,
-    "source" "EnrichmentSource" NOT NULL DEFAULT 'YAHOO',
+    "source" "EnrichmentSource" NOT NULL DEFAULT 'FINNHUB',
     "status" "EnrichmentStatus" NOT NULL DEFAULT 'PENDING',
     "errorMessage" TEXT,
     "financialData" JSONB,
@@ -167,6 +168,7 @@ CREATE TABLE "CompanyEnrichment" (
     "newsHeadlines" JSONB,
     "recommendations" JSONB,
     "aiAnalysis" TEXT,
+    "aiAnalysisEs" TEXT,
     "ollamaModel" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,

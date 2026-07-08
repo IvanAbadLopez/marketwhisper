@@ -2,7 +2,7 @@
 
 /**
  * Company Enrichment Display
- * Shows financial data and AI analysis from Yahoo Finance + Ollama
+ * Shows financial data and AI analysis from Finnhub + Ollama
  * @module entities/company/ui
  */
 
@@ -78,7 +78,7 @@ export function EnrichmentDisplay({ enrichment }: EnrichmentDisplayProps) {
         <div className="text-center text-zinc-400">
           <Activity className="h-12 w-12 mx-auto mb-3 opacity-50" />
           <p className="text-sm">No enrichment data available yet.</p>
-          <p className="text-xs mt-1">Click "Enrich" to fetch public financial data and AI analysis.</p>
+          <p className="text-xs mt-1">Click &quot;Enrich&quot; to fetch public financial data and AI analysis.</p>
         </div>
       </div>
     );

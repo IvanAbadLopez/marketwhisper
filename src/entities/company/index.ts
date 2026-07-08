@@ -26,4 +26,3 @@ export { useCompanies, useCompany } from "./model/hooks";
 // ===== UI =====
 export { CompanyCard } from "./ui/CompanyCard";
 export { EnrichmentDisplay } from "./ui/EnrichmentDisplay";
-export { EnrichmentTabs } from "./ui/EnrichmentTabs";

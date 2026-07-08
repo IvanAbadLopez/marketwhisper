@@ -1,6 +1,5 @@
 import { auth } from "@/lib/auth";
 import { NextResponse } from "next/server";
-import type { NextRequest } from "next/server";
 
 // Force Node.js runtime instead of Edge (Prisma requires Node.js)
 export const runtime = 'nodejs';

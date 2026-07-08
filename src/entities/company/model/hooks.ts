@@ -34,6 +34,7 @@ export function useCompanies() {
   }, []);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchCompanies();
   }, [fetchCompanies]);
 
@@ -66,6 +67,7 @@ export function useCompany(ticker: string) {
   }, [ticker]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchCompany();
   }, [fetchCompany]);
 

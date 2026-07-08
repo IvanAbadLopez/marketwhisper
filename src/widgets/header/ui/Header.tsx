@@ -33,6 +33,7 @@ export function Header({ user }: HeaderProps) {
             {user && (
               <div className="flex items-center gap-3 pl-4 border-l border-zinc-200 dark:border-zinc-800">
                 {user.image ? (
+                  // eslint-disable-next-line @next/next/no-img-element
                   <img
                     src={user.image}
                     alt={user.name || "User"}

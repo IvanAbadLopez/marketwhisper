@@ -94,7 +94,7 @@ services:
       timeout: 10s
       retries: 5
 
-  # Enrichment Service - Python FastAPI for yfinance data fetching
+  # Enrichment Service - Python FastAPI for Finnhub data fetching
   enrichment:
     build:
       context: ./services/enrichment
@@ -107,6 +107,7 @@ services:
       PYTHONHTTPSVERIFY: "0"
       REQUESTS_CA_BUNDLE: ""
       CURL_CA_BUNDLE: ""
+      FINNHUB_API_KEY: ${FINNHUB_API_KEY:-}
     healthcheck:
       test: ["CMD", "python", "-c", "import requests; requests.get('http://localhost:8001/health')"]
       interval: 30s

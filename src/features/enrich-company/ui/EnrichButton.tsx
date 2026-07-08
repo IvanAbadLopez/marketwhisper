@@ -10,14 +10,12 @@
 import { useState, useRef, useEffect } from "react";
 import { Sparkles, Loader2 } from "lucide-react";
 import { enrichCompany, getEnrichmentStatus } from "../api/enrichCompany";
-import type { EnrichmentSource } from "../model/types";
 
 interface EnrichButtonProps {
   ticker: string;
   onSuccess?: () => void;
   variant?: "default" | "compact";
   className?: string;
-  source?: EnrichmentSource;
 }
 
 /** Poll interval for checking background job status (ms) */
@@ -27,17 +25,11 @@ const MAX_POLLS = 100;
 
 type JobState = "idle" | "pending" | "processing" | "success" | "error";
 
-const SOURCE_LABELS = {
-  YAHOO: "Yahoo Finance",
-  FINNHUB: "Finnhub",
-} as const;
-
 export function EnrichButton({
   ticker,
   onSuccess,
   variant = "default",
   className = "",
-  source = "YAHOO",
 }: EnrichButtonProps) {
   const [state, setState] = useState<JobState>("idle");
   const [error, setError] = useState<string | null>(null);
@@ -56,7 +48,7 @@ export function EnrichButton({
   const pollStatus = (enrichmentId: string, attempt = 0) => {
     timerRef.current = setTimeout(async () => {
       try {
-        const result = await getEnrichmentStatus(ticker, enrichmentId, source);
+        const result = await getEnrichmentStatus(ticker, enrichmentId);
 
         if (result.status === "COMPLETED") {
           setState("success");
@@ -80,9 +72,10 @@ export function EnrichButton({
         }
 
         pollStatus(enrichmentId, attempt + 1);
-      } catch (err: any) {
+      } catch (err: unknown) {
         setState("error");
-        setError(err.message || "Failed to check enrichment status");
+        const message = err instanceof Error ? err.message : "Failed to check enrichment status";
+        setError(message);
       }
     }, POLL_INTERVAL);
   };
@@ -92,15 +85,14 @@ export function EnrichButton({
     setError(null);
 
     try {
-      const job = await enrichCompany(ticker, source);
+      const job = await enrichCompany(ticker);
       pollStatus(job.enrichmentId);
-    } catch (err: any) {
+    } catch (err: unknown) {
       setState("error");
-      setError(err.message || "Failed to enrich company");
+      const message = err instanceof Error ? err.message : "Failed to enrich company";
+      setError(message);
     }
   };
-
-  const sourceLabel = SOURCE_LABELS[source];
 
   const statusLabel =
     state === "pending"
@@ -119,7 +111,7 @@ export function EnrichButton({
             ? "bg-green-500/20 text-green-400 cursor-default"
             : "bg-purple-500/20 text-purple-400 hover:bg-purple-500/30 disabled:opacity-50 disabled:cursor-not-allowed"
         } ${className}`}
-        title={error || (success ? "Enriched successfully!" : `Fetch data from ${sourceLabel}`)}
+        title={error || (success ? "Enriched successfully!" : "Fetch data from Finnhub")}
       >
         {loading ? (
           <>
@@ -134,7 +126,7 @@ export function EnrichButton({
         ) : (
           <>
             <Sparkles className="h-3.5 w-3.5" />
-            <span>{source === "FINNHUB" ? "Finnhub" : "Yahoo"}</span>
+            <span>Finnhub</span>
           </>
         )}
       </button>
@@ -165,7 +157,7 @@ export function EnrichButton({
         ) : (
           <>
             <Sparkles className="h-4 w-4" />
-            <span>Enrich with {sourceLabel}</span>
+            <span>Enrich with Finnhub</span>
           </>
         )}
       </button>
@@ -180,7 +172,7 @@ export function EnrichButton({
       {loading && (
         <p className="text-sm text-zinc-400">
           Running in the background — you can keep browsing. Fetching financial
-          data from {sourceLabel} and generating AI analysis...
+          data from Finnhub and generating AI analysis...
         </p>
       )}
     </div>

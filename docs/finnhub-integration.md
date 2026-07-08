@@ -1,11 +1,12 @@
 # Finnhub Integration Guide
 
 ## Overview
-MarketWhisper now supports **two** financial data sources for company enrichment:
-- **Yahoo Finance** — Free, comprehensive data (prices, financials, news, analyst recommendations)
-- **Finnhub** — Free tier with 60 req/min, provides profile, financial metrics, and 52-week ranges
+MarketWhisper uses **Finnhub** as its financial data source for company enrichment, providing:
+- Company profile (name, sector, market cap, website)
+- Financial metrics (EPS, P/E ratio, profit margins, dividend yield)
+- 52-week high/low price data
 
-Both sources generate AI analysis using **Ollama** (llama3.1:8b).
+All enrichment data is analyzed using **Ollama** (llama3.1:8b) to generate AI-powered investment insights.
 
 ---
 
@@ -14,7 +15,7 @@ Both sources generate AI analysis using **Ollama** (llama3.1:8b).
 ### 1. Get your Finnhub API Key (Free)
 1. Register at [https://finnhub.io/register](https://finnhub.io/register)
 2. Copy your **API Key** from the dashboard
-3. Free tier limits: **60 requests/minute** (generous)
+3. Free tier limits: **60 requests/minute** (3,600/hour)
 
 ### 2. Configure Environment Variables
 
@@ -45,26 +46,21 @@ docker compose up --build -d
 ## How to Use
 
 ### In the Company Detail Page (`/companies/[TICKER]`)
-1. You'll see **two tabs**: **Yahoo Finance** and **Finnhub**
-2. Click on the tab you want to view/enrich
-3. Click the **"Enrich with [Source]"** button for that tab
-4. The enrichment runs in the background (you can keep browsing)
-5. Refresh the page or wait for auto-update to see results
+1. Navigate to any company detail page
+2. Find the **"Financial Data"** section
+3. Click the **"Enrich with Finnhub"** button
+4. The enrichment runs in the background (status shows: Queued → Analyzing → Success)
+5. The page will auto-refresh to display the enrichment results
 
-### Data Comparison
+### Available Data
 
-| Feature | Yahoo Finance | Finnhub |
-|---------|---------------|---------|
-| **Price data** | ✅ Current, 52W high/low, volume | ⚠️ Only 52W high/low |
-| **Financial metrics** | ✅ Revenue, net income, EPS, P/E, debt/equity, margins | ⚠️ EPS, P/E, margins only |
-| **News** | ✅ Recent headlines | ❌ Not fetched (free tier limitation) |
-| **Analyst recommendations** | ✅ Buy/sell/hold counts | ❌ Not available in free tier |
-| **AI Analysis** | ✅ Ollama-generated | ✅ Ollama-generated |
-| **Rate limits** | ⚠️ Can be restrictive (~2000/hour) | ✅ 60/min (3600/hour) |
-
-### When to Use Each Source
-- **Yahoo Finance**: For comprehensive data (news, recommendations, full financials)
-- **Finnhub**: As fallback when Yahoo hits rate limits, or for basic company profiles
+| Feature | Finnhub Free Tier |
+|---------|-------------------|
+| **Company Info** | ✅ Name, sector, industry, market cap, website |
+| **Financial Metrics** | ✅ EPS, P/E ratio, profit margins, dividend yield |
+| **Price Data** | ✅ 52-week high/low |
+| **AI Analysis** | ✅ Ollama-generated investment insights (EN + ES) |
+| **Rate Limits** | ✅ 60 requests/minute |
 
 ---
 
@@ -72,23 +68,22 @@ docker compose up --build -d
 
 ### Backend (Python Enrichment Service)
 - **File**: `services/enrichment/main.py`
-- **New endpoint**: `GET /api/enrich-finnhub/{ticker}`
+- **Endpoint**: `GET /api/enrich-finnhub/{ticker}`
 - **Library**: `finnhub-python==2.4.20`
 - **Logic**:
   1. Fetch `company_profile2` → name, sector, marketCap, website
-  2. Fetch `company_basic_financials` (metric=all) → EPS, P/E, margins, 52W
-  3. Return structured response (same format as Yahoo)
+  2. Fetch `company_basic_financials` (metric=all) → EPS, P/E, margins, 52W high/low
+  3. Return structured response to Next.js API
 
 ### Frontend (Next.js)
 - **Routes**:
-  - `POST /api/companies/[ticker]/enrich-finnhub` — Start enrichment
-  - `GET /api/companies/[ticker]/enrich-finnhub/[id]` — Poll status
+  - `POST /api/companies/[ticker]/enrich-finnhub` — Start enrichment job
+  - `GET /api/companies/[ticker]/enrich-finnhub/[id]` — Poll job status
 - **Components**:
-  - `EnrichButton` — Now accepts `source` prop ("YAHOO" | "FINNHUB")
-  - `EnrichmentTabs` — Tab UI to switch between Yahoo/Finnhub data
-  - `EnrichmentDisplay` — Unified display component for both sources
+  - `EnrichButton` — Triggers enrichment and shows status (Queued/Analyzing/Success)
+  - `EnrichmentDisplay` — Displays financial data and AI analysis
 - **Database**:
-  - `CompanyEnrichment.source` — Enum field to distinguish data source
+  - `CompanyEnrichment` model stores enrichment data with `source: FINNHUB`
 
 ---
 
@@ -102,8 +97,11 @@ docker compose up --build -d
   3. Check logs: `docker logs marketwhisper-enrichment --tail 20`
 
 ### "Finnhub rate limit exceeded"
+  2. Restart the service: `docker compose restart enrichment`
+
+### "Finnhub rate limit exceeded"
 - **Cause**: You hit the 60 req/min limit (unlikely unless batch enriching)
-- **Fix**: Wait 1 minute, or use Yahoo Finance instead
+- **Fix**: Wait 1 minute before retrying
 
 ### Enrichment stuck on "Pending"
 - **Cause**: Enrichment service may be down, or Ollama is unreachable
@@ -126,38 +124,38 @@ model CompanyEnrichment {
   id              String            @id @default(cuid())
   companyId       String
   ticker          String
-  source          EnrichmentSource  @default(YAHOO)  // NEW FIELD
+  source          EnrichmentSource  @default(FINNHUB)
   status          EnrichmentStatus  @default(PENDING)
   financialData   Json?
   priceData       Json?
   newsHeadlines   Json?
   recommendations Json?
   aiAnalysis      String?
+  aiAnalysisEs    String?
   ollamaModel     String?
   createdAt       DateTime          @default(now())
   updatedAt       DateTime          @updatedAt
 
-  @@index([source])  // NEW INDEX
+  @@index([source])
 }
 
 enum EnrichmentSource {
-  YAHOO
   FINNHUB
 }
 ```
 
-**Migration applied**: `20260704150143_add_enrichment_source`
+**Migration**: `20260708162748_init` (clean schema without legacy sources)
 
 ---
 
 ## Credits
-- **Yahoo Finance**: [yfinance](https://github.com/ranaroussi/yfinance) by Ran Aroussi
 - **Finnhub**: [finnhub.io](https://finnhub.io) — Financial APIs for developers
+- **Ollama**: [ollama.ai](https://ollama.ai) — Local AI models
 
 ---
 
 ## Future Enhancements
-- [ ] Merge/compare data from both sources in one view
-- [ ] Add more Finnhub endpoints (real-time quotes, earnings calendar)
+- [ ] Add more Finnhub endpoints (real-time quotes, earnings calendar, company news)
 - [ ] Support for other providers (Alpha Vantage, Twelve Data, Polygon.io)
 - [ ] Cached enrichment results (reduce API calls)
+- [ ] Batch enrichment for multiple tickers

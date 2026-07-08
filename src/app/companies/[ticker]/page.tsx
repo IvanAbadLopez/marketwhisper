@@ -18,7 +18,6 @@ import { redirect, useRouter } from "next/navigation";
 import { useTranslations, useLocale } from "next-intl";
 import { EnrichButton } from "@/features/enrich-company";
 import { EnrichmentDisplay } from "@/entities/company/ui/EnrichmentDisplay";
-import { EnrichmentTabs } from "@/entities/company/ui/EnrichmentTabs";
 
 interface Mention {
   id: string;
@@ -93,7 +92,7 @@ interface Company {
   enrichments?: {
     id: string;
     ticker: string;
-    source: "YAHOO" | "FINNHUB";
+    source: "FINNHUB";
     financialData?: any;
     priceData?: any;
     newsHeadlines?: any[];
@@ -248,22 +247,25 @@ export default function CompanyDetailPage({ params }: { params: Promise<{ ticker
             <div className="flex items-start justify-between mb-6">
               <div>
                 <div className="flex items-center gap-3 mb-2">
-                  <h1 className="text-4xl font-bold font-mono text-blue-600 dark:text-blue-400">
-                    ${company.ticker}
-                  </h1>
                   {company.logoUrl && (
+                    // eslint-disable-next-line @next/next/no-img-element
                     <img
                       src={company.logoUrl}
                       alt={company.name}
                       className="w-12 h-12 rounded-lg"
                     />
                   )}
+                  <div>
+                    <h1 className="text-3xl font-bold text-zinc-900 dark:text-zinc-100">
+                      {company.name}
+                    </h1>
+                    <p className="text-lg font-mono text-blue-600 dark:text-blue-400">
+                      {company.ticker}
+                    </p>
+                  </div>
                 </div>
-                <h2 className="text-2xl font-semibold text-zinc-900 dark:text-zinc-100 mb-4">
-                  {company.name}
-                </h2>
                 {company.description && (
-                  <p className="text-zinc-600 dark:text-zinc-400 max-w-3xl">
+                  <p className="text-zinc-600 dark:text-zinc-400 max-w-3xl mt-4">
                     {company.description}
                   </p>
                 )}
@@ -351,16 +353,20 @@ export default function CompanyDetailPage({ params }: { params: Promise<{ ticker
             </div>
           </div>
 
-          {/* Enrichment Section with Tabs */}
+          {/* Enrichment Section */}
           <div className="mb-6">
-            <h3 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100 mb-4">
-              {t('financialData')}
-            </h3>
-            <EnrichmentTabs
-              ticker={ticker}
-              yahooEnrichment={company.enrichments?.find(e => e.source === "YAHOO") || null}
-              finnhubEnrichment={company.enrichments?.find(e => e.source === "FINNHUB") || null}
-              onRefresh={fetchCompany}
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">
+                {t('financialData')}
+              </h3>
+              <EnrichButton
+                ticker={ticker}
+                onSuccess={fetchCompany}
+                variant="default"
+              />
+            </div>
+            <EnrichmentDisplay
+              enrichment={company.enrichments?.find(e => e.source === "FINNHUB") || null}
             />
           </div>
 

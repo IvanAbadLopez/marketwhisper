@@ -4,6 +4,13 @@ import { analyzeText, prisma } from '@/shared';
 import { translateToSpanish } from '@/shared/api/translate';
 
 /**
+ * Normalize ticker by removing special characters like $
+ */
+function normalizeTicker(ticker: string): string {
+  return ticker.replace(/^\$/, '').trim().toUpperCase();
+}
+
+/**
  * POST /api/analyze
  * Analyze text with AI to detect multiple companies, sentiment, and reliability
  * Creates separate analysis records for each company mentioned
@@ -48,16 +55,19 @@ export async function POST(request: NextRequest) {
     // Process each detected company in parallel for better performance
     const results = await Promise.all(
       aiResults.map(async (aiResult) => {
+        // Normalize ticker (remove $ symbol if present)
+        const normalizedTicker = normalizeTicker(aiResult.ticker);
+        
         // Find or create company
         let company = await prisma.company.findUnique({
-          where: { ticker: aiResult.ticker },
+          where: { ticker: normalizedTicker },
         });
 
         if (!company) {
           // Create new company with AI-detected data
           company = await prisma.company.create({
             data: {
-              ticker: aiResult.ticker,
+              ticker: normalizedTicker,
               name: aiResult.companyName,
               analysisCount: 0,
             },
@@ -70,7 +80,7 @@ export async function POST(request: NextRequest) {
             text,
             source: source || null,
             companyId: company.id,
-            ticker: aiResult.ticker,
+            ticker: normalizedTicker,
             sentiment: aiResult.sentiment,
             reliabilityScore: aiResult.reliabilityScore,
             reasoning: aiResult.reasoning,
