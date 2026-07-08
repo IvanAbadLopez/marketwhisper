@@ -213,12 +213,7 @@ model CompanyEnrichment {
   // Processing status (for background enrichment)
   status          EnrichmentStatus  @default(PENDING)
   errorMessage    String?           // Error detail if status is FAILED
-  // Financial data (raw structured data)
-  financialData   Json?             // Revenue, EPS, P/E ratio, debt/equity, profit margins, etc.
-  priceData       Json?             // Current price, 52-week high/low, volume, day change, etc.
-  newsHeadlines   Json?             // Recent news articles with title, publisher, link, date
-  recommendations Json?             // Analyst recommendations (strong buy, buy, hold, sell, strong sell)
-  // AI Analysis (Ollama-generated insights)
+  // AI Analysis (Ollama-generated insights combining user texts + Finnhub data)
   aiAnalysis      String?           // Comprehensive AI-generated summary and insights (English)
   aiAnalysisEs    String?           // Spanish translation of AI analysis
   ollamaModel     String?           // Model used for analysis (e.g., "llama3.1:8b")

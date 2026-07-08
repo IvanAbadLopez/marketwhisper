@@ -100,6 +100,29 @@
       "noResults": "No companies match your search",
       "clearSearch": "Clear search"
     },
+    "discover": {
+      "title": "Discover Companies",
+      "subtitle": "Search Finnhub to find and import companies into your system",
+      "searchPlaceholder": "Search by company name or ticker symbol...",
+      "searchButton": "Search",
+      "searching": "Searching...",
+      "importButton": "Import & Enrich",
+      "importing": "Importing...",
+      "alreadyImported": "Already Imported",
+      "viewProfile": "View Profile",
+      "noResults": "No companies found",
+      "noResultsDesc": "Try searching for a company name or ticker symbol",
+      "minChars": "Enter at least 2 characters to search",
+      "resultsCount": "{count} companies found",
+      "errorImport": "Failed to import company",
+      "errorSearch": "Search failed",
+      "importSuccess": "Company imported successfully",
+      "enrichmentStarted": "Enrichment in progress...",
+      "finnhubUnavailable": "Finnhub service unavailable. Check FINNHUB_API_KEY configuration.",
+      "rateLimitExceeded": "Rate limit exceeded. Please try again in a minute.",
+      "type": "Type",
+      "goBack": "← Back to Companies"
+    },
     "card": {
       "marketCap": "Market Cap",
       "sector": "Sector",
@@ -163,6 +186,7 @@
   "situations": {
     "title": "Companies Tracked",
     "subtitle": "Intelligence gathered across all your content sources",
+    "discoverButton": "Discover Companies",
     "noCompanies": "No Companies Yet",
     "noCompaniesDesc": "Add content to start tracking companies",
     "noResults": "No Companies Found",

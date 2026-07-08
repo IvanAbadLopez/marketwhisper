@@ -112,12 +112,8 @@ describe("GET /api/companies/[ticker]/enrich-finnhub/[id]", () => {
       source: "FINNHUB" as const,
       status: "COMPLETED" as const,
       errorMessage: null,
-      financialData: { eps: 6.05, peRatio: 28.5 },
-      priceData: { fiftyTwoWeekHigh: 199.62, fiftyTwoWeekLow: 164.08 },
-      newsHeadlines: null,
-      recommendations: null,
-      aiAnalysis: "Apple shows strong financial metrics with solid EPS and reasonable P/E ratio.",
-      aiAnalysisEs: "Apple muestra métricas financieras sólidas con un EPS sólido y un P/E razonable.",
+      aiAnalysis: "Apple shows strong financial metrics with solid EPS and reasonable P/E ratio. Combined with user sentiment, outlook is positive.",
+      aiAnalysisEs: "Apple muestra métricas financieras sólidas con un EPS sólido y un P/E razonable. Combinado con el sentimiento del usuario, la perspectiva es positiva.",
       ollamaModel: "llama3.1:8b",
       createdAt: now,
       updatedAt: now,
@@ -138,8 +134,10 @@ describe("GET /api/companies/[ticker]/enrich-finnhub/[id]", () => {
     expect(data.status).toBe("COMPLETED");
     expect(data.aiAnalysis).toContain("strong financial metrics");
     expect(data.aiAnalysisEs).toContain("métricas financieras sólidas");
-    expect(data.financials).toEqual({ eps: 6.05, peRatio: 28.5 });
-    expect(data.price).toEqual({ fiftyTwoWeekHigh: 199.62, fiftyTwoWeekLow: 164.08 });
     expect(data.ollamaModel).toBe("llama3.1:8b");
+    expect(data.financials).toBeUndefined();
+    expect(data.price).toBeUndefined();
+    expect(data.news).toBeUndefined();
+    expect(data.recommendations).toBeUndefined();
   });
 });

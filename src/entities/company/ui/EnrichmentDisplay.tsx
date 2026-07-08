@@ -2,7 +2,7 @@
 
 /**
  * Company Enrichment Display
- * Shows financial data and AI analysis from Finnhub + Ollama
+ * Shows AI analysis and live financial data from Finnhub
  * @module entities/company/ui
  */
 
@@ -13,49 +13,40 @@ import {
   TrendingDown, 
   DollarSign, 
   BarChart3, 
-  Newspaper,
   ChevronDown,
   ChevronUp,
-  Calendar,
   Activity
 } from "lucide-react";
+
+interface FinancialMetrics {
+  revenue: number | null;
+  netIncome: number | null;
+  eps: number | null;
+  peRatio: number | null;
+  debtToEquity: number | null;
+  dividendYield: number | null;
+  profitMargins: number | null;
+}
+
+interface PriceData {
+  currentPrice: number | null;
+  previousClose: number | null;
+  dayChange: number | null;
+  dayChangePercent: number | null;
+  fiftyTwoWeekHigh: number | null;
+  fiftyTwoWeekLow: number | null;
+  volume: number | null;
+  avgVolume: number | null;
+}
+
+interface LiveData {
+  financials: FinancialMetrics | null;
+  price: PriceData | null;
+}
 
 interface EnrichmentData {
   id: string;
   ticker: string;
-  financialData?: {
-    revenue: number | null;
-    netIncome: number | null;
-    eps: number | null;
-    peRatio: number | null;
-    debtToEquity: number | null;
-    dividendYield: number | null;
-    profitMargins: number | null;
-  };
-  priceData?: {
-    currentPrice: number | null;
-    previousClose: number | null;
-    dayChange: number | null;
-    dayChangePercent: number | null;
-    fiftyTwoWeekHigh: number | null;
-    fiftyTwoWeekLow: number | null;
-    volume: number | null;
-    avgVolume: number | null;
-  };
-  newsHeadlines?: Array<{
-    title: string;
-    publisher: string | null;
-    link: string | null;
-    publishedAt: string | null;
-  }>;
-  recommendations?: Array<{
-    period: string;
-    strongBuy: number;
-    buy: number;
-    hold: number;
-    sell: number;
-    strongSell: number;
-  }>;
   aiAnalysis: string | null;
   aiAnalysisEs: string | null;
   ollamaModel: string | null;
@@ -64,27 +55,28 @@ interface EnrichmentData {
 
 interface EnrichmentDisplayProps {
   enrichment: EnrichmentData | null;
+  liveData?: LiveData | null;
 }
 
-export function EnrichmentDisplay({ enrichment }: EnrichmentDisplayProps) {
+export function EnrichmentDisplay({ enrichment, liveData }: EnrichmentDisplayProps) {
   const locale = useLocale();
   const [showFullAnalysis, setShowFullAnalysis] = useState(false);
   const [showFinancials, setShowFinancials] = useState(false);
-  const [showNews, setShowNews] = useState(false);
 
-  if (!enrichment) {
+  if (!enrichment && !liveData) {
     return (
       <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-6">
         <div className="text-center text-zinc-400">
           <Activity className="h-12 w-12 mx-auto mb-3 opacity-50" />
           <p className="text-sm">No enrichment data available yet.</p>
-          <p className="text-xs mt-1">Click &quot;Enrich&quot; to fetch public financial data and AI analysis.</p>
+          <p className="text-xs mt-1">Click &quot;Generate AI Analysis&quot; to create analysis from Finnhub data and user texts.</p>
         </div>
       </div>
     );
   }
 
-  const { priceData, financialData, newsHeadlines, recommendations, aiAnalysis, aiAnalysisEs, createdAt } = enrichment;
+  const priceData = liveData?.price;
+  const financialData = liveData?.financials;
 
   const formatCurrency = (value: number | null | undefined, compact = true) => {
     if (value === null || value === undefined) return "N/A";
@@ -101,12 +93,6 @@ export function EnrichmentDisplay({ enrichment }: EnrichmentDisplayProps) {
   const dayChangeColor = (priceData?.dayChange || 0) >= 0 ? "text-green-400" : "text-red-400";
   const DayChangeIcon = (priceData?.dayChange || 0) >= 0 ? TrendingUp : TrendingDown;
 
-  // Calculate recommendation sentiment
-  const latestRec = recommendations && recommendations.length > 0 ? recommendations[recommendations.length - 1] : null;
-  const totalRecs = latestRec ? latestRec.strongBuy + latestRec.buy + latestRec.hold + latestRec.sell + latestRec.strongSell : 0;
-  const bullishRecs = latestRec ? latestRec.strongBuy + latestRec.buy : 0;
-  const bearishRecs = latestRec ? latestRec.sell + latestRec.strongSell : 0;
-
   return (
     <div className="space-y-4">
       {/* Price Summary */}
@@ -118,7 +104,7 @@ export function EnrichmentDisplay({ enrichment }: EnrichmentDisplayProps) {
               <h3 className="text-lg font-semibold text-white">Current Price</h3>
             </div>
             <div className="text-xs text-zinc-500">
-              Updated: {new Date(createdAt).toLocaleDateString()}
+              Live data
             </div>
           </div>
 
@@ -147,14 +133,14 @@ export function EnrichmentDisplay({ enrichment }: EnrichmentDisplayProps) {
       )}
 
       {/* AI Analysis */}
-      {aiAnalysis && (
+      {enrichment?.aiAnalysis && (
         <div className="bg-gradient-to-br from-purple-900/20 to-blue-900/20 border border-purple-500/30 rounded-lg p-6">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
               <Activity className="h-5 w-5 text-purple-400" />
               <h3 className="text-lg font-semibold text-white">AI Analysis</h3>
               <span className="text-xs text-purple-400 bg-purple-500/20 px-2 py-1 rounded">
-                {enrichment.ollamaModel || "llama3.1:8b"}
+                {enrichment?.ollamaModel || "llama3.1:8b"}
               </span>
             </div>
             <button
@@ -177,7 +163,7 @@ export function EnrichmentDisplay({ enrichment }: EnrichmentDisplayProps) {
 
           <div className={`prose prose-invert max-w-none ${showFullAnalysis ? "" : "line-clamp-4"}`}>
             <p className="text-sm text-zinc-300 whitespace-pre-wrap">
-              {locale === 'es' && aiAnalysisEs ? aiAnalysisEs : aiAnalysis}
+              {locale === 'es' && enrichment?.aiAnalysisEs ? enrichment.aiAnalysisEs : enrichment?.aiAnalysis}
             </p>
           </div>
         </div>
@@ -229,97 +215,6 @@ export function EnrichmentDisplay({ enrichment }: EnrichmentDisplayProps) {
               </div>
             </div>
           )}
-        </div>
-      )}
-
-      {/* News Collapsible */}
-      {newsHeadlines && newsHeadlines.length > 0 && (
-        <div className="bg-zinc-900 border border-zinc-800 rounded-lg overflow-hidden">
-          <button
-            onClick={() => setShowNews(!showNews)}
-            className="w-full flex items-center justify-between p-4 hover:bg-zinc-800/50 transition-colors"
-          >
-            <div className="flex items-center gap-2">
-              <Newspaper className="h-5 w-5 text-orange-400" />
-              <h3 className="text-lg font-semibold text-white">Recent News</h3>
-              <span className="text-sm text-zinc-400">({newsHeadlines.length})</span>
-            </div>
-            {showNews ? (
-              <ChevronUp className="h-5 w-5 text-zinc-400" />
-            ) : (
-              <ChevronDown className="h-5 w-5 text-zinc-400" />
-            )}
-          </button>
-
-          {showNews && (
-            <div className="p-4 border-t border-zinc-800 space-y-3">
-              {newsHeadlines.slice(0, 5).map((news, idx) => (
-                <div key={idx} className="border-l-2 border-orange-500/30 pl-3">
-                  <a
-                    href={news.link || "#"}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-sm font-medium text-white hover:text-orange-400 transition-colors"
-                  >
-                    {news.title}
-                  </a>
-                  <p className="text-xs text-zinc-500 mt-1 flex items-center gap-2">
-                    <span>{news.publisher || "Unknown"}</span>
-                    {news.publishedAt && (
-                      <>
-                        <span>•</span>
-                        <span>{new Date(news.publishedAt).toLocaleDateString()}</span>
-                      </>
-                    )}
-                  </p>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Analyst Recommendations */}
-      {latestRec && totalRecs > 0 && (
-        <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-4">
-          <div className="flex items-center gap-2 mb-3">
-            <Calendar className="h-5 w-5 text-green-400" />
-            <h3 className="text-lg font-semibold text-white">Analyst Recommendations</h3>
-            <span className="text-xs text-zinc-500">({latestRec.period})</span>
-          </div>
-
-          <div className="grid grid-cols-5 gap-2 text-center">
-            <div>
-              <p className="text-xs text-zinc-400">Strong Buy</p>
-              <p className="text-lg font-bold text-green-400">{latestRec.strongBuy}</p>
-            </div>
-            <div>
-              <p className="text-xs text-zinc-400">Buy</p>
-              <p className="text-lg font-bold text-green-500">{latestRec.buy}</p>
-            </div>
-            <div>
-              <p className="text-xs text-zinc-400">Hold</p>
-              <p className="text-lg font-bold text-zinc-400">{latestRec.hold}</p>
-            </div>
-            <div>
-              <p className="text-xs text-zinc-400">Sell</p>
-              <p className="text-lg font-bold text-red-500">{latestRec.sell}</p>
-            </div>
-            <div>
-              <p className="text-xs text-zinc-400">Strong Sell</p>
-              <p className="text-lg font-bold text-red-400">{latestRec.strongSell}</p>
-            </div>
-          </div>
-
-          <p className="text-sm text-zinc-500 mt-3 text-center">
-            Sentiment: {bullishRecs > bearishRecs ? (
-              <span className="text-green-400 font-semibold">Bullish ({Math.round((bullishRecs/totalRecs)*100)}%)</span>
-            ) : bearishRecs > bullishRecs ? (
-              <span className="text-red-400 font-semibold">Bearish ({Math.round((bearishRecs/totalRecs)*100)}%)</span>
-            ) : (
-              <span className="text-zinc-400 font-semibold">Neutral</span>
-            )}
-          </p>
         </div>
       )}
     </div>

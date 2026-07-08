@@ -1,0 +1,176 @@
+/**
+ * Feature: Discover Company - Discovery Search UI
+ * @module features/discover-company/ui
+ */
+
+"use client";
+
+import { Search, Building2, TrendingUp, AlertCircle, CheckCircle } from "lucide-react";
+import { useTranslations } from "next-intl";
+import { useRouter } from "next/navigation";
+import { useCompanyDiscovery } from "../model/useCompanyDiscovery";
+
+export function DiscoverSearch() {
+  const t = useTranslations("company.discover");
+  const router = useRouter();
+  const {
+    query,
+    setQuery,
+    results,
+    isSearching,
+    searchError,
+    isImporting,
+    importError,
+    handleImport,
+  } = useCompanyDiscovery();
+
+  const handleImportClick = async (ticker: string) => {
+    try {
+      const importedTicker = await handleImport(ticker);
+      // Redirect to company detail page
+      router.push(`/companies/${importedTicker.toLowerCase()}`);
+    } catch (error) {
+      // Error already set in hook
+      console.error("Import failed:", error);
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Search Input */}
+      <div className="max-w-2xl">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-400" />
+          <input
+            type="text"
+            placeholder={t("searchPlaceholder")}
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            className="w-full pl-10 pr-4 py-3 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 dark:placeholder-zinc-600 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
+          />
+          {isSearching && (
+            <div className="absolute right-3 top-1/2 -translate-y-1/2">
+              <div className="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+            </div>
+          )}
+        </div>
+
+        {/* Min chars hint */}
+        {query.length > 0 && query.length < 2 && (
+          <p className="mt-2 text-sm text-zinc-500 dark:text-zinc-400">
+            {t("minChars")}
+          </p>
+        )}
+
+        {/* Results count */}
+        {query.length >= 2 && !isSearching && results.length > 0 && (
+          <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
+            {t("resultsCount", { count: results.length })}
+          </p>
+        )}
+      </div>
+
+      {/* Search Error */}
+      {searchError && (
+        <div className="flex items-start gap-3 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+          <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
+          <div>
+            <p className="font-medium text-red-900 dark:text-red-100">
+              {t("errorSearch")}
+            </p>
+            <p className="text-sm text-red-700 dark:text-red-300 mt-1">
+              {searchError}
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Import Error */}
+      {importError && (
+        <div className="flex items-start gap-3 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+          <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
+          <div>
+            <p className="font-medium text-red-900 dark:text-red-100">
+              {t("errorImport")}
+            </p>
+            <p className="text-sm text-red-700 dark:text-red-300 mt-1">
+              {importError}
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* No results when searched */}
+      {query.length >= 2 && !isSearching && results.length === 0 && !searchError && (
+        <div className="text-center py-12 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg">
+          <div className="text-6xl mb-4">🔍</div>
+          <h3 className="text-xl font-semibold text-zinc-900 dark:text-zinc-100 mb-2">
+            {t("noResults")}
+          </h3>
+          <p className="text-zinc-600 dark:text-zinc-400">
+            {t("noResultsDesc")}
+          </p>
+        </div>
+      )}
+
+      {/* Results Grid */}
+      {results.length > 0 && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {results.map((result) => (
+            <div
+              key={result.symbol}
+              className="p-4 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg hover:border-blue-500 dark:hover:border-blue-400 transition-colors"
+            >
+              <div className="flex items-start justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <Building2 className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                  <span className="font-bold text-lg text-zinc-900 dark:text-zinc-100">
+                    {result.displaySymbol}
+                  </span>
+                </div>
+                {result.existsInDatabase && (
+                  <span className="flex items-center gap-1 text-xs text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/20 px-2 py-1 rounded">
+                    <CheckCircle className="w-3 h-3" />
+                    {t("alreadyImported")}
+                  </span>
+                )}
+              </div>
+
+              <p className="text-sm text-zinc-700 dark:text-zinc-300 mb-2 line-clamp-2">
+                {result.description}
+              </p>
+
+              <div className="flex items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400 mb-4">
+                <TrendingUp className="w-3 h-3" />
+                <span>
+                  {t("type")}: {result.type}
+                </span>
+              </div>
+
+              <div className="flex gap-2">
+                {result.existsInDatabase ? (
+                  <button
+                    onClick={() => router.push(`/companies/${result.symbol.toLowerCase()}`)}
+                    className="flex-1 px-3 py-2 text-sm bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-900 dark:text-zinc-100 rounded-lg transition-colors"
+                  >
+                    {t("viewProfile")}
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => handleImportClick(result.symbol)}
+                    disabled={isImporting[result.symbol]}
+                    className="flex-1 px-3 py-2 text-sm bg-blue-600 hover:bg-blue-700 disabled:bg-zinc-400 dark:disabled:bg-zinc-700 text-white rounded-lg transition-colors disabled:cursor-not-allowed"
+                  >
+                    {isImporting[result.symbol]
+                      ? t("importing")
+                      : t("importButton")}
+                  </button>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}

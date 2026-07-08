@@ -5,6 +5,7 @@ import { MainLayout } from "@/widgets/layout";
 import { useSession } from "next-auth/react";
 import { redirect, useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
+import { Plus } from "lucide-react";
 import { SearchBar, useCompanySearch } from "@/features/company-search";
 import { CompanyCard } from "@/entities/company";
 import type { Company } from "@/entities/company";
@@ -68,13 +69,22 @@ export default function SituationsPage() {
     <MainLayout user={session?.user}>
       <div className="p-8">
         <div className="max-w-7xl mx-auto">
-          <div className="mb-6">
-            <h1 className="text-3xl font-bold text-zinc-900 dark:text-zinc-100">
-              {t('title')}
-            </h1>
-            <p className="text-zinc-600 dark:text-zinc-400 mt-2">
-              {t('subtitle')}
-            </p>
+          <div className="mb-6 flex items-start justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-zinc-900 dark:text-zinc-100">
+                {t('title')}
+              </h1>
+              <p className="text-zinc-600 dark:text-zinc-400 mt-2">
+                {t('subtitle')}
+              </p>
+            </div>
+            <button
+              onClick={() => router.push('/companies/discover')}
+              className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+            >
+              <Plus className="w-4 h-4" />
+              <span className="hidden sm:inline">{t('discoverButton')}</span>
+            </button>
           </div>
 
           {/* Search Bar */}

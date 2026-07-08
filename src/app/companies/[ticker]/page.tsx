@@ -93,10 +93,6 @@ interface Company {
     id: string;
     ticker: string;
     source: "FINNHUB";
-    financialData?: any;
-    priceData?: any;
-    newsHeadlines?: any[];
-    recommendations?: any[];
     aiAnalysis: string | null;
     aiAnalysisEs: string | null;
     ollamaModel: string | null;
@@ -113,6 +109,27 @@ export default function CompanyDetailPage({ params }: { params: Promise<{ ticker
   const [ticker, setTicker] = useState<string>("");
   const [company, setCompany] = useState<Company | null>(null);
   const [loading, setLoading] = useState(true);
+  const [liveData, setLiveData] = useState<{
+    financials: {
+      revenue: number | null;
+      netIncome: number | null;
+      eps: number | null;
+      peRatio: number | null;
+      debtToEquity: number | null;
+      dividendYield: number | null;
+      profitMargins: number | null;
+    } | null;
+    price: {
+      currentPrice: number | null;
+      previousClose: number | null;
+      dayChange: number | null;
+      dayChangePercent: number | null;
+      fiftyTwoWeekHigh: number | null;
+      fiftyTwoWeekLow: number | null;
+      volume: number | null;
+      avgVolume: number | null;
+    } | null;
+  } | null>(null);
 
   useEffect(() => {
     params.then(p => setTicker(p.ticker));
@@ -138,6 +155,23 @@ export default function CompanyDetailPage({ params }: { params: Promise<{ ticker
       console.error("Error fetching company:", error);
     } finally {
       setLoading(false);
+    }
+  }, [ticker]);
+
+  const fetchLiveData = useCallback(async () => {
+    if (!ticker) return;
+    try {
+      const response = await fetch(`/api/companies/${ticker}/finnhub-live`);
+      if (response.ok) {
+        const data = await response.json();
+        setLiveData({
+          financials: data.financials,
+          price: data.price,
+        });
+      }
+    } catch (error) {
+      console.error("Error fetching live Finnhub data:", error);
+      setLiveData(null);
     }
   }, [ticker]);
 
@@ -168,8 +202,9 @@ export default function CompanyDetailPage({ params }: { params: Promise<{ ticker
     if (status === "authenticated" && ticker) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       fetchCompany();
+      fetchLiveData();
     }
-  }, [status, ticker, fetchCompany]);
+  }, [status, ticker, fetchCompany, fetchLiveData]);
 
   const formatMarketCap = (marketCap: number | null): string => {
     if (!marketCap) return "N/A";
@@ -367,6 +402,7 @@ export default function CompanyDetailPage({ params }: { params: Promise<{ ticker
             </div>
             <EnrichmentDisplay
               enrichment={company.enrichments?.find(e => e.source === "FINNHUB") || null}
+              liveData={liveData}
             />
           </div>
 

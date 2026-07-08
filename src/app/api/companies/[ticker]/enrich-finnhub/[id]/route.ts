@@ -46,10 +46,6 @@ export async function GET(
       errorMessage: enrichment.errorMessage,
       aiAnalysis: enrichment.aiAnalysis,
       aiAnalysisEs: enrichment.aiAnalysisEs,
-      financials: enrichment.financialData,
-      price: enrichment.priceData,
-      news: enrichment.newsHeadlines,
-      recommendations: enrichment.recommendations,
       ollamaModel: enrichment.ollamaModel,
       updatedAt: enrichment.updatedAt,
     });

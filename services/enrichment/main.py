@@ -1,4 +1,4 @@
-    """
+"""
 MarketWhisper - Company Enrichment Service
 FastAPI microservice that fetches public financial data from Finnhub
 """
@@ -105,6 +105,21 @@ class EnrichmentResponse(BaseModel):
     error: Optional[str] = None
     timestamp: datetime
 
+class SearchResult(BaseModel):
+    """Single search result from Finnhub symbol lookup"""
+    symbol: str
+    description: str
+    displaySymbol: str
+    type: str
+
+class SearchResponse(BaseModel):
+    """Search response with results"""
+    success: bool
+    query: str
+    count: int
+    results: List[SearchResult]
+    timestamp: datetime
+
 @app.get("/health")
 async def health_check():
     """Health check endpoint"""
@@ -116,6 +131,80 @@ async def health_check():
             "finnhub": finnhub_client is not None
         }
     }
+
+
+@app.get("/api/search-finnhub", response_model=SearchResponse)
+async def search_companies_finnhub(q: str):
+    """
+    Search for companies using Finnhub symbol lookup
+    
+    Args:
+        q: Search query (company name or ticker symbol)
+    
+    Returns:
+        SearchResponse with matching companies
+    """
+    if not finnhub_client:
+        raise HTTPException(
+            status_code=503,
+            detail="Finnhub service unavailable. FINNHUB_API_KEY not configured."
+        )
+    
+    if not q or not q.strip():
+        raise HTTPException(
+            status_code=400,
+            detail="Search query 'q' parameter is required and cannot be empty."
+        )
+    
+    try:
+        query = q.strip()
+        logger.info(f"[FINNHUB SEARCH] Query: {query}")
+        
+        # Call Finnhub symbol_lookup
+        response = finnhub_client.symbol_lookup(query)
+        
+        if not response or 'result' not in response:
+            logger.warning(f"[FINNHUB SEARCH] No results for query: {query}")
+            return SearchResponse(
+                success=True,
+                query=query,
+                count=0,
+                results=[],
+                timestamp=datetime.now()
+            )
+        
+        # Map Finnhub results to our schema
+        results = []
+        for item in response.get('result', []):
+            results.append(SearchResult(
+                symbol=item.get('symbol', ''),
+                description=item.get('description', ''),
+                displaySymbol=item.get('displaySymbol', item.get('symbol', '')),
+                type=item.get('type', '')
+            ))
+        
+        logger.info(f"[FINNHUB SEARCH] Found {len(results)} results for: {query}")
+        
+        return SearchResponse(
+            success=True,
+            query=query,
+            count=len(results),
+            results=results,
+            timestamp=datetime.now()
+        )
+        
+    except Exception as e:
+        error_msg = str(e)
+        logger.error(f"[FINNHUB SEARCH] Error searching for '{q}': {error_msg}")
+        if "429" in error_msg or "rate limit" in error_msg.lower():
+            raise HTTPException(
+                status_code=429,
+                detail="Finnhub rate limit exceeded. Please try again later."
+            )
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to search companies in Finnhub. Error: {error_msg}"
+        )
 
 
 @app.get("/api/enrich-finnhub/{ticker}", response_model=EnrichmentResponse)
