@@ -14,7 +14,8 @@
     "dashboard": "Panel",
     "analyze": "Analizar",
     "companies": "Empresas",
-    "insights": "Análisis"
+    "insights": "Análisis",
+    "jobs": "Procesos"
   },
   "sidebar": {
     "appName": "MarketWhisper",
@@ -178,9 +179,14 @@
     "videosAnalyzed": "Videos Analizados",
     "contentItems": "Elementos de Contenido",
     "stockMentions": "Menciones de Acciones",
+    "activeJobs": "Procesos Activos",
+    "recentActivity": "Actividad Reciente",
     "gettingStarted": "Primeros Pasos",
-    "getStartedTitle": "¿Listo para analizar tu primer texto?",
-    "getStartedDesc": "Usa nuestro análisis con IA para detectar empresas y sentimiento",
+    "getStartedTitle": "🚀 Cómo Funciona",
+    "getStartedStep1": "Analiza texto con IA para detectar empresas y sentimiento",
+    "getStartedStep2": "Genera informes IA completos con datos financieros de Finnhub",
+    "getStartedStep3": "Sigue todos los trabajos de análisis y enriquecimiento en la cola de procesos",
+    "getStartedStep4": "Visualiza perfiles detallados de empresas con insights agregados",
     "analyzeButton": "Comenzar a Analizar"
   },
   "situations": {

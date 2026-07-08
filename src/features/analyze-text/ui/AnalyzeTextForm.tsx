@@ -1,11 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { Brain, TrendingUp, TrendingDown, Minus, Sparkles, Building2, RotateCcw } from "lucide-react";
+import { Brain, Sparkles, RotateCcw, ArrowRight, CheckCircle2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { analyzeText } from "../api/analyzeText";
-import type { AnalysisResponse } from "../model/types";
 
 export function AnalyzeTextForm() {
   const router = useRouter();
@@ -13,7 +12,7 @@ export function AnalyzeTextForm() {
   const [analyzing, setAnalyzing] = useState(false);
   const [text, setText] = useState("");
   const [source, setSource] = useState("");
-  const [result, setResult] = useState<AnalysisResponse | null>(null);
+  const [jobId, setJobId] = useState<string | null>(null);
   const [error, setError] = useState("");
 
   const handleAnalyze = async () => {
@@ -24,11 +23,11 @@ export function AnalyzeTextForm() {
 
     setAnalyzing(true);
     setError("");
-    setResult(null);
+    setJobId(null);
     
     try {
       const data = await analyzeText({ text, source: source || undefined });
-      setResult(data);
+      setJobId(data.jobId);
     } catch (err) {
       console.error("Analysis error:", err);
       setError(err instanceof Error ? err.message : t('errorGeneric'));
@@ -41,23 +40,7 @@ export function AnalyzeTextForm() {
     setText("");
     setSource("");
     setError("");
-    setResult(null);
-  };
-
-  const getSentimentIcon = (sentiment: string) => {
-    switch (sentiment) {
-      case "BULLISH": return <TrendingUp className="w-5 h-5 text-green-500" />;
-      case "BEARISH": return <TrendingDown className="w-5 h-5 text-red-500" />;
-      default: return <Minus className="w-5 h-5 text-zinc-500" />;
-    }
-  };
-
-  const getSentimentColor = (sentiment: string) => {
-    switch (sentiment) {
-      case "BULLISH": return "text-green-600 dark:text-green-400";
-      case "BEARISH": return "text-red-600 dark:text-red-400";
-      default: return "text-zinc-600 dark:text-zinc-400";
-    }
+    setJobId(null);
   };
 
   return (
@@ -118,85 +101,46 @@ export function AnalyzeTextForm() {
                 </>
               )}
             </button>
-
-            <button
-              onClick={handleClear}
-              disabled={analyzing}
-              className="px-4 py-3 rounded-lg font-medium transition-colors bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <RotateCcw className="w-5 h-5" />
-            </button>
+            
+            {(text || source || jobId) && !analyzing && (
+              <button
+                onClick={handleClear}
+                className="px-4 py-3 rounded-lg border border-zinc-300 dark:border-zinc-700 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+                title={t('clearButton')}
+              >
+                <RotateCcw className="w-5 h-5" />
+              </button>
+            )}
           </div>
 
-          {/* Loading Message */}
-          {analyzing && (
-            <div className="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
-              <div className="flex items-center gap-3">
-                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600 dark:border-blue-400"></div>
-                <div className="text-sm text-blue-700 dark:text-blue-300">
-                  <div className="font-medium">Analyzing with local AI (Ollama)...</div>
-                  <div className="text-xs mt-1 text-blue-600 dark:text-blue-400">This may take 20-60 seconds depending on text length and number of companies mentioned.</div>
+          {/* Success message with job ID */}
+          {jobId && !error && (
+            <div className="mt-4 p-4 rounded-lg bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800">
+              <div className="flex items-start gap-3">
+                <CheckCircle2 className="w-5 h-5 text-green-600 dark:text-green-400 flex-shrink-0 mt-0.5" />
+                <div className="flex-1">
+                  <h4 className="text-sm font-semibold text-green-900 dark:text-green-100 mb-1">
+                    Analysis Started!
+                  </h4>
+                  <p className="text-sm text-green-700 dark:text-green-300 mb-3">
+                    Your text is being analyzed by AI. You can track the progress in the process queue.
+                  </p>
+                  <button
+                    onClick={() => router.push("/jobs")}
+                    className="flex items-center gap-1.5 text-sm font-medium text-green-700 dark:text-green-300 hover:text-green-800 dark:hover:text-green-200 transition-colors"
+                  >
+                    <span>View in queue</span>
+                    <ArrowRight className="w-4 h-4" />
+                  </button>
                 </div>
               </div>
             </div>
           )}
 
-          {/* Error Message */}
+          {/* Error message */}
           {error && (
-            <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-sm text-red-700 dark:text-red-300">
+            <div className="mt-4 p-4 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-sm text-red-700 dark:text-red-300">
               {error}
-            </div>
-          )}
-
-          {/* Success Result */}
-          {result && result.success && result.analyses && result.analyses.length > 0 && (
-            <div className="p-6 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg space-y-4">
-              <div className="text-sm font-semibold text-green-700 dark:text-green-300 mb-3">
-                ✓ {result.message}
-              </div>
-              
-              {result.analyses.map((analysis, index) => (
-                <div key={analysis.id} className={`flex items-start gap-3 ${index > 0 ? 'pt-4 border-t border-green-200 dark:border-green-800' : ''}`}>
-                  {getSentimentIcon(analysis.sentiment)}
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="font-mono text-sm font-bold text-blue-600 dark:text-blue-400">
-                        ${analysis.ticker}
-                      </span>
-                      <span className="text-sm text-zinc-700 dark:text-zinc-300">
-                        {analysis.company.name}
-                      </span>
-                    </div>
-                    
-                    <div className="flex items-center gap-4 text-xs">
-                      <div>
-                        <span className="text-zinc-500">{t('sentimentLabel')}: </span>
-                        <span className={`font-semibold ${getSentimentColor(analysis.sentiment)}`}>
-                          {analysis.sentiment}
-                        </span>
-                      </div>
-                      <div>
-                        <span className="text-zinc-500">{t('reliabilityLabel')}: </span>
-                        <span className="font-semibold text-zinc-900 dark:text-zinc-100">
-                          {analysis.reliabilityScore}/10
-                        </span>
-                      </div>
-                    </div>
-                    
-                    <p className="mt-2 text-xs text-zinc-600 dark:text-zinc-400 italic">
-                      {analysis.reasoning}
-                    </p>
-                  </div>
-                </div>
-              ))}
-              
-              <button
-                onClick={() => router.push("/situations")}
-                className="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors bg-blue-600 hover:bg-blue-700 text-white mt-4"
-              >
-                <Building2 className="w-4 h-4" />
-                {t('viewCompanyProfile')}
-              </button>
             </div>
           )}
         </div>

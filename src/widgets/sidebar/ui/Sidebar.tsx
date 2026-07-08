@@ -2,6 +2,7 @@
 
 "use client";
 
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
@@ -10,6 +11,28 @@ import { navigationItems } from "../model/navigation";
 export function Sidebar() {
   const pathname = usePathname();
   const t = useTranslations();
+  const [activeJobsCount, setActiveJobsCount] = useState(0);
+
+  // Fetch active jobs count
+  useEffect(() => {
+    const fetchActiveJobs = async () => {
+      try {
+        const response = await fetch("/api/jobs?status=PENDING,PROCESSING");
+        if (response.ok) {
+          const data = await response.json();
+          setActiveJobsCount(data.count || 0);
+        }
+      } catch (error) {
+        console.error("Error fetching active jobs:", error);
+      }
+    };
+
+    fetchActiveJobs();
+
+    // Poll every 5 seconds
+    const interval = setInterval(fetchActiveJobs, 5000);
+    return () => clearInterval(interval);
+  }, []);
 
   return (
     <aside className="w-64 bg-zinc-50 dark:bg-zinc-950 border-r border-zinc-200 dark:border-zinc-800 flex flex-col">
@@ -28,13 +51,14 @@ export function Sidebar() {
         {navigationItems.map((item) => {
           const isActive = pathname === item.href;
           const Icon = item.icon;
+          const showBadge = item.href === "/jobs" && activeJobsCount > 0;
 
           return (
             <Link
               key={item.nameKey}
               href={item.href}
               className={`
-                flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition-colors
+                flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition-colors relative
                 ${
                   isActive
                     ? "bg-blue-500 text-white"
@@ -43,7 +67,12 @@ export function Sidebar() {
               `}
             >
               <Icon className="w-5 h-5" />
-              <span>{t(item.nameKey)}</span>
+              <span className="flex-1">{t(item.nameKey)}</span>
+              {showBadge && (
+                <span className="flex items-center justify-center min-w-[20px] h-5 px-1.5 text-xs font-bold rounded-full bg-orange-500 text-white">
+                  {activeJobsCount}
+                </span>
+              )}
             </Link>
           );
         })}

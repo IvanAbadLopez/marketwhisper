@@ -27,7 +27,17 @@ export async function POST(
 
     const { ticker } = await params;
 
-    // 2. Find company in database
+    // 2. Get user ID
+    const user = await prisma.user.findUnique({
+      where: { email: session.user.email },
+      select: { id: true },
+    });
+
+    if (!user) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
+    // 3. Find company in database
     const company = await prisma.company.findUnique({
       where: { ticker: ticker.toUpperCase() },
     });
@@ -39,25 +49,37 @@ export async function POST(
       );
     }
 
-    // 3. Create a PENDING enrichment record with source=FINNHUB
+    // 4. Create a Job record for tracking in the queue
+    const job = await prisma.job.create({
+      data: {
+        userId: user.id,
+        type: "ENRICHMENT",
+        status: "PENDING",
+        ticker: ticker.toUpperCase(),
+      },
+    });
+
+    // 5. Create a PENDING enrichment record with source=FINNHUB
     const enrichment = await prisma.companyEnrichment.create({
       data: {
         companyId: company.id,
         ticker: ticker.toUpperCase(),
         source: "FINNHUB",
         status: "PENDING",
+        jobId: job.id, // Link to job for tracking
       },
     });
 
-    // 4. Kick off the heavy work in the background
-    after(() => processEnrichment(enrichment.id, company.id, ticker));
+    // 6. Kick off the heavy work in the background
+    after(() => processEnrichment(enrichment.id, company.id, ticker, job.id));
 
-    // 5. Respond immediately
+    // 7. Respond immediately
     return NextResponse.json(
       {
         success: true,
         ticker: ticker.toUpperCase(),
         enrichmentId: enrichment.id,
+        jobId: job.id,
         status: "PENDING",
         source: "FINNHUB",
       },

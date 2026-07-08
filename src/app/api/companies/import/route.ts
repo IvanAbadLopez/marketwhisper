@@ -92,30 +92,52 @@ export async function POST(request: NextRequest) {
 
     console.log(`[Import] Created company ${ticker} (ID: ${company.id})`);
 
-    // 6. Create a PENDING enrichment record
+    // 6. Get user ID for job tracking
+    const user = await prisma.user.findUnique({
+      where: { email: session.user.email },
+      select: { id: true },
+    });
+
+    if (!user) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
+    // 7. Create a Job record for tracking in the queue
+    const job = await prisma.job.create({
+      data: {
+        userId: user.id,
+        type: "ENRICHMENT",
+        status: "PENDING",
+        ticker,
+      },
+    });
+
+    // 8. Create a PENDING enrichment record
     const enrichment = await prisma.companyEnrichment.create({
       data: {
         companyId: company.id,
         ticker,
         source: "FINNHUB",
         status: "PENDING",
+        jobId: job.id, // Link to job for tracking
       },
     });
 
-    // 7. Kick off background enrichment (full analysis with Ollama)
-    after(() => processEnrichment(enrichment.id, company.id, ticker));
+    // 9. Kick off background enrichment (full analysis with Ollama)
+    after(() => processEnrichment(enrichment.id, company.id, ticker, job.id));
 
     console.log(
-      `[Import] Started enrichment for ${ticker} (Enrichment ID: ${enrichment.id})`
+      `[Import] Started enrichment for ${ticker} (Enrichment ID: ${enrichment.id}, Job ID: ${job.id})`
     );
 
-    // 8. Respond immediately
+    // 10. Respond immediately
     return NextResponse.json(
       {
         success: true,
         ticker,
         companyId: company.id,
         enrichmentId: enrichment.id,
+        jobId: job.id,
         alreadyExists: false,
         message: `Company ${ticker} imported successfully. Enrichment in progress.`,
       },

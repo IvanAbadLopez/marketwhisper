@@ -1,29 +1,20 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@/lib/auth';
-import { analyzeText, prisma } from '@/shared';
-import { translateToSpanish } from '@/shared/api/translate';
-
-/**
- * Normalize ticker by removing special characters like $
- */
-function normalizeTicker(ticker: string): string {
-  return ticker.replace(/^\$/, '').trim().toUpperCase();
-}
+import { NextRequest, NextResponse } from "next/server";
+import { after } from "next/server";
+import { auth } from "@/lib/auth";
+import { prisma } from "@/shared";
+import { processAnalysis } from "@/features/analyze-text/api/processAnalysis";
 
 /**
  * POST /api/analyze
- * Analyze text with AI to detect multiple companies, sentiment, and reliability
- * Creates separate analysis records for each company mentioned
+ * Kicks off a background text analysis job with Ollama
+ * Returns immediately with jobId for tracking
  */
 export async function POST(request: NextRequest) {
   try {
     // Check authentication
     const session = await auth();
-    if (!session) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+    if (!session?.user?.email) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // Parse request body
@@ -31,148 +22,46 @@ export async function POST(request: NextRequest) {
     const { text, source } = body;
 
     // Validate input
-    if (!text || typeof text !== 'string' || text.trim().length === 0) {
-      return NextResponse.json(
-        { error: 'Text is required' },
-        { status: 400 }
-      );
+    if (!text || typeof text !== "string" || text.trim().length === 0) {
+      return NextResponse.json({ error: "Text is required" }, { status: 400 });
     }
 
-    // Analyze text with Ollama AI - returns array of all companies detected
-    const aiResults = await analyzeText(text);
-
-    // Check if AI detected any companies
-    if (!aiResults || aiResults.length === 0) {
-      return NextResponse.json(
-        { 
-          error: 'No companies identified in the text. Please provide more specific information about companies or stock tickers.',
-          analyses: [] 
-        },
-        { status: 400 }
-      );
-    }
-
-    // Process each detected company in parallel for better performance
-    const results = await Promise.all(
-      aiResults.map(async (aiResult) => {
-        // Normalize ticker (remove $ symbol if present)
-        const normalizedTicker = normalizeTicker(aiResult.ticker);
-        
-        // Find or create company
-        let company = await prisma.company.findUnique({
-          where: { ticker: normalizedTicker },
-        });
-
-        if (!company) {
-          // Create new company with AI-detected data
-          company = await prisma.company.create({
-            data: {
-              ticker: normalizedTicker,
-              name: aiResult.companyName,
-              analysisCount: 0,
-            },
-          });
-        }
-
-        // Create analysis record
-        const analysis = await prisma.analysis.create({
-          data: {
-            text,
-            source: source || null,
-            companyId: company.id,
-            ticker: normalizedTicker,
-            sentiment: aiResult.sentiment,
-            reliabilityScore: aiResult.reliabilityScore,
-            reasoning: aiResult.reasoning,
-            reasoningEs: await translateToSpanish(aiResult.reasoning), // Translate once and store
-          },
-          include: {
-            company: true,
-          },
-        });
-
-        // Recalculate company aggregates
-        await updateCompanyAggregates(company.id);
-
-        // Fetch updated company data
-        const updatedCompany = await prisma.company.findUnique({
-          where: { id: company.id },
-          include: {
-            _count: {
-              select: { analyses: true },
-            },
-          },
-        });
-
-        return { analysis, company: updatedCompany };
-      })
-    );
-
-    const analyses = results.map(r => r.analysis);
-    const companies = results.map(r => r.company);
-
-    return NextResponse.json({
-      success: true,
-      count: analyses.length,
-      analyses,
-      companies,
-      message: `Successfully analyzed ${analyses.length} ${analyses.length === 1 ? 'company' : 'companies'}`,
+    // Get user ID
+    const user = await prisma.user.findUnique({
+      where: { email: session.user.email },
+      select: { id: true },
     });
-  } catch (error) {
-    console.error('Analysis endpoint error:', error);
-    return NextResponse.json(
-      { 
-        error: error instanceof Error ? error.message : 'Failed to analyze text' 
-      },
-      { status: 500 }
-    );
-  }
-}
 
-/**
- * Update company aggregate scores based on all analyses
- */
-async function updateCompanyAggregates(companyId: string) {
-  // Get all analyses for this company
-  const analyses = await prisma.analysis.findMany({
-    where: { companyId },
-    select: {
-      sentiment: true,
-      reliabilityScore: true,
-    },
-  });
-
-  if (analyses.length === 0) {
-    return;
-  }
-
-  // Convert sentiment to numeric values for averaging
-  const sentimentValues = analyses.map(a => {
-    switch (a.sentiment) {
-      case 'BULLISH': return 1;
-      case 'BEARISH': return -1;
-      case 'NEUTRAL': return 0;
+    if (!user) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
-  });
 
-  const reliabilityScores = analyses.map(a => a.reliabilityScore);
+    // Create a PENDING job record (we don't know the ticker yet, use placeholder)
+    const job = await prisma.job.create({
+      data: {
+        userId: user.id,
+        type: "ANALYSIS",
+        status: "PENDING",
+        ticker: "PENDING", // Will be updated after analysis
+      },
+    });
 
-  // Calculate averages
-  const avgSentimentScore = 
-    sentimentValues.reduce((a: number, b: number) => a + b, 0) / sentimentValues.length;
-  const avgReliabilityScore = 
-    reliabilityScores.reduce((a: number, b: number) => a + b, 0) / reliabilityScores.length;
+    // Kick off the heavy work in the background
+    after(() => processAnalysis(job.id, text, source, user.id));
 
-  // Update company
-  await prisma.company.update({
-    where: { id: companyId },
-    data: {
-      avgSentimentScore,
-      avgReliabilityScore,
-      analysisCount: analyses.length,
-    },
-  });
+    // Respond immediately
+    return NextResponse.json(
+      {
+        success: true,
+        jobId: job.id,
+        status: "PENDING",
+        message: "Analysis job started. Check status using the jobId.",
+      },
+      { status: 202 } // 202 Accepted
+    );
+  } catch (error) {
+    console.error("[Analyze] Error:", error);
+    const message = error instanceof Error ? error.message : "Failed to start analysis";
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
 }
-
-// Export for testing
-export { updateCompanyAggregates };

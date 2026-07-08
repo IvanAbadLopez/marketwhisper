@@ -19,15 +19,8 @@ export interface AnalysisItem {
 
 export interface AnalysisResponse {
   success: boolean;
-  count: number;
-  analyses: AnalysisItem[];
-  companies: Array<{
-    ticker: string;
-    name: string;
-    avgSentimentScore?: number;
-    avgReliabilityScore?: number;
-    analysisCount: number;
-  }>;
+  jobId: string;
+  status: string;
   message: string;
   error?: string;
 }

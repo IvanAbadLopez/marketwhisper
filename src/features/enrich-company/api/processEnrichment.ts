@@ -200,16 +200,24 @@ export async function fetchFinnhubData(ticker: string): Promise<FinnhubData> {
 export async function processEnrichment(
   enrichmentId: string,
   companyId: string,
-  ticker: string
+  ticker: string,
+  jobId?: string // Optional job ID for queue tracking
 ): Promise<void> {
   const { prisma } = await import("@/shared/api/prisma");
 
   try {
-    // Mark as processing
+    // Mark enrichment and job as processing
     await prisma.companyEnrichment.update({
       where: { id: enrichmentId },
       data: { status: "PROCESSING" },
     });
+
+    if (jobId) {
+      await prisma.job.update({
+        where: { id: jobId },
+        data: { status: "PROCESSING" },
+      });
+    }
 
     // 1. Fetch financial data from Finnhub (via enrichment service)
     console.log(`[Enrich-Finnhub:${enrichmentId}] Fetching Finnhub data for ${ticker}...`);
@@ -274,17 +282,44 @@ export async function processEnrichment(
       },
     });
 
+    // 7. Update job status if exists
+    if (jobId) {
+      await prisma.job.update({
+        where: { id: jobId },
+        data: {
+          status: "COMPLETED",
+          result: {
+            enrichmentId,
+            aiAnalysisPreview: aiAnalysis.substring(0, 200) + "...",
+          } as any,
+        },
+      });
+    }
+
     console.log(`[Enrich-Finnhub:${enrichmentId}] Successfully enriched ${ticker}`);
   } catch (error: unknown) {
     console.error(`[Enrich-Finnhub:${enrichmentId}] Failed to enrich ${ticker}:`, error);
+    const errorMessage = error instanceof Error ? error.message : "Failed to enrich company with Finnhub";
+    
     try {
       await prisma.companyEnrichment.update({
         where: { id: enrichmentId },
         data: {
           status: "FAILED",
-          errorMessage: error instanceof Error ? error.message : "Failed to enrich company with Finnhub",
+          errorMessage,
         },
       });
+
+      // Update job status if exists
+      if (jobId) {
+        await prisma.job.update({
+          where: { id: jobId },
+          data: {
+            status: "FAILED",
+            errorMessage,
+          },
+        });
+      }
     } catch (updateError) {
       console.error(`[Enrich-Finnhub:${enrichmentId}] Could not mark as FAILED:`, updateError);
     }
