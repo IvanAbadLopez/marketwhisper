@@ -10,8 +10,14 @@ vi.mock("@/lib/auth", () => ({
 // Mock prisma module
 vi.mock("@/shared/api/prisma", () => ({
   prisma: {
+    user: {
+      findUnique: vi.fn(),
+    },
     company: {
       findUnique: vi.fn(),
+    },
+    job: {
+      create: vi.fn(),
     },
     companyEnrichment: {
       create: vi.fn(),
@@ -61,6 +67,11 @@ describe("POST /api/companies/[ticker]/enrich-finnhub", () => {
       expires: "2026-12-31",
     } as unknown as Awaited<ReturnType<typeof auth>>);
 
+    vi.mocked(prisma.user.findUnique).mockResolvedValue({
+      id: "user1",
+      email: "test@example.com",
+    } as any);
+
     vi.mocked(prisma.company.findUnique).mockResolvedValue(null);
 
     const request = new NextRequest("http://localhost:3000/api/companies/INVALID/enrich-finnhub", {
@@ -83,6 +94,11 @@ describe("POST /api/companies/[ticker]/enrich-finnhub", () => {
       user: { id: "user1", email: "test@example.com" },
       expires: "2026-12-31",
     } as unknown as Awaited<ReturnType<typeof auth>>);
+
+    vi.mocked(prisma.user.findUnique).mockResolvedValue({
+      id: "user1",
+      email: "test@example.com",
+    } as any);
 
     const mockCompany = {
       id: "company1",
@@ -120,6 +136,21 @@ describe("POST /api/companies/[ticker]/enrich-finnhub", () => {
     };
 
     vi.mocked(prisma.company.findUnique).mockResolvedValue(mockCompany);
+    
+    vi.mocked(prisma.job.create).mockResolvedValue({
+      id: "job123",
+      userId: "user1",
+      type: "ENRICHMENT",
+      status: "PENDING",
+      ticker: "AAPL",
+      result: null,
+      errorMessage: null,
+      analysisId: null,
+      enrichmentId: "enrichment1",
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    } as any);
+    
     vi.mocked(prisma.companyEnrichment.create).mockResolvedValue(mockEnrichment);
 
     const request = new NextRequest("http://localhost:3000/api/companies/AAPL/enrich-finnhub", {
@@ -137,13 +168,23 @@ describe("POST /api/companies/[ticker]/enrich-finnhub", () => {
     expect(data.status).toBe("PENDING");
     expect(data.source).toBe("FINNHUB");
 
-    // Verify enrichment was created with correct source
+    // Verify enrichment was created with correct source and job
+    expect(prisma.job.create).toHaveBeenCalledWith({
+      data: {
+        userId: "user1",
+        type: "ENRICHMENT",
+        status: "PENDING",
+        ticker: "AAPL",
+      },
+    });
+    
     expect(prisma.companyEnrichment.create).toHaveBeenCalledWith({
       data: {
         companyId: "company1",
         ticker: "AAPL",
         source: "FINNHUB",
         status: "PENDING",
+        jobId: "job123",
       },
     });
   });

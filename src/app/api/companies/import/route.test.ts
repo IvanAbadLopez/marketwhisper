@@ -16,11 +16,17 @@ vi.mock("@/lib/auth", () => ({
 
 vi.mock("@/shared/api/prisma", () => ({
   prisma: {
+    user: {
+      findUnique: vi.fn(),
+    },
     company: {
       findUnique: vi.fn(),
       create: vi.fn(),
     },
     companyEnrichment: {
+      create: vi.fn(),
+    },
+    job: {
       create: vi.fn(),
     },
   },
@@ -115,8 +121,14 @@ describe("POST /api/companies/import", () => {
 
   it("should create new company and start enrichment", async () => {
     mockAuth.mockResolvedValue({
-      user: { email: "test@example.com" },
+      user: { id: "user1", email: "test@example.com" },
     } as Session);
+
+    // Mock user lookup
+    mockPrisma.user.findUnique.mockResolvedValue({
+      id: "user1",
+      email: "test@example.com",
+    } as any);
 
     // Company doesn't exist
     mockPrisma.company.findUnique.mockResolvedValue(null);
@@ -146,6 +158,21 @@ describe("POST /api/companies/import", () => {
       name: "Tesla Inc.",
     } as Company);
 
+    // Mock job creation
+    mockPrisma.job.create.mockResolvedValue({
+      id: "job-123",
+      userId: "user1",
+      type: "ENRICHMENT",
+      status: "PENDING",
+      ticker: "TSLA",
+      result: null,
+      errorMessage: null,
+      analysisId: null,
+      enrichmentId: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    } as any);
+
     // Mock enrichment creation
     mockPrisma.companyEnrichment.create.mockResolvedValue({
       id: "enrichment-789",
@@ -153,6 +180,7 @@ describe("POST /api/companies/import", () => {
       ticker: "TSLA",
       source: "FINNHUB",
       status: "PENDING",
+      jobId: "job-123",
     } as CompanyEnrichment);
 
     const request = new NextRequest("http://localhost:3000/api/companies/import", {

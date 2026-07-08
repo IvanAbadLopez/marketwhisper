@@ -97,20 +97,12 @@ describe("AnalyzeTextForm", () => {
     });
   });
 
-  it("displays success result and view companies button", async () => {
+  it("displays success message and view in queue link", async () => {
     const mockResponse = {
       success: true,
-      message: "Analysis complete",
-      analyses: [
-        {
-          id: "1",
-          ticker: "AAPL",
-          sentiment: "BULLISH",
-          reliabilityScore: 8,
-          reasoning: "Strong earnings",
-          company: { name: "Apple Inc." }
-        }
-      ]
+      jobId: "job-123",
+      status: "PENDING",
+      message: "Analysis started",
     };
     
     vi.mocked(analyzeTextApi.analyzeText).mockResolvedValue(mockResponse);
@@ -124,18 +116,15 @@ describe("AnalyzeTextForm", () => {
     fireEvent.click(analyzeButton);
     
     await waitFor(() => {
-      expect(screen.getByText("✓ Analysis complete")).toBeInTheDocument();
-      expect(screen.getByText("$AAPL")).toBeInTheDocument();
-      expect(screen.getByText("Apple Inc.")).toBeInTheDocument();
-      expect(screen.getByText("BULLISH")).toBeInTheDocument();
-      expect(screen.getByText(/8\/10/)).toBeInTheDocument();
+      expect(screen.getByText("Analysis Started!")).toBeInTheDocument();
+      expect(screen.getByText(/Your text is being analyzed by AI/)).toBeInTheDocument();
     });
     
-    const viewCompaniesButton = screen.getByRole("button", { name: /View Companies/i });
-    expect(viewCompaniesButton).toBeInTheDocument();
+    const viewInQueueButton = screen.getByRole("button", { name: /View in queue/i });
+    expect(viewInQueueButton).toBeInTheDocument();
     
-    fireEvent.click(viewCompaniesButton);
-    expect(mockPush).toHaveBeenCalledWith("/situations");
+    fireEvent.click(viewInQueueButton);
+    expect(mockPush).toHaveBeenCalledWith("/jobs");
   });
 
   it("shows loading state during analysis", async () => {
