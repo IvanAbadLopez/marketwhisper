@@ -5,6 +5,7 @@
 
 import { env } from "@/shared/config/env";
 import { translateToSpanish } from "@/shared/api/translate";
+import { calcAnalystScore, analystScoreLabel, type AnalystRecommendation } from "../lib/analystScore";
 
 interface UserAnalysis {
   text: string;
@@ -47,6 +48,7 @@ interface FinnhubData {
     volume: number | null;
     avgVolume: number | null;
   };
+  recommendations?: AnalystRecommendation[];
 }
 
 interface OllamaResponse {
@@ -83,6 +85,17 @@ function generateAnalysisPrompt(
 **52-Week Performance:**
 - 52-Week High: $${price?.fiftyTwoWeekHigh?.toFixed(2) || "N/A"}
 - 52-Week Low: $${price?.fiftyTwoWeekLow?.toFixed(2) || "N/A"}`;
+
+  // Add analyst recommendations if available
+  if (data.recommendations && data.recommendations.length > 0) {
+    const latest = data.recommendations[data.recommendations.length - 1];
+    const score = calcAnalystScore(latest);
+    const label = analystScoreLabel(score);
+    
+    prompt += `\n\n**Analyst Recommendations (Latest Period: ${latest.period}):**
+- Strong Buy: ${latest.strongBuy} | Buy: ${latest.buy} | Hold: ${latest.hold} | Sell: ${latest.sell} | Strong Sell: ${latest.strongSell}
+- Consensus Score: ${score !== null ? score.toFixed(2) : "N/A"} (${label})`;
+  }
 
   // Add user text analyses if available
   if (userAnalyses.length > 0) {
@@ -275,6 +288,7 @@ export async function processEnrichment(
       where: { id: enrichmentId },
       data: {
         status: "COMPLETED",
+        recommendations: (finnhubData.recommendations ?? undefined) as any,
         aiAnalysis,
         aiAnalysisEs,
         ollamaModel: "llama3.1:8b",

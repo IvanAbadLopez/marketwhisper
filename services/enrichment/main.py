@@ -261,6 +261,25 @@ async def enrich_company_finnhub(ticker: str):
             logger.warning(f"[FINNHUB] Metrics fetch failed for {ticker}: {e}")
             metric_data = {}
         
+        # 3. Fetch analyst recommendation trends
+        try:
+            rec_trends = finnhub_client.recommendation_trends(ticker_upper)
+            recommendations = [
+                Recommendation(
+                    period=r.get('period', ''),
+                    strongBuy=r.get('strongBuy', 0),
+                    buy=r.get('buy', 0),
+                    hold=r.get('hold', 0),
+                    sell=r.get('sell', 0),
+                    strongSell=r.get('strongSell', 0),
+                )
+                for r in (rec_trends or [])
+            ]
+            logger.info(f"[FINNHUB] Recommendation trends fetched for {ticker_upper}: {len(recommendations)} periods")
+        except Exception as e:
+            logger.warning(f"[FINNHUB] Recommendation trends fetch failed for {ticker}: {e}")
+            recommendations = []
+        
         # Extract company info
         company_info = CompanyInfo(
             ticker=ticker_upper,
@@ -310,7 +329,7 @@ async def enrich_company_finnhub(ticker: str):
             financials=financials,
             price=price,
             news=[],  # News not requested
-            recommendations=[],  # Recommendations not available in Finnhub free tier
+            recommendations=recommendations,
             timestamp=datetime.now()
         )
         

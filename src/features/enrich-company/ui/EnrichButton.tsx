@@ -3,14 +3,13 @@
 /**
  * Enrich Company Button
  * Triggers a background public financial data fetch + AI analysis job,
- * then registers it with the notification system for global polling.
+ * then polls for completion.
  * @module features/enrich-company/ui
  */
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Sparkles, Loader2 } from "lucide-react";
-import { enrichCompany } from "../api/enrichCompany";
-import { useNotifications } from "@/shared/ui/notifications";
+import { enrichCompany, getEnrichmentStatus } from "../api/enrichCompany";
 
 interface EnrichButtonProps {
   ticker: string;
@@ -19,55 +18,115 @@ interface EnrichButtonProps {
   className?: string;
 }
 
+/** Poll interval for checking background job status (ms) */
+const POLL_INTERVAL = 3000;
+/** Safety cap on polling attempts (~5 min at 3s each) */
+const MAX_POLLS = 100;
+
+type JobState = "idle" | "pending" | "processing" | "success" | "error";
+
 export function EnrichButton({
   ticker,
   onSuccess,
   variant = "default",
   className = "",
 }: EnrichButtonProps) {
-  const [loading, setLoading] = useState(false);
+  const [state, setState] = useState<JobState>("idle");
   const [error, setError] = useState<string | null>(null);
-  const { addJob } = useNotifications();
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Cleanup any pending timer on unmount
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
+  }, []);
+
+  const loading = state === "pending" || state === "processing";
+  const success = state === "success";
+
+  const pollStatus = (enrichmentId: string, attempt = 0) => {
+    timerRef.current = setTimeout(async () => {
+      try {
+        const result = await getEnrichmentStatus(ticker, enrichmentId);
+
+        if (result.status === "COMPLETED") {
+          setState("success");
+          setTimeout(() => onSuccess?.(), 1000);
+          return;
+        }
+
+        if (result.status === "FAILED") {
+          setState("error");
+          setError(result.errorMessage || "Enrichment failed");
+          return;
+        }
+
+        // Still PENDING or PROCESSING
+        setState(result.status === "PROCESSING" ? "processing" : "pending");
+
+        if (attempt + 1 >= MAX_POLLS) {
+          setState("error");
+          setError("Enrichment timed out. Please try again later.");
+          return;
+        }
+
+        pollStatus(enrichmentId, attempt + 1);
+      } catch (err: unknown) {
+        setState("error");
+        const message = err instanceof Error ? err.message : "Failed to check enrichment status";
+        setError(message);
+      }
+    }, POLL_INTERVAL);
+  };
 
   const handleEnrich = async () => {
-    setLoading(true);
+    setState("pending");
     setError(null);
 
     try {
       const job = await enrichCompany(ticker);
-      
-      // Register job with notification system (background polling + toast on completion)
-      addJob(job.ticker, job.enrichmentId);
-      
-      // Reset button state immediately (job runs in background)
-      setLoading(false);
-      
-      // Optionally trigger refresh (e.g., to show the PENDING enrichment)
-      onSuccess?.();
+      pollStatus(job.enrichmentId);
     } catch (err: unknown) {
-      setLoading(false);
+      setState("error");
       const message = err instanceof Error ? err.message : "Failed to enrich company";
       setError(message);
     }
   };
+
+  const statusLabel =
+    state === "pending"
+      ? "Queued..."
+      : state === "processing"
+      ? "Analyzing..."
+      : "Enriching...";
 
   if (variant === "compact") {
     return (
       <button
         onClick={handleEnrich}
         disabled={loading}
-        className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md transition-colors bg-purple-500/20 text-purple-400 hover:bg-purple-500/30 disabled:opacity-50 disabled:cursor-not-allowed ${className}`}
-        title={error || "Generate AI analysis from Finnhub data + user texts"}
+        className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
+          success
+            ? "bg-green-500/20 text-green-400 cursor-default"
+            : "bg-purple-500/20 text-purple-400 hover:bg-purple-500/30 disabled:opacity-50 disabled:cursor-not-allowed"
+        } ${className}`}
+        title={error || (success ? "Enriched successfully!" : "Fetch data from Finnhub")}
       >
         {loading ? (
           <>
             <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            <span>Starting...</span>
+            <span>{state === "processing" ? "Analyzing" : "Queued"}</span>
+          </>
+        ) : success ? (
+          <>
+            <Sparkles className="h-3.5 w-3.5" />
+            <span>Enriched</span>
           </>
         ) : (
           <>
             <Sparkles className="h-3.5 w-3.5" />
-            <span>Analyze</span>
+            <span>Finnhub</span>
           </>
         )}
       </button>
@@ -79,17 +138,26 @@ export function EnrichButton({
       <button
         onClick={handleEnrich}
         disabled={loading}
-        className={`inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-colors bg-purple-600 text-white hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed ${className}`}
+        className={`inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+          success
+            ? "bg-green-500/20 text-green-400 cursor-default"
+            : "bg-purple-600 text-white hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed"
+        } ${className}`}
       >
         {loading ? (
           <>
             <Loader2 className="h-4 w-4 animate-spin" />
-            <span>Starting Analysis...</span>
+            <span>{statusLabel}</span>
+          </>
+        ) : success ? (
+          <>
+            <Sparkles className="h-4 w-4" />
+            <span>Enriched Successfully!</span>
           </>
         ) : (
           <>
             <Sparkles className="h-4 w-4" />
-            <span>Generate AI Analysis</span>
+            <span>Enrich with Finnhub</span>
           </>
         )}
       </button>

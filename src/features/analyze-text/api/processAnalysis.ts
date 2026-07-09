@@ -3,8 +3,9 @@
  * @module features/analyze-text/api/processAnalysis
  */
 
+import { after } from "next/server";
 import { analyzeText, prisma } from "@/shared";
-import { translateToSpanish } from "@/shared/api/translate";
+import { processTranslation } from "./processTranslation";
 
 interface AnalysisJobResult {
   analysisIds: string[];
@@ -76,7 +77,7 @@ export async function processAnalysis(
             sentiment: aiResult.sentiment,
             reliabilityScore: aiResult.reliabilityScore,
             reasoning: aiResult.reasoning,
-            reasoningEs: await translateToSpanish(aiResult.reasoning),
+            reasoningEs: null, // Translation will be done in background
             jobId, // Link to job for tracking
           },
         });
@@ -113,6 +114,9 @@ export async function processAnalysis(
     });
 
     console.log(`[Job ${jobId}] Analysis completed successfully: ${results.length} companies detected`);
+
+    // Kick off background translation (non-blocking)
+    after(() => processTranslation(jobResult.analysisIds));
   } catch (error: unknown) {
     console.error(`[Job ${jobId}] Analysis failed:`, error);
 
@@ -128,9 +132,72 @@ export async function processAnalysis(
 }
 
 /**
- * Update company aggregate scores based on all analyses
+ * Update company aggregate scores incrementally (optimized)
+ * Uses moving average formula instead of recalculating from all analyses
  */
 async function updateCompanyAggregates(companyId: string) {
+  // Get current company aggregates
+  const company = await prisma.company.findUnique({
+    where: { id: companyId },
+    select: {
+      avgSentimentScore: true,
+      avgReliabilityScore: true,
+      analysisCount: true,
+    },
+  });
+
+  if (!company) {
+    return;
+  }
+
+  // Get the most recent analysis for this company
+  const latestAnalysis = await prisma.analysis.findFirst({
+    where: { companyId },
+    orderBy: { createdAt: 'desc' },
+    select: {
+      sentiment: true,
+      reliabilityScore: true,
+    },
+  });
+
+  if (!latestAnalysis) {
+    return;
+  }
+
+  // Convert sentiment to numeric value
+  const sentimentValue = latestAnalysis.sentiment === "BULLISH" ? 1 
+                        : latestAnalysis.sentiment === "BEARISH" ? -1 
+                        : 0;
+
+  const oldCount = company.analysisCount;
+  const newCount = oldCount + 1;
+
+  // Calculate new averages using incremental formula
+  // newAvg = (oldAvg * oldCount + newValue) / newCount
+  const newAvgSentiment = oldCount === 0 
+    ? sentimentValue 
+    : ((company.avgSentimentScore || 0) * oldCount + sentimentValue) / newCount;
+    
+  const newAvgReliability = oldCount === 0
+    ? latestAnalysis.reliabilityScore
+    : ((company.avgReliabilityScore || 0) * oldCount + latestAnalysis.reliabilityScore) / newCount;
+
+  // Update company with new aggregates
+  await prisma.company.update({
+    where: { id: companyId },
+    data: {
+      avgSentimentScore: newAvgSentiment,
+      avgReliabilityScore: newAvgReliability,
+      analysisCount: newCount,
+    },
+  });
+}
+
+/**
+ * Recalculate company aggregates from scratch (for data integrity checks)
+ * Use only for migrations or corrections, not for regular updates
+ */
+export async function recalculateCompanyAggregatesFromScratch(companyId: string) {
   // Get all analyses for this company
   const analyses = await prisma.analysis.findMany({
     where: { companyId },
@@ -141,6 +208,15 @@ async function updateCompanyAggregates(companyId: string) {
   });
 
   if (analyses.length === 0) {
+    // Reset aggregates if no analyses
+    await prisma.company.update({
+      where: { id: companyId },
+      data: {
+        avgSentimentScore: null,
+        avgReliabilityScore: null,
+        analysisCount: 0,
+      },
+    });
     return;
   }
 

@@ -42,7 +42,7 @@ export async function analyzeText(text: string): Promise<AnalysisResult[]> {
   try {
     // Add timeout to prevent hanging (Ollama can be slow on large texts)
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 60000); // 60 second timeout
+    const timeout = setTimeout(() => controller.abort(), 120000); // 120 second timeout (increased for batch operations)
 
     const response = await fetch(`${OLLAMA_URL}/api/generate`, {
       method: 'POST',
@@ -84,7 +84,7 @@ export async function analyzeText(text: string): Promise<AnalysisResult[]> {
   } catch (error) {
     console.error('Ollama analysis error:', error);
     if (error instanceof Error && error.name === 'AbortError') {
-      throw new Error('AI analysis timed out (> 60s). Try with shorter text or wait for the model to warm up.');
+      throw new Error('AI analysis timed out (> 120s). Try with shorter text or wait for the model to warm up.');
     }
     throw new Error(
       error instanceof Error 

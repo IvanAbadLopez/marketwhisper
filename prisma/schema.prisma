@@ -22,7 +22,7 @@ model User {
   password      String?
   accounts      Account[]
   sessions      Session[]
-  jobs          Job[]     // Background AI jobs (analysis + enrichment)
+  jobs          Job[]
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 }
@@ -59,6 +59,42 @@ model VerificationToken {
   expires    DateTime
 
   @@unique([identifier, token])
+}
+
+// ==========================================
+// JOB TRACKING SYSTEM
+// ==========================================
+
+model Job {
+  id            String    @id @default(cuid())
+  userId        String
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type          JobType
+  status        JobStatus @default(PENDING)
+  ticker        String
+  result        Json?
+  errorMessage  String?
+  analysisId    String?   @unique
+  enrichmentId  String?   @unique
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([userId])
+  @@index([status])
+  @@index([type])
+  @@index([createdAt])
+}
+
+enum JobType {
+  ANALYSIS
+  ENRICHMENT
+}
+
+enum JobStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
 }
 
 // ==========================================
@@ -194,8 +230,7 @@ model Analysis {
   reliabilityScore Int       // AI confidence score (1-10)
   reasoning        String    // AI explanation for the analysis (English)
   reasoningEs      String?   // Spanish translation of reasoning
-  // Job tracking (optional - for unified queue visibility)
-  jobId            String?   @unique // Reference to Job for queue tracking
+  jobId            String?   @unique // Optional job relation for tracking
   createdAt        DateTime  @default(now())
 
   @@index([companyId])
@@ -217,12 +252,16 @@ model CompanyEnrichment {
   // Processing status (for background enrichment)
   status          EnrichmentStatus  @default(PENDING)
   errorMessage    String?           // Error detail if status is FAILED
-  // Job tracking (optional - for unified queue visibility)
-  jobId           String?           @unique // Reference to Job for queue tracking
-  // AI Analysis (Ollama-generated insights combining user texts + Finnhub data)
+  // Financial data (raw structured data)
+  financialData   Json?             // Revenue, EPS, P/E ratio, debt/equity, profit margins, etc.
+  priceData       Json?             // Current price, 52-week high/low, volume, day change, etc.
+  newsHeadlines   Json?             // Recent news articles with title, publisher, link, date
+  recommendations Json?             // Analyst recommendations (strong buy, buy, hold, sell, strong sell)
+  // AI Analysis (Ollama-generated insights)
   aiAnalysis      String?           // Comprehensive AI-generated summary and insights (English)
   aiAnalysisEs    String?           // Spanish translation of AI analysis
   ollamaModel     String?           // Model used for analysis (e.g., "llama3.1:8b")
+  jobId           String?           @unique // Optional job relation for tracking
   // Metadata
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
@@ -243,44 +282,5 @@ enum EnrichmentStatus {
   PENDING     // Queued, not started yet
   PROCESSING  // Currently fetching data / generating analysis
   COMPLETED   // Successfully enriched
-  FAILED      // Failed (see errorMessage)
-}
-
-// ==========================================
-// JOB TRACKING - Unified Background Jobs
-// ==========================================
-
-model Job {
-  id          String   @id @default(cuid())
-  userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  type        JobType
-  status      JobStatus @default(PENDING)
-  ticker      String   // Company ticker being processed
-  // Result data (stored as JSON for flexibility)
-  result      Json?    // Success result (analysis or enrichment data)
-  errorMessage String? // Error detail if status is FAILED
-  // Relationships (optional - for reference only)
-  analysisId  String?  @unique // Reference to Analysis if type=ANALYSIS
-  enrichmentId String? @unique // Reference to CompanyEnrichment if type=ENRICHMENT
-  // Metadata
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  @@index([userId])
-  @@index([status])
-  @@index([type])
-  @@index([createdAt])
-}
-
-enum JobType {
-  ANALYSIS    // Text analysis with Ollama
-  ENRICHMENT  // Company enrichment with Finnhub
-}
-
-enum JobStatus {
-  PENDING     // Queued, not started yet
-  PROCESSING  // Currently processing
-  COMPLETED   // Successfully completed
   FAILED      // Failed (see errorMessage)
 }
