@@ -390,6 +390,7 @@ export default function CompanyDetailPage({ params }: { params: Promise<{ ticker
               </h3>
               <EnrichButton
                 ticker={ticker}
+                lastEnrichment={company.enrichments?.find(e => e.source === "FINNHUB") || null}
                 onSuccess={fetchCompany}
                 variant="default"
               />
