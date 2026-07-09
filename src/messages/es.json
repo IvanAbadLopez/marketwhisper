@@ -227,5 +227,12 @@
   "analyzePage": {
     "title": "Análisis de Texto con IA",
     "subtitle": "Pega cualquier texto sobre empresas o acciones para obtener análisis de sentimiento y puntuaciones de confiabilidad con IA"
+  },
+  "relativeTime": {
+    "justNow": "ahora mismo",
+    "minutesAgo": "{count, plural, one {hace # minuto} other {hace # minutos}}",
+    "hoursAgo": "{count, plural, one {hace # hora} other {hace # horas}}",
+    "daysAgo": "{count, plural, one {hace # día} other {hace # días}}",
+    "monthsAgo": "{count, plural, one {hace # mes} other {hace # meses}}"
   }
 }
