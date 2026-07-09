@@ -2,7 +2,8 @@
  * @vitest-environment jsdom
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { EnrichButton } from './EnrichButton';
 
 // Mock next-intl
@@ -30,9 +31,16 @@ vi.mock('../api/enrichCompany', () => ({
   getEnrichmentStatus: vi.fn(),
 }));
 
+import { enrichCompany, getEnrichmentStatus } from '../api/enrichCompany';
+
+const mockEnrichCompany = vi.mocked(enrichCompany);
+const mockGetEnrichmentStatus = vi.mocked(getEnrichmentStatus);
+
 describe('EnrichButton - timestamp display', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockEnrichCompany.mockResolvedValue({ enrichmentId: 'test-123' });
+    mockGetEnrichmentStatus.mockResolvedValue({ status: 'PENDING' });
   });
 
   it('displays timestamp when lastEnrichment is provided', () => {
@@ -88,5 +96,45 @@ describe('EnrichButton - timestamp display', () => {
     const timestampDiv = screen.getByText('2 days ago').parentElement;
     expect(timestampDiv).toHaveClass('text-zinc-500');
     expect(timestampDiv).toHaveClass('dark:text-zinc-400');
+  });
+
+  it('updates timestamp text with correct relative time', () => {
+    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+    
+    render(
+      <EnrichButton 
+        ticker="AAPL" 
+        lastEnrichment={{ createdAt: oneHourAgo }}
+      />
+    );
+
+    expect(screen.getByText('1 hour ago')).toBeInTheDocument();
+  });
+
+  it('hides timestamp while loading', async () => {
+    const user = userEvent.setup();
+    const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000);
+    
+    render(
+      <EnrichButton 
+        ticker="AAPL" 
+        lastEnrichment={{ createdAt: twoHoursAgo }}
+      />
+    );
+
+    // Initially timestamp should be visible
+    expect(screen.getByText('2 hours ago')).toBeInTheDocument();
+
+    // Click the enrich button to trigger loading state
+    const enrichButton = screen.getByRole('button', { name: /enrich with finnhub/i });
+    await user.click(enrichButton);
+
+    // Wait for loading state to activate
+    await waitFor(() => {
+      expect(screen.getByText(/queued|analyzing/i)).toBeInTheDocument();
+    });
+
+    // Timestamp should be hidden during loading
+    expect(screen.queryByText('2 hours ago')).not.toBeInTheDocument();
   });
 });
