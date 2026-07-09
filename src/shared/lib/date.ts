@@ -13,6 +13,14 @@ export function formatRelativeTime(date: Date, locale: string): string {
     return 'just now';
   }
 
+  // Less than 1 hour (1-59 minutes)
+  const diffInMinutes = Math.floor(diffInSeconds / 60);
+  if (diffInMinutes < 60) {
+    return diffInMinutes === 1 
+      ? '1 minute ago' 
+      : `${diffInMinutes} minutes ago`;
+  }
+
   // Fallback (temporary)
   return 'unknown';
 }

@@ -18,4 +18,22 @@ describe('formatRelativeTime', () => {
     const result = formatRelativeTime(thirtySecondsAgo, 'en');
     expect(result).toBe('just now');
   });
+
+  it('returns "1 minute ago" for singular minute', () => {
+    const now = new Date('2026-07-09T10:00:00Z');
+    vi.setSystemTime(now);
+    
+    const oneMinuteAgo = new Date('2026-07-09T09:59:00Z');
+    const result = formatRelativeTime(oneMinuteAgo, 'en');
+    expect(result).toBe('1 minute ago');
+  });
+
+  it('returns "X minutes ago" for plural minutes', () => {
+    const now = new Date('2026-07-09T10:00:00Z');
+    vi.setSystemTime(now);
+    
+    const fiveMinutesAgo = new Date('2026-07-09T09:55:00Z');
+    const result = formatRelativeTime(fiveMinutesAgo, 'en');
+    expect(result).toBe('5 minutes ago');
+  });
 });
