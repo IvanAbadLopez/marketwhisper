@@ -72,4 +72,22 @@ describe('formatRelativeTime', () => {
     const result = formatRelativeTime(fiveDaysAgo, 'en');
     expect(result).toBe('5 days ago');
   });
+
+  it('returns "1 month ago" for singular month', () => {
+    const now = new Date('2026-07-09T10:00:00Z');
+    vi.setSystemTime(now);
+    
+    const oneMonthAgo = new Date('2026-06-09T10:00:00Z');
+    const result = formatRelativeTime(oneMonthAgo, 'en');
+    expect(result).toBe('1 month ago');
+  });
+
+  it('returns "X months ago" for plural months', () => {
+    const now = new Date('2026-07-09T10:00:00Z');
+    vi.setSystemTime(now);
+    
+    const threeMonthsAgo = new Date('2026-04-09T10:00:00Z');
+    const result = formatRelativeTime(threeMonthsAgo, 'en');
+    expect(result).toBe('3 months ago');
+  });
 });

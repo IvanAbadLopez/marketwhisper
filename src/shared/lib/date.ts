@@ -37,6 +37,9 @@ export function formatRelativeTime(date: Date, locale: string): string {
       : `${diffInDays} days ago`;
   }
 
-  // Fallback (temporary)
-  return 'unknown';
+  // 30+ days (months)
+  const diffInMonths = Math.floor(diffInDays / 30);
+  return diffInMonths === 1 
+    ? '1 month ago' 
+    : `${diffInMonths} months ago`;
 }
