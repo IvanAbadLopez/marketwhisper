@@ -29,6 +29,14 @@ export function formatRelativeTime(date: Date, locale: string): string {
       : `${diffInHours} hours ago`;
   }
 
+  // Less than 30 days (1-29 days)
+  const diffInDays = Math.floor(diffInHours / 24);
+  if (diffInDays < 30) {
+    return diffInDays === 1 
+      ? '1 day ago' 
+      : `${diffInDays} days ago`;
+  }
+
   // Fallback (temporary)
   return 'unknown';
 }

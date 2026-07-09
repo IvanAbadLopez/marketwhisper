@@ -54,4 +54,22 @@ describe('formatRelativeTime', () => {
     const result = formatRelativeTime(fiveHoursAgo, 'en');
     expect(result).toBe('5 hours ago');
   });
+
+  it('returns "1 day ago" for singular day', () => {
+    const now = new Date('2026-07-09T10:00:00Z');
+    vi.setSystemTime(now);
+    
+    const oneDayAgo = new Date('2026-07-08T10:00:00Z');
+    const result = formatRelativeTime(oneDayAgo, 'en');
+    expect(result).toBe('1 day ago');
+  });
+
+  it('returns "X days ago" for plural days', () => {
+    const now = new Date('2026-07-09T10:00:00Z');
+    vi.setSystemTime(now);
+    
+    const fiveDaysAgo = new Date('2026-07-04T10:00:00Z');
+    const result = formatRelativeTime(fiveDaysAgo, 'en');
+    expect(result).toBe('5 days ago');
+  });
 });
