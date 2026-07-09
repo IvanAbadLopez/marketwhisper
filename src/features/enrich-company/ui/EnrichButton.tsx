@@ -8,14 +8,17 @@
  */
 
 import { useState, useRef, useEffect } from "react";
-import { Sparkles, Loader2 } from "lucide-react";
+import { Sparkles, Loader2, Clock } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { enrichCompany, getEnrichmentStatus } from "../api/enrichCompany";
+import { formatRelativeTime } from "@/shared/lib/date";
 
 interface EnrichButtonProps {
   ticker: string;
   onSuccess?: () => void;
   variant?: "default" | "compact";
   className?: string;
+  lastEnrichment?: { createdAt: Date } | null;
 }
 
 /** Poll interval for checking background job status (ms) */
@@ -30,7 +33,9 @@ export function EnrichButton({
   onSuccess,
   variant = "default",
   className = "",
+  lastEnrichment,
 }: EnrichButtonProps) {
+  const t = useTranslations();
   const [state, setState] = useState<JobState>("idle");
   const [error, setError] = useState<string | null>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -44,6 +49,16 @@ export function EnrichButton({
 
   const loading = state === "pending" || state === "processing";
   const success = state === "success";
+
+  // Calculate age color for timestamp (gray <7 days, yellow >7 days)
+  const ageInDays = lastEnrichment
+    ? (Date.now() - lastEnrichment.createdAt.getTime()) / 86400000
+    : 0;
+
+  const ageColor =
+    ageInDays > 7
+      ? "text-yellow-600 dark:text-yellow-400"
+      : "text-zinc-500 dark:text-zinc-400";
 
   const pollStatus = (enrichmentId: string, attempt = 0) => {
     timerRef.current = setTimeout(async () => {
@@ -103,33 +118,42 @@ export function EnrichButton({
 
   if (variant === "compact") {
     return (
-      <button
-        onClick={handleEnrich}
-        disabled={loading}
-        className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
-          success
-            ? "bg-green-500/20 text-green-400 cursor-default"
-            : "bg-purple-500/20 text-purple-400 hover:bg-purple-500/30 disabled:opacity-50 disabled:cursor-not-allowed"
-        } ${className}`}
-        title={error || (success ? "Enriched successfully!" : "Fetch data from Finnhub")}
-      >
-        {loading ? (
-          <>
-            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            <span>{state === "processing" ? "Analyzing" : "Queued"}</span>
-          </>
-        ) : success ? (
-          <>
-            <Sparkles className="h-3.5 w-3.5" />
-            <span>Enriched</span>
-          </>
-        ) : (
-          <>
-            <Sparkles className="h-3.5 w-3.5" />
-            <span>Finnhub</span>
-          </>
+      <div className="flex flex-col items-end gap-1">
+        <button
+          onClick={handleEnrich}
+          disabled={loading}
+          className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
+            success
+              ? "bg-green-500/20 text-green-400 cursor-default"
+              : "bg-purple-500/20 text-purple-400 hover:bg-purple-500/30 disabled:opacity-50 disabled:cursor-not-allowed"
+          } ${className}`}
+          title={error || (success ? "Enriched successfully!" : "Fetch data from Finnhub")}
+        >
+          {loading ? (
+            <>
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              <span>{state === "processing" ? "Analyzing" : "Queued"}</span>
+            </>
+          ) : success ? (
+            <>
+              <Sparkles className="h-3.5 w-3.5" />
+              <span>Enriched</span>
+            </>
+          ) : (
+            <>
+              <Sparkles className="h-3.5 w-3.5" />
+              <span>Finnhub</span>
+            </>
+          )}
+        </button>
+
+        {lastEnrichment && !loading && (
+          <div className={`flex items-center gap-1 text-xs ${ageColor}`}>
+            <Clock className="w-3 h-3" />
+            <span>{formatRelativeTime(lastEnrichment.createdAt, t)}</span>
+          </div>
         )}
-      </button>
+      </div>
     );
   }
 
@@ -174,6 +198,13 @@ export function EnrichButton({
           Running in the background — you can keep browsing. Fetching financial
           data from Finnhub and generating AI analysis...
         </p>
+      )}
+
+      {lastEnrichment && !loading && (
+        <div className={`flex items-center gap-1.5 text-sm ${ageColor}`}>
+          <Clock className="w-4 h-4" />
+          <span>{formatRelativeTime(lastEnrichment.createdAt, t)}</span>
+        </div>
       )}
     </div>
   );
