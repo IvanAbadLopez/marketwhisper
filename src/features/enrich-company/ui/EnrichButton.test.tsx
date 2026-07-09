@@ -59,4 +59,34 @@ describe('EnrichButton - timestamp display', () => {
     // The timestamp text should not be in the document
     expect(screen.queryByText(/ago/)).not.toBeInTheDocument();
   });
+
+  it('displays yellow color for stale data (>7 days)', () => {
+    const tenDaysAgo = new Date(Date.now() - 10 * 24 * 60 * 60 * 1000);
+    
+    render(
+      <EnrichButton 
+        ticker="AAPL" 
+        lastEnrichment={{ createdAt: tenDaysAgo }}
+      />
+    );
+
+    const timestampDiv = screen.getByText('10 days ago').parentElement;
+    expect(timestampDiv).toHaveClass('text-yellow-600');
+    expect(timestampDiv).toHaveClass('dark:text-yellow-400');
+  });
+
+  it('displays gray color for fresh data (<7 days)', () => {
+    const twoDaysAgo = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000);
+    
+    render(
+      <EnrichButton 
+        ticker="AAPL" 
+        lastEnrichment={{ createdAt: twoDaysAgo }}
+      />
+    );
+
+    const timestampDiv = screen.getByText('2 days ago').parentElement;
+    expect(timestampDiv).toHaveClass('text-zinc-500');
+    expect(timestampDiv).toHaveClass('dark:text-zinc-400');
+  });
 });
