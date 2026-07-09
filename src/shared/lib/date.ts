@@ -5,8 +5,18 @@
  * @returns A human-readable relative time string
  */
 export function formatRelativeTime(date: Date, locale: string): string {
+  // Validate input: check for invalid dates
+  if (isNaN(date.getTime())) {
+    return '';
+  }
+
   const now = new Date();
   const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+
+  // Handle future dates
+  if (diffInSeconds < 0) {
+    return '';
+  }
 
   // Less than 1 minute
   if (diffInSeconds < 60) {

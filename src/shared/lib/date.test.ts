@@ -90,4 +90,96 @@ describe('formatRelativeTime', () => {
     const result = formatRelativeTime(threeMonthsAgo, 'en');
     expect(result).toBe('3 months ago');
   });
+
+  // Boundary tests
+  it('returns "just now" for exactly 59 seconds ago', () => {
+    const now = new Date('2026-07-09T10:00:00Z');
+    vi.setSystemTime(now);
+    
+    const fiftyNineSecondsAgo = new Date(now.getTime() - 59 * 1000);
+    const result = formatRelativeTime(fiftyNineSecondsAgo, 'en');
+    expect(result).toBe('just now');
+  });
+
+  it('returns "1 minute ago" for exactly 60 seconds', () => {
+    const now = new Date('2026-07-09T10:00:00Z');
+    vi.setSystemTime(now);
+    
+    const sixtySecondsAgo = new Date(now.getTime() - 60 * 1000);
+    const result = formatRelativeTime(sixtySecondsAgo, 'en');
+    expect(result).toBe('1 minute ago');
+  });
+
+  it('returns "59 minutes ago" for exactly 59 minutes 59 seconds', () => {
+    const now = new Date('2026-07-09T10:00:00Z');
+    vi.setSystemTime(now);
+    
+    const fiftyNineMinutesFiftyNineSecondsAgo = new Date(now.getTime() - (59 * 60 + 59) * 1000);
+    const result = formatRelativeTime(fiftyNineMinutesFiftyNineSecondsAgo, 'en');
+    expect(result).toBe('59 minutes ago');
+  });
+
+  it('returns "1 hour ago" for exactly 60 minutes', () => {
+    const now = new Date('2026-07-09T10:00:00Z');
+    vi.setSystemTime(now);
+    
+    const sixtyMinutesAgo = new Date(now.getTime() - 60 * 60 * 1000);
+    const result = formatRelativeTime(sixtyMinutesAgo, 'en');
+    expect(result).toBe('1 hour ago');
+  });
+
+  it('returns "23 hours ago" for exactly 23 hours 59 minutes', () => {
+    const now = new Date('2026-07-09T10:00:00Z');
+    vi.setSystemTime(now);
+    
+    const twentyThreeHoursFiftyNineMinutesAgo = new Date(now.getTime() - (23 * 60 + 59) * 60 * 1000);
+    const result = formatRelativeTime(twentyThreeHoursFiftyNineMinutesAgo, 'en');
+    expect(result).toBe('23 hours ago');
+  });
+
+  it('returns "1 day ago" for exactly 24 hours', () => {
+    const now = new Date('2026-07-09T10:00:00Z');
+    vi.setSystemTime(now);
+    
+    const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+    const result = formatRelativeTime(twentyFourHoursAgo, 'en');
+    expect(result).toBe('1 day ago');
+  });
+
+  it('returns "29 days ago" for exactly 29 days 23 hours', () => {
+    const now = new Date('2026-07-09T10:00:00Z');
+    vi.setSystemTime(now);
+    
+    const twentyNineDaysTwentyThreeHoursAgo = new Date(now.getTime() - (29 * 24 + 23) * 60 * 60 * 1000);
+    const result = formatRelativeTime(twentyNineDaysTwentyThreeHoursAgo, 'en');
+    expect(result).toBe('29 days ago');
+  });
+
+  it('returns "1 month ago" for exactly 30 days', () => {
+    const now = new Date('2026-07-09T10:00:00Z');
+    vi.setSystemTime(now);
+    
+    const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+    const result = formatRelativeTime(thirtyDaysAgo, 'en');
+    expect(result).toBe('1 month ago');
+  });
+
+  // Error case tests
+  it('returns empty string for future dates', () => {
+    const now = new Date('2026-07-09T10:00:00Z');
+    vi.setSystemTime(now);
+    
+    const futureDate = new Date('2026-07-09T11:00:00Z');
+    const result = formatRelativeTime(futureDate, 'en');
+    expect(result).toBe('');
+  });
+
+  it('returns empty string for invalid dates', () => {
+    const now = new Date('2026-07-09T10:00:00Z');
+    vi.setSystemTime(now);
+    
+    const invalidDate = new Date('invalid');
+    const result = formatRelativeTime(invalidDate, 'en');
+    expect(result).toBe('');
+  });
 });
