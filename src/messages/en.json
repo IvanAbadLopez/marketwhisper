@@ -229,5 +229,12 @@
   "analyzePage": {
     "title": "AI Text Analysis",
     "subtitle": "Paste any text about companies or stocks to get AI-powered sentiment analysis and reliability scores"
+  },
+  "relativeTime": {
+    "justNow": "just now",
+    "minutesAgo": "{count, plural, one {# minute ago} other {# minutes ago}}",
+    "hoursAgo": "{count, plural, one {# hour ago} other {# hours ago}}",
+    "daysAgo": "{count, plural, one {# day ago} other {# days ago}}",
+    "monthsAgo": "{count, plural, one {# month ago} other {# months ago}}"
   }
 }
