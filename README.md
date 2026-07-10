@@ -24,7 +24,7 @@
 - 🔍 **Company Dashboard**: View all analyses, sentiment trends, and insights per ticker
 - 💬 **Local AI**: Uses Ollama for analysis (100% local, no external API costs)
 - 🐳 **Full Docker Stack**: PostgreSQL + Next.js ready to deploy
-- 🔐 **Multi-Auth**: Email/password, Google, GitHub authentication
+- 🔐 **Authentication**: Secure email/password authentication with NextAuth.js
 
 #### Multi-Company Analysis Example
 
@@ -70,6 +70,10 @@ See [docs/multi-company-analysis.md](docs/multi-company-analysis.md) for detaile
 git clone https://github.com/IvanAbadLopez/marketwhisper.git
 cd marketwhisper
 
+# Create .env file (optional - only needed for Finnhub features)
+cp .env.example .env
+# Edit .env and add your Finnhub API key (get free key at https://finnhub.io/register)
+
 # Start the application
 docker compose up
 ```
@@ -80,11 +84,23 @@ docker compose up
 - Email: `demo@marketwhisper.com`
 - Password: `MarketWhisper2026!`
 
-**First steps after login:**
-1. Click "Analyze Text" button in the header
-2. Paste any financial text (e.g., news about AAPL, MSFT, etc.)
-3. View results showing detected companies with sentiment and reliability
-4. Navigate to companies page to see aggregated analysis
+**First login - explore with pre-seeded companies:**
+1. Browse the 3 pre-seeded companies (AAPL, MSFT, GOOGL)
+2. View company details and metrics
+
+**Optional features** (set up after first login):
+
+📊 **Company Search & Enrichment** (requires Finnhub API key)
+- Get a free key at https://finnhub.io/register
+- Add to `.env`: `FINNHUB_API_KEY="your_key_here"`
+- Restart: `docker compose restart web`
+
+🤖 **AI Text Analysis** (requires Ollama model ~5GB)
+Download the model when you want to use the "Analyze Text" feature:
+```bash
+docker exec marketwhisper-ollama ollama pull llama3.1:8b
+```
+This downloads the AI model (~5GB). Then you can paste financial text and get AI-powered sentiment analysis.
 
 For detailed Docker instructions, see [docs/docker.md](docs/docker.md)
 
@@ -145,12 +161,6 @@ DATABASE_URL="postgresql://marketwhisper:marketwhisper_dev_2026@localhost:5432/m
 # NextAuth.js
 NEXTAUTH_URL="http://localhost:3000"
 NEXTAUTH_SECRET="docker-dev-secret-change-in-production-please"
-
-# Optional: OAuth providers
-GOOGLE_CLIENT_ID=""
-GOOGLE_CLIENT_SECRET=""
-GITHUB_CLIENT_ID=""
-GITHUB_CLIENT_SECRET=""
 
 # Optional: AI API (or use local models)
 # No AI API keys needed - Ollama runs locally!

@@ -7,7 +7,7 @@
  */
 
 import { useState } from "react";
-import { useLocale } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { 
   TrendingUp, 
   TrendingDown, 
@@ -17,10 +17,65 @@ import {
   ChevronDown,
   ChevronUp,
   Calendar,
-  Activity
+  Activity,
+  Languages
 } from "lucide-react";
 import { AnalystSentimentChart } from "./AnalystSentimentChart";
 import { calcAnalystScore, analystScoreLabel } from "@/features/enrich-company/lib/analystScore";
+
+interface VerdictInfo {
+  verdict: 'BULLISH' | 'BEARISH' | 'NEUTRAL';
+  risk: 'Low' | 'Medium' | 'High';
+  confidence: number;
+}
+
+/**
+ * Parse VERDICT line from AI analysis
+ * Expected format: "VERDICT: BULLISH | Risk: Medium | Confidence: 7/10"
+ */
+function parseVerdict(text: string): VerdictInfo | null {
+  const firstLine = text.split('\n')[0];
+  const verdictMatch = firstLine.match(/VERDICT:\s*(BULLISH|BEARISH|NEUTRAL)/i);
+  const riskMatch = firstLine.match(/Risk:\s*(Low|Medium|High)/i);
+  const confidenceMatch = firstLine.match(/Confidence:\s*(\d+)\/10/i);
+
+  if (verdictMatch && riskMatch && confidenceMatch) {
+    return {
+      verdict: verdictMatch[1].toUpperCase() as 'BULLISH' | 'BEARISH' | 'NEUTRAL',
+      risk: riskMatch[1] as 'Low' | 'Medium' | 'High',
+      confidence: parseInt(confidenceMatch[1], 10),
+    };
+  }
+  return null;
+}
+
+/**
+ * Get color classes for verdict badge
+ */
+function getVerdictColor(verdict: 'BULLISH' | 'BEARISH' | 'NEUTRAL'): string {
+  switch (verdict) {
+    case 'BULLISH':
+      return 'bg-green-500/20 text-green-400 border-green-500/30';
+    case 'BEARISH':
+      return 'bg-red-500/20 text-red-400 border-red-500/30';
+    case 'NEUTRAL':
+      return 'bg-zinc-500/20 text-zinc-400 border-zinc-500/30';
+  }
+}
+
+/**
+ * Get color classes for risk badge
+ */
+function getRiskColor(risk: 'Low' | 'Medium' | 'High'): string {
+  switch (risk) {
+    case 'Low':
+      return 'bg-blue-500/20 text-blue-400 border-blue-500/30';
+    case 'Medium':
+      return 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30';
+    case 'High':
+      return 'bg-orange-500/20 text-orange-400 border-orange-500/30';
+  }
+}
 
 interface EnrichmentData {
   id: string;
@@ -61,7 +116,7 @@ interface EnrichmentData {
   aiAnalysis: string | null;
   aiAnalysisEs: string | null;
   ollamaModel: string | null;
-  createdAt: Date;
+  createdAt: string; // Comes as string from JSON
 }
 
 interface EnrichmentDisplayProps {
@@ -70,9 +125,63 @@ interface EnrichmentDisplayProps {
 
 export function EnrichmentDisplay({ enrichment }: EnrichmentDisplayProps) {
   const locale = useLocale();
+  const t = useTranslations('company.enrichment');
   const [showFullAnalysis, setShowFullAnalysis] = useState(false);
   const [showFinancials, setShowFinancials] = useState(false);
   const [showNews, setShowNews] = useState(false);
+
+  // Translation state
+  const [translatedText, setTranslatedText] = useState<string | null>(
+    enrichment?.aiAnalysisEs || null
+  );
+  const [language, setLanguage] = useState<'en' | 'es'>(
+    locale === 'es' && enrichment?.aiAnalysisEs ? 'es' : 'en'
+  );
+  const [isTranslating, setIsTranslating] = useState(false);
+  const [translateError, setTranslateError] = useState<string | null>(null);
+
+  const handleToggleTranslation = async () => {
+    // If already in Spanish and we have the translation, toggle back to English
+    if (language === 'es') {
+      setLanguage('en');
+      return;
+    }
+
+    // If we already have the translation, just switch to Spanish
+    if (translatedText) {
+      setLanguage('es');
+      return;
+    }
+
+    // Otherwise, fetch translation
+    if (!enrichment) return;
+
+    setIsTranslating(true);
+    setTranslateError(null);
+
+    try {
+      const response = await fetch(
+        `/api/companies/${enrichment.ticker}/enrich-finnhub/${enrichment.id}/translate`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error('Translation failed');
+      }
+
+      const data = await response.json();
+      setTranslatedText(data.aiAnalysisEs);
+      setLanguage('es');
+    } catch (error) {
+      console.error('Translation error:', error);
+      setTranslateError(t('translateError'));
+    } finally {
+      setIsTranslating(false);
+    }
+  };
 
   if (!enrichment) {
     return (
@@ -86,7 +195,7 @@ export function EnrichmentDisplay({ enrichment }: EnrichmentDisplayProps) {
     );
   }
 
-  const { priceData, financialData, newsHeadlines, recommendations, aiAnalysis, aiAnalysisEs, createdAt } = enrichment;
+  const { priceData, financialData, newsHeadlines, recommendations, aiAnalysis, createdAt } = enrichment;
 
   const formatCurrency = (value: number | null | undefined, compact = true) => {
     if (value === null || value === undefined) return "N/A";
@@ -102,6 +211,14 @@ export function EnrichmentDisplay({ enrichment }: EnrichmentDisplayProps) {
 
   const dayChangeColor = (priceData?.dayChange || 0) >= 0 ? "text-green-400" : "text-red-400";
   const DayChangeIcon = (priceData?.dayChange || 0) >= 0 ? TrendingUp : TrendingDown;
+
+  // Parse verdict from AI analysis
+  const displayText = language === 'es' && translatedText ? translatedText : aiAnalysis;
+  const verdictInfo = displayText ? parseVerdict(displayText) : null;
+  // Remove the first line (VERDICT) from the display text if parsed successfully
+  const analysisBody = verdictInfo && displayText 
+    ? displayText.split('\n').slice(1).join('\n').trim()
+    : displayText;
 
   // Calculate recommendation sentiment
   const latestRec = recommendations && recommendations.length > 0 ? recommendations[recommendations.length - 1] : null;
@@ -157,27 +274,69 @@ export function EnrichmentDisplay({ enrichment }: EnrichmentDisplayProps) {
                 {enrichment.ollamaModel || "llama3.1:8b"}
               </span>
             </div>
-            <button
-              onClick={() => setShowFullAnalysis(!showFullAnalysis)}
-              className="text-sm text-purple-400 hover:text-purple-300 flex items-center gap-1"
-            >
-              {showFullAnalysis ? (
-                <>
-                  <span>Collapse</span>
-                  <ChevronUp className="h-4 w-4" />
-                </>
-              ) : (
-                <>
-                  <span>Expand</span>
-                  <ChevronDown className="h-4 w-4" />
-                </>
-              )}
-            </button>
+            <div className="flex items-center gap-2">
+              {/* Translation Toggle Button */}
+              <button
+                onClick={handleToggleTranslation}
+                disabled={isTranslating}
+                className="text-sm text-purple-400 hover:text-purple-300 flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
+                title={language === 'es' ? t('showOriginal') : t('translateToSpanish')}
+              >
+                {isTranslating ? (
+                  <>
+                    <span>{t('translating')}</span>
+                  </>
+                ) : (
+                  <>
+                    <Languages className="h-4 w-4" />
+                    <span>{language === 'es' ? t('showOriginal') : t('translateToSpanish')}</span>
+                  </>
+                )}
+              </button>
+              {/* Expand/Collapse Button */}
+              <button
+                onClick={() => setShowFullAnalysis(!showFullAnalysis)}
+                className="text-sm text-purple-400 hover:text-purple-300 flex items-center gap-1"
+              >
+                {showFullAnalysis ? (
+                  <>
+                    <span>Collapse</span>
+                    <ChevronUp className="h-4 w-4" />
+                  </>
+                ) : (
+                  <>
+                    <span>Expand</span>
+                    <ChevronDown className="h-4 w-4" />
+                  </>
+                )}
+              </button>
+            </div>
           </div>
+
+          {translateError && (
+            <div className="mb-3 p-2 bg-red-500/10 border border-red-500/30 rounded text-xs text-red-400">
+              {translateError}
+            </div>
+          )}
+
+          {/* Verdict Badge */}
+          {verdictInfo && (
+            <div className="flex flex-wrap items-center gap-2 mb-3">
+              <span className={`px-3 py-1 rounded-full text-sm font-semibold border ${getVerdictColor(verdictInfo.verdict)}`}>
+                {verdictInfo.verdict}
+              </span>
+              <span className={`px-3 py-1 rounded-full text-sm font-semibold border ${getRiskColor(verdictInfo.risk)}`}>
+                Risk: {verdictInfo.risk}
+              </span>
+              <span className="px-3 py-1 rounded-full text-sm font-semibold border bg-purple-500/20 text-purple-400 border-purple-500/30">
+                Confidence: {verdictInfo.confidence}/10
+              </span>
+            </div>
+          )}
 
           <div className={`prose prose-invert max-w-none ${showFullAnalysis ? "" : "line-clamp-4"}`}>
             <p className="text-sm text-zinc-300 whitespace-pre-wrap">
-              {locale === 'es' && aiAnalysisEs ? aiAnalysisEs : aiAnalysis}
+              {analysisBody}
             </p>
           </div>
         </div>

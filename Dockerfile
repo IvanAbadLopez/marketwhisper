@@ -34,7 +34,7 @@ ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_ENV=production
 RUN npm run build
 
-# Stage 3: Runner
+# Stage 3: Runner (slim - no Prisma CLI, init handled by Postgres)
 FROM node:20-alpine AS runner
 WORKDIR /app
 
@@ -45,13 +45,14 @@ ENV NEXT_TELEMETRY_DISABLED=1
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
-# Copy necessary files
+# Copy Next.js standalone build
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
-COPY --from=builder /app/prisma ./prisma
+
+# Copy Prisma Client (generated) - needed for runtime queries
 COPY --from=builder /app/src/generated ./src/generated
-COPY --from=builder /app/prisma.config.ts ./prisma.config.ts
+
 # Copy Prisma adapter and pg driver (not included in standalone)
 COPY --from=builder /app/node_modules/@prisma/adapter-pg ./node_modules/@prisma/adapter-pg
 COPY --from=builder /app/node_modules/pg ./node_modules/pg

@@ -30,7 +30,7 @@ interface OllamaResponse {
 }
 
 const OLLAMA_URL = env.OLLAMA_URL;
-const OLLAMA_MODEL = 'llama3.1:8b'; // Default model, can be configured
+const OLLAMA_MODEL = env.OLLAMA_MODEL;
 
 /**
  * Analyze text to extract ALL companies mentioned, with individual sentiment and reliability
@@ -52,6 +52,7 @@ export async function analyzeText(text: string): Promise<AnalysisResult[]> {
         prompt,
         stream: false,
         format: 'json',
+        keep_alive: '30m', // Keep model in memory for 30 minutes (avoids cold-start)
       }),
       signal: controller.signal,
     });

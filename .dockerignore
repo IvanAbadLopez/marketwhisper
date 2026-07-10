@@ -44,6 +44,10 @@ downloads/
 *.md
 !README.md
 
+# Keep scripts for Docker entrypoint
+!scripts/docker-entrypoint.sh
+!scripts/seed-demo.js
+
 # Docker
 Dockerfile
 docker-compose.yml

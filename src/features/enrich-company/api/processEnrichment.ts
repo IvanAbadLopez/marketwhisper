@@ -4,7 +4,6 @@
  */
 
 import { env } from "@/shared/config/env";
-import { translateToSpanish } from "@/shared/api/translate";
 import { calcAnalystScore, analystScoreLabel, type AnalystRecommendation } from "../lib/analystScore";
 
 interface UserAnalysis {
@@ -68,58 +67,44 @@ function generateAnalysisPrompt(
 ): string {
   const { companyInfo, financials, price } = data;
 
-  let prompt = `You are a financial analyst AI. Analyze the following data for ${ticker} (${companyInfo?.name || "Unknown Company"}) sourced from Finnhub and user-submitted text analyses, then provide a comprehensive investment analysis.
+  let prompt = `You are a financial analyst AI. Analyze ${ticker} (${companyInfo?.name || "Unknown"}) using Finnhub data and user analyses.
 
-**Company Overview:**
-- Sector: ${companyInfo?.sector || "N/A"}
-- Industry: ${companyInfo?.industry || "N/A"}
-- Market Cap: ${companyInfo?.marketCap ? `$${(companyInfo.marketCap / 1e9).toFixed(2)}B` : "N/A"}
-- Website: ${companyInfo?.website || "N/A"}
-
-**Financial Metrics:**
-- EPS: ${financials?.eps?.toFixed(2) || "N/A"}
-- P/E Ratio: ${financials?.peRatio?.toFixed(2) || "N/A"}
-- Dividend Yield: ${financials?.dividendYield ? `${(financials.dividendYield * 100).toFixed(2)}%` : "N/A"}
-- Profit Margin: ${financials?.profitMargins ? `${(financials.profitMargins * 100).toFixed(2)}%` : "N/A"}
-
-**52-Week Performance:**
-- 52-Week High: $${price?.fiftyTwoWeekHigh?.toFixed(2) || "N/A"}
-- 52-Week Low: $${price?.fiftyTwoWeekLow?.toFixed(2) || "N/A"}`;
+**Data:**
+- Sector: ${companyInfo?.sector || "N/A"} | Market Cap: ${companyInfo?.marketCap ? `$${(companyInfo.marketCap / 1e9).toFixed(2)}B` : "N/A"}
+- EPS: ${financials?.eps?.toFixed(2) || "N/A"} | P/E: ${financials?.peRatio?.toFixed(2) || "N/A"} | Margin: ${financials?.profitMargins ? `${(financials.profitMargins * 100).toFixed(1)}%` : "N/A"}
+- 52W High: $${price?.fiftyTwoWeekHigh?.toFixed(2) || "N/A"} | Low: $${price?.fiftyTwoWeekLow?.toFixed(2) || "N/A"}`;
 
   // Add analyst recommendations if available
   if (data.recommendations && data.recommendations.length > 0) {
     const latest = data.recommendations[data.recommendations.length - 1];
     const score = calcAnalystScore(latest);
     const label = analystScoreLabel(score);
-    
-    prompt += `\n\n**Analyst Recommendations (Latest Period: ${latest.period}):**
-- Strong Buy: ${latest.strongBuy} | Buy: ${latest.buy} | Hold: ${latest.hold} | Sell: ${latest.sell} | Strong Sell: ${latest.strongSell}
-- Consensus Score: ${score !== null ? score.toFixed(2) : "N/A"} (${label})`;
+    prompt += `\n- Analyst Consensus: ${label} (Score: ${score !== null ? score.toFixed(2) : "N/A"})`;
   }
 
-  // Add user text analyses if available
+  // Add user text analyses if available (limit to 5, shorter excerpts)
   if (userAnalyses.length > 0) {
-    prompt += `\n\n**User Text Analyses (${userAnalyses.length} total):**\n`;
-    userAnalyses.slice(0, 10).forEach((analysis, idx) => {
-      const source = analysis.source ? ` from ${analysis.source}` : '';
-      prompt += `\n${idx + 1}. **${analysis.sentiment}** (Reliability: ${analysis.reliabilityScore}/10)${source}
-   Text: "${analysis.text.substring(0, 200)}${analysis.text.length > 200 ? '...' : ''}"
-   AI Reasoning: ${analysis.reasoning}\n`;
+    prompt += `\n\n**User Analyses (${userAnalyses.length} total):**`;
+    userAnalyses.slice(0, 5).forEach((analysis, idx) => {
+      prompt += `\n${idx + 1}. ${analysis.sentiment} (${analysis.reliabilityScore}/10): "${analysis.text.substring(0, 120)}${analysis.text.length > 120 ? '...' : ''}" - ${analysis.reasoning}`;
     });
     
-    if (userAnalyses.length > 10) {
-      prompt += `\n... and ${userAnalyses.length - 10} more analyses.\n`;
+    if (userAnalyses.length > 5) {
+      prompt += `\n... (${userAnalyses.length - 5} more)`;
     }
   }
 
-  prompt += `\n**Your Task:**
-Provide a structured analysis with the following sections:
-1. **Executive Summary** (2-3 sentences combining Finnhub metrics and user sentiment)
-2. **Financial Health** (assess profitability, valuation from Finnhub data)
-3. **Market Sentiment** (synthesize insights from user text analyses)
-4. **Investment Outlook** (bullish, bearish, or neutral with reasoning based on ALL available data)
+  prompt += `\n\n**Task:**
+Provide a concise investment recommendation starting with:
+VERDICT: [BULLISH/BEARISH/NEUTRAL] | Risk: [Low/Medium/High] | Confidence: [1-10]/10
 
-Keep your analysis concise, objective, and data-driven. Integrate both quantitative metrics (Finnhub) and qualitative insights (user texts) to provide actionable investment guidance.`;
+Then 3-5 bullet points with:
+• Key strengths/weaknesses
+• Financial health assessment
+• Market sentiment synthesis
+• Investment outlook
+
+Be concise, data-driven, and actionable.`;
 
   return prompt;
 }
@@ -134,8 +119,9 @@ export function normalizeTicker(ticker: string): string {
 /**
  * Call Ollama API to generate AI analysis
  */
-async function generateOllamaAnalysis(prompt: string, model: string = "llama3.1:8b"): Promise<string> {
+async function generateOllamaAnalysis(prompt: string): Promise<string> {
   const ollamaUrl = env.OLLAMA_URL;
+  const model = env.OLLAMA_MODEL;
   
   try {
     const response = await fetch(`${ollamaUrl}/api/generate`, {
@@ -145,10 +131,11 @@ async function generateOllamaAnalysis(prompt: string, model: string = "llama3.1:
         model,
         prompt,
         stream: false,
+        keep_alive: '30m', // Keep model in memory for 30 minutes (avoids cold-start)
         options: {
           temperature: 0.7,
           top_p: 0.9,
-          num_predict: 1000,
+          num_predict: 400, // Reduced for concise output
         }
       }),
     });
@@ -279,24 +266,20 @@ export async function processEnrichment(
     const prompt = generateAnalysisPrompt(ticker, finnhubData, userAnalyses);
     const aiAnalysis = await generateOllamaAnalysis(prompt);
 
-    // 5. Translate AI analysis to Spanish
-    console.log(`[Enrich-Finnhub:${enrichmentId}] Translating analysis to Spanish...`);
-    const aiAnalysisEs = await translateToSpanish(aiAnalysis);
-
-    // 6. Store final result and mark as completed
+    // 5. Store final result and mark as completed (translation deferred to on-demand)
     await prisma.companyEnrichment.update({
       where: { id: enrichmentId },
       data: {
         status: "COMPLETED",
         recommendations: (finnhubData.recommendations ?? undefined) as any,
         aiAnalysis,
-        aiAnalysisEs,
-        ollamaModel: "llama3.1:8b",
+        // aiAnalysisEs remains null - will be translated on-demand via UI button
+        ollamaModel: env.OLLAMA_MODEL,
         errorMessage: null,
       },
     });
 
-    // 7. Update job status if exists
+    // 6. Update job status if exists
     if (jobId) {
       await prisma.job.update({
         where: { id: jobId },

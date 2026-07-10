@@ -129,7 +129,7 @@ interface Company {
     aiAnalysis: string | null;
     aiAnalysisEs: string | null;
     ollamaModel: string | null;
-    createdAt: Date;
+    createdAt: string; // Comes as string from JSON
   }[];
 }
 
@@ -154,6 +154,8 @@ export default function CompanyDetailPage({ params }: { params: Promise<{ ticker
   }, [status]);
 
   const fetchCompany = useCallback(async () => {
+    if (!ticker) return; // Don't fetch if ticker is empty
+    
     try {
       const response = await fetch(`/api/companies/${ticker}`);
       if (response.ok) {
@@ -195,7 +197,6 @@ export default function CompanyDetailPage({ params }: { params: Promise<{ ticker
 
   useEffect(() => {
     if (status === "authenticated" && ticker) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       fetchCompany();
     }
   }, [status, ticker, fetchCompany]);

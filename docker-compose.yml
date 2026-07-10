@@ -1,5 +1,3 @@
-version: '3.9'
-
 services:
   # PostgreSQL Database
   db:
@@ -14,7 +12,9 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./scripts/init-db.sh:/docker-entrypoint-initdb.d/init-db.sh
+      - ./scripts/init-db.sh:/docker-entrypoint-initdb.d/01-init-db.sh
+      - ./prisma/docker-init/02-schema.sql:/docker-entrypoint-initdb.d/02-schema.sql
+      - ./prisma/docker-init/03-seed.sql:/docker-entrypoint-initdb.d/03-seed.sql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U marketwhisper"]
       interval: 10s
@@ -46,32 +46,15 @@ services:
       NEXTAUTH_SECRET: docker-dev-secret-change-in-production-please
       AUTH_TRUST_HOST: "true"
       
-      # Optional: OAuth (leave empty for demo mode)
-      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
-      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
-      GITHUB_CLIENT_ID: ${GITHUB_CLIENT_ID:-}
-      GITHUB_CLIENT_SECRET: ${GITHUB_CLIENT_SECRET:-}
-      
-      # Optional: Blog credentials (for scraping)
-      BLOG_ANALYSIS_URL: ${BLOG_ANALYSIS_URL:-}
-      BLOG_ANALYSIS_USER: ${BLOG_ANALYSIS_USER:-}
-      BLOG_ANALYSIS_PASSWORD: ${BLOG_ANALYSIS_PASSWORD:-}
-      BLOG_SITUATIONS_URL: ${BLOG_SITUATIONS_URL:-}
-      BLOG_SITUATIONS_USER: ${BLOG_SITUATIONS_USER:-}
-      BLOG_SITUATIONS_PASSWORD: ${BLOG_SITUATIONS_PASSWORD:-}
-      
       # Optional: APIs
       FINNHUB_API_KEY: ${FINNHUB_API_KEY:-}
       
       # Enrichment service URLs
       OLLAMA_URL: http://ollama:11434
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-qwen2.5:7b}
       ENRICHMENT_SERVICE_URL: http://enrichment:8001
     depends_on:
       db:
-        condition: service_healthy
-      ollama:
-        condition: service_healthy
-      enrichment:
         condition: service_healthy
 
   # Ollama - Local LLM for AI analysis
@@ -88,6 +71,9 @@ services:
       GODEBUG: x509ignoreCN=0,http2client=0
       GIT_SSL_NO_VERIFY: "true"
       NODE_TLS_REJECT_UNAUTHORIZED: "0"
+      HTTPS_PROXY: ""
+      HTTP_PROXY: ""
+      NO_PROXY: "*"
     healthcheck:
       test: ["CMD", "ollama", "list"]
       interval: 30s

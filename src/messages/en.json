@@ -41,10 +41,7 @@
       "invalidCredentials": "Invalid email or password",
       "forgotPassword": "Forgot password?",
       "noAccount": "Don't have an account?",
-      "signUpLink": "Sign up",
-      "continueWith": "Or continue with",
-      "googleButton": "Continue with Google",
-      "githubButton": "Continue with GitHub"
+      "signUpLink": "Sign up"
     },
     "register": {
       "title": "MarketWhisper",
@@ -187,6 +184,12 @@
       "relatedContent": "Related Content",
       "noContent": "No content found for this company.",
       "untitled": "Untitled"
+    },
+    "enrichment": {
+      "translateToSpanish": "Translate to Spanish",
+      "showOriginal": "Show Original",
+      "translating": "Translating...",
+      "translateError": "Failed to translate. Please try again."
     }
   },
   "dashboard": {

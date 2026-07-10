@@ -20,11 +20,8 @@
 - **Strategy**: JWT (not database sessions)
 - **Providers**: 
   - Credentials (email/password with bcrypt)
-  - Google OAuth (not yet configured)
-  - GitHub OAuth (not yet configured)
-- **Current State**: Demo user mode (database not connected)
-  - Email: `demo@marketwhisper.com`
-  - Password: `demo1234`
+- **Current State**: Connected to PostgreSQL database
+  - Demo user: `demo@marketwhisper.com` / `MarketWhisper2026!`
 
 ### Database (Planned)
 - **Provider**: Neon PostgreSQL (not yet configured)
@@ -580,12 +577,6 @@ DATABASE_URL="postgresql://user:pass@host/db?sslmode=require"
 NEXTAUTH_URL="http://localhost:3000"  # Change to production URL in deployment
 NEXTAUTH_SECRET="y69CjqVQvFMgOMcOgAyU7c1eKpBmSW5iZKSblEXFOzc="  # Generated with: openssl rand -base64 32
 
-# OAuth Providers (optional, not configured yet)
-GOOGLE_CLIENT_ID=""
-GOOGLE_CLIENT_SECRET=""
-GITHUB_CLIENT_ID=""
-GITHUB_CLIENT_SECRET=""
-
 # Ollama - Local LLM (no API key needed)
 OLLAMA_URL="http://localhost:11434"
 
@@ -657,8 +648,7 @@ BLOG_PASSWORD=""
 10. **Deployment**
     - Connect GitHub repo to Vercel
     - Add environment variables to Vercel
-    - Configure Neon production database
-    - Test OAuth providers in production
+    - Configure production database
     - Custom domain (optional)
 
 ## Common Tasks

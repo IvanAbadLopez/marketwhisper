@@ -34,6 +34,7 @@ export const env = {
 
   // Enrichment Services
   OLLAMA_URL: getEnvVar("OLLAMA_URL", "http://localhost:11434"),
+  OLLAMA_MODEL: getEnvVar("OLLAMA_MODEL", "qwen2.5:7b"),
   ENRICHMENT_SERVICE_URL: getEnvVar("ENRICHMENT_SERVICE_URL", "http://localhost:8001"),
 
   // Node Environment

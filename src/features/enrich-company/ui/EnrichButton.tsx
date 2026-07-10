@@ -18,7 +18,7 @@ interface EnrichButtonProps {
   onSuccess?: () => void;
   variant?: "default" | "compact";
   className?: string;
-  lastEnrichment?: { createdAt: Date } | null;
+  lastEnrichment?: { createdAt: string } | null; // Comes as string from JSON
 }
 
 /** Poll interval for checking background job status (ms) */
@@ -51,8 +51,9 @@ export function EnrichButton({
   const success = state === "success";
 
   // Calculate age color for timestamp (gray <7 days, yellow >7 days)
+  // Parse createdAt as Date since it comes as string from JSON
   const ageInDays = lastEnrichment
-    ? (Date.now() - lastEnrichment.createdAt.getTime()) / 86400000
+    ? (Date.now() - new Date(lastEnrichment.createdAt).getTime()) / 86400000
     : 0;
 
   const ageColor =
@@ -150,7 +151,7 @@ export function EnrichButton({
         {lastEnrichment && !loading && (
           <div className={`flex items-center gap-1 text-xs ${ageColor}`}>
             <Clock className="w-3 h-3" />
-            <span>{formatRelativeTime(lastEnrichment.createdAt, t)}</span>
+            <span>{formatRelativeTime(new Date(lastEnrichment.createdAt), t)}</span>
           </div>
         )}
       </div>
@@ -203,7 +204,7 @@ export function EnrichButton({
       {lastEnrichment && !loading && (
         <div className={`flex items-center gap-1.5 text-sm ${ageColor}`}>
           <Clock className="w-4 h-4" />
-          <span>{formatRelativeTime(lastEnrichment.createdAt, t)}</span>
+          <span>{formatRelativeTime(new Date(lastEnrichment.createdAt), t)}</span>
         </div>
       )}
     </div>
