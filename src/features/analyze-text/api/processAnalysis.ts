@@ -3,9 +3,17 @@
  * @module features/analyze-text/api/processAnalysis
  */
 
-import { after } from "next/server";
-import { analyzeText, prisma } from "@/shared";
-import { processTranslation } from "./processTranslation";
+import { 
+  detectCompanies,
+  analyzeWithFinancials,
+  resolveTicker,
+  fetchFinnhubData,
+  createFinancialSnapshot,
+  getCachedFinnhub,
+  prisma,
+  type FinnhubData,
+} from "@/shared";
+import { recomputeCompanyValuation } from "@/entities/company/api/recomputeValuation";
 
 interface AnalysisJobResult {
   analysisIds: string[];
@@ -14,8 +22,8 @@ interface AnalysisJobResult {
 }
 
 /**
- * Process a text analysis job in the background
- * Updates Job status and creates Analysis records
+ * Process a text analysis job in the background (2-call LLM + Finnhub enrichment)
+ * Updates Job status and creates Analysis records with financial snapshots
  */
 export async function processAnalysis(
   jobId: string,
@@ -30,11 +38,11 @@ export async function processAnalysis(
       data: { status: "PROCESSING" },
     });
 
-    // Analyze text with Ollama AI - returns array of all companies detected
-    const aiResults = await analyzeText(text);
+    // PHASE 1: Detect companies (LLM call #1 - lightweight)
+    console.log(`[Job ${jobId}] Phase 1: Detecting companies...`);
+    const detections = await detectCompanies(text);
 
-    // Check if AI detected any companies
-    if (!aiResults || aiResults.length === 0) {
+    if (!detections || detections.length === 0) {
       await prisma.job.update({
         where: { id: jobId },
         data: {
@@ -45,82 +53,229 @@ export async function processAnalysis(
       return;
     }
 
-    // Process each detected company in parallel
-    const results = await Promise.all(
-      aiResults.map(async (aiResult) => {
-        // Normalize ticker (remove $ symbol if present)
-        const normalizedTicker = aiResult.ticker.replace(/^\$/, "").trim().toUpperCase();
+    console.log(`[Job ${jobId}] Detected ${detections.length} companies: ${detections.map(d => d.companyName).join(', ')}`);
 
-        // Find or create company
-        let company = await prisma.company.findUnique({
-          where: { ticker: normalizedTicker },
-        });
+    // PHASE 2: Resolve tickers and find/create companies
+    console.log(`[Job ${jobId}] Phase 2: Resolving tickers and companies...`);
+    const companiesData: Array<{
+      ticker: string;
+      companyName: string;
+      company: { id: string; ticker: string };
+      finnhubData: FinnhubData | null;
+    }> = [];
 
-        if (!company) {
-          // Create new company with AI-detected data
-          company = await prisma.company.create({
-            data: {
-              ticker: normalizedTicker,
-              name: aiResult.companyName,
-              analysisCount: 0,
-            },
-          });
+    for (const detection of detections) {
+      let ticker = detection.ticker.replace(/^\$/, "").trim().toUpperCase();
+
+      // Resolve ticker if missing
+      if (!ticker && detection.companyName) {
+        console.log(`[processAnalysis] Ticker missing for "${detection.companyName}", resolving via Finnhub...`);
+        ticker = await resolveTicker(detection.companyName);
+        
+        if (!ticker) {
+          console.warn(`[processAnalysis] Could not resolve ticker for "${detection.companyName}", skipping`);
+          continue;
         }
+      }
+
+      if (!ticker) {
+        console.warn(`[processAnalysis] No ticker and no companyName for detection, skipping`);
+        continue;
+      }
+
+      // Find or create company
+      let company = await prisma.company.findUnique({
+        where: { ticker },
+      });
+
+      if (!company) {
+        company = await prisma.company.create({
+          data: {
+            ticker,
+            name: detection.companyName || ticker,
+            analysisCount: 0,
+          },
+        });
+        console.log(`[processAnalysis] Created new company: ${ticker}`);
+      }
+
+      companiesData.push({
+        ticker,
+        companyName: detection.companyName || company.name,
+        company: { id: company.id, ticker: company.ticker },
+        finnhubData: null, // Will be fetched in Phase 3
+      });
+    }
+
+    if (companiesData.length === 0) {
+      await prisma.job.update({
+        where: { id: jobId },
+        data: {
+          status: "FAILED",
+          errorMessage: "No companies could be identified or resolved. Please provide more specific company information or stock tickers.",
+        },
+      });
+      return;
+    }
+
+    // PHASE 3: Fetch Finnhub data (with cache, serial to respect rate limits)
+    console.log(`[Job ${jobId}] Phase 3: Fetching financial data (with cache)...`);
+    for (const companyData of companiesData) {
+      try {
+        // Try cache first (24h TTL)
+        const cached = await getCachedFinnhub(companyData.company.id);
+        
+        if (cached) {
+          console.log(`[processAnalysis] Using cached Finnhub data for ${companyData.ticker}`);
+          // Reconstruct FinnhubData from snapshot (minimal structure for prompt)
+          companyData.finnhubData = {
+            success: true,
+            ticker: companyData.ticker,
+            price: {
+              currentPrice: cached.currentPrice,
+              previousClose: null,
+              dayChange: null,
+              dayChangePercent: null,
+              fiftyTwoWeekHigh: cached.fiftyTwoWeekHigh,
+              fiftyTwoWeekLow: cached.fiftyTwoWeekLow,
+              volume: null,
+              avgVolume: null,
+            },
+            financials: {
+              revenue: null,
+              netIncome: null,
+              eps: cached.eps,
+              peRatio: cached.peRatio,
+              debtToEquity: null,
+              dividendYield: null,
+              profitMargins: null,
+            },
+            recommendations: cached.analystConsensus ? [{
+              strongBuy: 0, buy: 0, hold: 0, sell: 0, strongSell: 0,
+              period: cached.fetchedAt.substring(0, 10),
+            }] : undefined,
+          };
+        } else {
+          // Fetch fresh data
+          console.log(`[processAnalysis] Fetching fresh Finnhub data for ${companyData.ticker}...`);
+          companyData.finnhubData = await fetchFinnhubData(companyData.ticker);
+        }
+      } catch (error) {
+        console.warn(`[processAnalysis] Failed to fetch Finnhub data for ${companyData.ticker}:`, error);
+        companyData.finnhubData = null; // Fallback: analyze without financial data
+      }
+    }
+
+    // PHASE 4: Analyze with financials (LLM call #2 - single call for ALL companies)
+    console.log(`[Job ${jobId}] Phase 4: Analyzing with financial data (1 LLM call for all companies)...`);
+    const enrichedAnalyses = await analyzeWithFinancials(
+      text,
+      companiesData.map(cd => ({
+        ticker: cd.ticker,
+        companyName: cd.companyName,
+        finnhubData: cd.finnhubData,
+      }))
+    );
+
+    if (!enrichedAnalyses || enrichedAnalyses.length === 0) {
+      await prisma.job.update({
+        where: { id: jobId },
+        data: {
+          status: "FAILED",
+          errorMessage: "AI analysis failed to produce any results. Please try again.",
+        },
+      });
+      return;
+    }
+
+    // PHASE 5: Create Analysis records with financial snapshots
+    console.log(`[Job ${jobId}] Phase 5: Saving analyses with financial snapshots...`);
+    const results = await Promise.all(
+      enrichedAnalyses.map(async (aiResult) => {
+        const ticker = aiResult.ticker.replace(/^\$/, "").trim().toUpperCase();
+        
+        // Find matching company data
+        const companyData = companiesData.find(cd => cd.ticker === ticker);
+        if (!companyData) {
+          console.warn(`[processAnalysis] No company data found for ticker ${ticker}, skipping`);
+          return null;
+        }
+
+        // Create financial snapshot if we have Finnhub data
+        const financialSnapshot = companyData.finnhubData 
+          ? createFinancialSnapshot(companyData.finnhubData)
+          : null;
 
         // Create analysis record
         const analysis = await prisma.analysis.create({
           data: {
             text,
             source: source || null,
-            companyId: company.id,
-            ticker: normalizedTicker,
+            companyId: companyData.company.id,
+            ticker,
             sentiment: aiResult.sentiment,
             reliabilityScore: aiResult.reliabilityScore,
             reasoning: aiResult.reasoning,
-            reasoningEs: null, // Translation will be done in background
-            jobId, // Link to job for tracking
+            financialSnapshot: financialSnapshot as any,
+            jobId,
           },
         });
 
         // Recalculate company aggregates
-        await updateCompanyAggregates(company.id);
+        await updateCompanyAggregates(companyData.company.id);
+
+        // Recalculate valuation (global score + target price)
+        await recomputeCompanyValuation(companyData.company.id);
 
         return {
           analysisId: analysis.id,
-          companyId: company.id,
+          companyId: companyData.company.id,
         };
       })
     );
 
+    const validResults = results.filter((r): r is { analysisId: string; companyId: string } => r !== null);
+
+    if (validResults.length === 0) {
+      await prisma.job.update({
+        where: { id: jobId },
+        data: {
+          status: "FAILED",
+          errorMessage: "No analyses could be saved. Please try again.",
+        },
+      });
+      return;
+    }
+
     // Prepare result data
     const jobResult: AnalysisJobResult = {
-      analysisIds: results.map((r) => r.analysisId),
-      companyIds: results.map((r) => r.companyId),
-      count: results.length,
+      analysisIds: validResults.map((r) => r.analysisId),
+      companyIds: validResults.map((r) => r.companyId),
+      count: validResults.length,
     };
 
-    // Get first ticker for job tracking (if multiple, show count)
-    const firstTicker = aiResults[0].ticker.replace(/^\$/, "").trim().toUpperCase();
-    const tickerDisplay = results.length > 1 ? `${firstTicker} +${results.length - 1}` : firstTicker;
+    // Get first ticker for job tracking
+    const firstCompany = await prisma.company.findUnique({
+      where: { id: validResults[0].companyId },
+      select: { ticker: true },
+    });
+    const firstTicker = firstCompany?.ticker || 'UNKNOWN';
+    const tickerDisplay = validResults.length > 1 ? `${firstTicker} +${validResults.length - 1}` : firstTicker;
 
-    // Update job status to COMPLETED with result
+    // Update job status to COMPLETED
     await prisma.job.update({
       where: { id: jobId },
       data: {
         status: "COMPLETED",
-        ticker: tickerDisplay, // Update from PENDING to actual ticker(s)
-        result: jobResult as any, // Store as JSON
+        ticker: tickerDisplay,
+        result: jobResult as any,
       },
     });
 
-    console.log(`[Job ${jobId}] Analysis completed successfully: ${results.length} companies detected`);
-
-    // Kick off background translation (non-blocking)
-    after(() => processTranslation(jobResult.analysisIds));
+    console.log(`[Job ${jobId}] Analysis completed successfully: ${validResults.length} companies analyzed (2 LLM calls total)`);
   } catch (error: unknown) {
     console.error(`[Job ${jobId}] Analysis failed:`, error);
 
-    // Update job status to FAILED
     await prisma.job.update({
       where: { id: jobId },
       data: {
