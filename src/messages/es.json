@@ -92,7 +92,14 @@
     }
   },
   "company": {
-    "search": {
+    "financials": {
+    "price": "Precio",
+    "pe": "PER",
+    "eps": "BPA",
+    "52wHigh": "Máx 52s",
+    "52wLow": "Mín 52s",
+    "consensus": "Consenso"
+  },
       "placeholder": "Buscar empresas...",
       "resultsCount": "{count} empresas encontradas",
       "noResults": "No hay empresas que coincidan con tu búsqueda",
@@ -237,5 +244,25 @@
     "hoursAgo": "{count, plural, one {hace # hora} other {hace # horas}}",
     "daysAgo": "{count, plural, one {hace # día} other {hace # días}}",
     "monthsAgo": "{count, plural, one {hace # mes} other {hace # meses}}"
+  },
+  "valuation": {
+    "globalScore": "Nota Global",
+    "targetPrice": "Precio Objetivo",
+    "upside": "Potencial",
+    "noData": "N/D",
+    "financialHealth": "Salud Financiera",
+    "analystConsensus": "Consenso Analistas",
+    "textSentiment": "Sentimiento Textos",
+    "methods": "Métodos de Valoración",
+    "grahamNumber": "Número de Graham",
+    "fairPE": "P/E Justo",
+    "fiftyTwoWeekMid": "Punto Medio 52 Semanas",
+    "baseTarget": "Objetivo Base",
+    "sentimentAdjustment": "Ajuste por Sentimiento",
+    "tooltipGlobalScore": "Combina salud financiera (40%), consenso de analistas (35%) y tus análisis de texto (25%). Escala 0-100.",
+    "tooltipTargetPrice": "Valor razonable estimado con Número de Graham, P/E justo y punto medio de 52 semanas, ajustado por sentimiento global.",
+    "tooltipFinancialHealth": "Basado en ratio P/E, margen de beneficio, ROE, deuda/capital y rendimiento de dividendos.",
+    "tooltipAnalyst": "Consenso de recomendaciones de analistas (compra fuerte, compra, mantener, vender, venta fuerte).",
+    "tooltipText": "Sentimiento agregado de tus análisis de texto, ponderado por fiabilidad y volumen."
   }
 }

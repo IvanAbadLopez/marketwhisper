@@ -92,7 +92,14 @@
     }
   },
   "company": {
-    "search": {
+    "financials": {
+    "price": "Price",
+    "pe": "P/E",
+    "eps": "EPS",
+    "52wHigh": "52w High",
+    "52wLow": "52w Low",
+    "consensus": "Consensus"
+  },
       "placeholder": "Search companies...",
       "resultsCount": "{count} companies found",
       "noResults": "No companies match your search",
@@ -239,5 +246,25 @@
     "hoursAgo": "{count, plural, one {# hour ago} other {# hours ago}}",
     "daysAgo": "{count, plural, one {# day ago} other {# days ago}}",
     "monthsAgo": "{count, plural, one {# month ago} other {# months ago}}"
+  },
+  "valuation": {
+    "globalScore": "Global Score",
+    "targetPrice": "Target Price",
+    "upside": "Upside",
+    "noData": "N/A",
+    "financialHealth": "Financial Health",
+    "analystConsensus": "Analyst Consensus",
+    "textSentiment": "Text Sentiment",
+    "methods": "Valuation Methods",
+    "grahamNumber": "Graham Number",
+    "fairPE": "Fair P/E",
+    "fiftyTwoWeekMid": "52-Week Midpoint",
+    "baseTarget": "Base Target",
+    "sentimentAdjustment": "Sentiment Adjustment",
+    "tooltipGlobalScore": "Combines financial health (40%), analyst consensus (35%), and your text analyses (25%). Scale 0-100.",
+    "tooltipTargetPrice": "Fair value estimate using Graham Number, fair P/E, and 52-week midpoint, adjusted by global sentiment.",
+    "tooltipFinancialHealth": "Based on P/E ratio, profit margin, ROE, debt/equity, and dividend yield.",
+    "tooltipAnalyst": "Consensus from analyst recommendations (strong buy, buy, hold, sell, strong sell).",
+    "tooltipText": "Aggregate sentiment from your text analyses, weighted by reliability and volume."
   }
 }
