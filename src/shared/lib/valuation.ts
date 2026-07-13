@@ -74,10 +74,12 @@ function computeFairPETarget(
   // Baseline P/E: 15 (market average)
   let fairPE = 15;
   
-  // Adjust for growth if available
+  // Adjust for growth if available (epsGrowth is in decimal: 0.15 = 15%)
   if (epsGrowth !== null && epsGrowth > 0) {
     // PEG-inspired: higher growth justifies higher P/E (cap at 25)
-    fairPE = Math.min(15 + epsGrowth * 0.5, 25);
+    // Convert decimal to percentage: 0.15 → 15
+    const growthPct = epsGrowth * 100;
+    fairPE = Math.min(15 + growthPct * 0.5, 25);
   }
   
   // Use current P/E if lower (conservative)
