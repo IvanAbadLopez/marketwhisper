@@ -313,7 +313,7 @@ export default function CompanyDetailPage({ params }: { params: Promise<{ ticker
             className="mb-6 flex items-center gap-2 text-blue-600 dark:text-blue-400 hover:underline"
           >
             <ArrowLeft className="w-4 h-4" />
-            ← Back to Companies
+            Back to Companies
           </button>
 
           {/* Company Header */}

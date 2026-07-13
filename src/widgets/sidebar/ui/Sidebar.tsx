@@ -54,6 +54,7 @@ export function Sidebar() {
           // Translate navigation item names
           const navNames: Record<string, string> = {
             'nav.dashboard': 'Dashboard',
+            'nav.analyze': 'Analyze',
             'nav.companies': 'Companies',
             'nav.insights': 'Insights',
             'nav.jobs': 'Processes',

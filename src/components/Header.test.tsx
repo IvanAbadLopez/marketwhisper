@@ -12,17 +12,6 @@ vi.mock("next/navigation", () => ({
   useRouter: vi.fn(() => ({ push: vi.fn() })),
 }));
 
-// Mock next-intl (required by LocaleSwitcher)
-vi.mock("next-intl", () => ({
-  useLocale: vi.fn(() => 'en'),
-  useTranslations: vi.fn(() => (key: string) => key),
-}));
-
-// Mock LocaleSwitcher feature
-vi.mock("@/features/switch-locale", () => ({
-  LocaleSwitcher: () => <div data-testid="locale-switcher">EN | ES</div>,
-}));
-
 describe("Header Component", () => {
   const mockUser = {
     id: "test-id",

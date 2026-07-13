@@ -8,6 +8,7 @@
 import { useState, useCallback, useEffect } from "react";
 import { searchCompanies } from "../api/searchCompanies";
 import { importCompany } from "../api/importCompany";
+import { useNotifications } from "@/shared/ui/notifications";
 import type { FinnhubSearchResult } from "./types";
 
 interface UseCompanyDiscoveryResult {
@@ -29,6 +30,7 @@ export function useCompanyDiscovery(): UseCompanyDiscoveryResult {
   const [searchError, setSearchError] = useState<string | null>(null);
   const [isImporting, setIsImporting] = useState<{ [ticker: string]: boolean }>({});
   const [importError, setImportError] = useState<string | null>(null);
+  const { addJob } = useNotifications();
 
   // Auto-search with debounce when query changes
   useEffect(() => {
@@ -91,6 +93,12 @@ export function useCompanyDiscovery(): UseCompanyDiscoveryResult {
 
     try {
       const response = await importCompany(ticker);
+
+      // Register the background enrichment in the global notification system
+      // so the user gets a toast when it completes (even after navigating away)
+      if (response.enrichmentId && !response.alreadyExists) {
+        addJob(ticker, response.enrichmentId);
+      }
       
       // Mark as imported in results
       setResults((prev) =>
@@ -110,7 +118,7 @@ export function useCompanyDiscovery(): UseCompanyDiscoveryResult {
     } finally {
       setIsImporting((prev) => ({ ...prev, [ticker]: false }));
     }
-  }, []);
+  }, [addJob]);
 
   return {
     query,

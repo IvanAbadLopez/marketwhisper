@@ -12,7 +12,6 @@ vi.mock("@/shared/api/prisma", () => ({
   prisma: {
     companyEnrichment: {
       findUnique: vi.fn(),
-      update: vi.fn(),
     },
   },
 }));
@@ -128,44 +127,7 @@ describe("POST /api/companies/[ticker]/enrich-finnhub/[id]/translate", () => {
     expect(data.error).toBe("Finnhub enrichment not found");
   });
 
-  it("returns cached translation if aiAnalysisEs already exists", async () => {
-    const { auth } = await import("@/lib/auth");
-    const { prisma } = await import("@/shared/api/prisma");
-    const { translateToSpanish } = await import("@/shared/api/translate");
-
-    vi.mocked(auth).mockResolvedValue({
-      user: { id: "user1", email: "test@example.com" },
-      expires: "2026-12-31",
-    } as unknown as Awaited<ReturnType<typeof auth>>);
-
-    const mockEnrichment = {
-      id: "enrichment1",
-      ticker: "AAPL",
-      source: "FINNHUB" as const,
-      aiAnalysis: "Apple shows strong fundamentals.",
-      aiAnalysisEs: "Apple muestra fundamentos sólidos.",
-    };
-
-    vi.mocked(prisma.companyEnrichment.findUnique).mockResolvedValue(mockEnrichment);
-
-    const request = new NextRequest("http://localhost:3000/api/companies/AAPL/enrich-finnhub/enrichment1/translate", {
-      method: "POST",
-    });
-    const params = Promise.resolve({ ticker: "AAPL", id: "enrichment1" });
-
-    const response = await POST(request, { params });
-    const data = await response.json();
-
-    expect(response.status).toBe(200);
-    expect(data.aiAnalysisEs).toBe("Apple muestra fundamentos sólidos.");
-    expect(data.cached).toBe(true);
-    
-    // Should not call translate function (cache hit)
-    expect(translateToSpanish).not.toHaveBeenCalled();
-    expect(prisma.companyEnrichment.update).not.toHaveBeenCalled();
-  });
-
-  it("returns 400 if aiAnalysis is null", async () => {
+  it("returns 404 if aiAnalysis is null", async () => {
     const { auth } = await import("@/lib/auth");
     const { prisma } = await import("@/shared/api/prisma");
 
@@ -179,7 +141,6 @@ describe("POST /api/companies/[ticker]/enrich-finnhub/[id]/translate", () => {
       ticker: "AAPL",
       source: "FINNHUB" as const,
       aiAnalysis: null,
-      aiAnalysisEs: null,
     };
 
     vi.mocked(prisma.companyEnrichment.findUnique).mockResolvedValue(mockEnrichment);
@@ -192,11 +153,11 @@ describe("POST /api/companies/[ticker]/enrich-finnhub/[id]/translate", () => {
     const response = await POST(request, { params });
     const data = await response.json();
 
-    expect(response.status).toBe(400);
+    expect(response.status).toBe(404);
     expect(data.error).toBe("No AI analysis available to translate");
   });
 
-  it("translates and caches aiAnalysis when aiAnalysisEs is null", async () => {
+  it("translates aiAnalysis to Spanish without persisting", async () => {
     const { auth } = await import("@/lib/auth");
     const { prisma } = await import("@/shared/api/prisma");
     const { translateToSpanish } = await import("@/shared/api/translate");
@@ -211,18 +172,12 @@ describe("POST /api/companies/[ticker]/enrich-finnhub/[id]/translate", () => {
       ticker: "AAPL",
       source: "FINNHUB" as const,
       aiAnalysis: "Apple shows strong fundamentals with solid EPS and healthy profit margins.",
-      aiAnalysisEs: null,
     };
 
     const translatedText = "Apple muestra fundamentos sólidos con un EPS sólido y márgenes de ganancia saludables.";
 
     vi.mocked(prisma.companyEnrichment.findUnique).mockResolvedValue(mockEnrichment);
     vi.mocked(translateToSpanish).mockResolvedValue(translatedText);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    vi.mocked(prisma.companyEnrichment.update).mockResolvedValue({
-      ...mockEnrichment,
-      aiAnalysisEs: translatedText,
-    } as any);
 
     const request = new NextRequest("http://localhost:3000/api/companies/AAPL/enrich-finnhub/enrichment1/translate", {
       method: "POST",
@@ -233,17 +188,10 @@ describe("POST /api/companies/[ticker]/enrich-finnhub/[id]/translate", () => {
     const data = await response.json();
 
     expect(response.status).toBe(200);
-    expect(data.aiAnalysisEs).toBe(translatedText);
-    expect(data.cached).toBe(false);
+    expect(data.translation).toBe(translatedText);
 
     // Should call translate function
     expect(translateToSpanish).toHaveBeenCalledWith(mockEnrichment.aiAnalysis);
-
-    // Should persist translation in database
-    expect(prisma.companyEnrichment.update).toHaveBeenCalledWith({
-      where: { id: "enrichment1" },
-      data: { aiAnalysisEs: translatedText },
-    });
   });
 
   it("returns 500 on translation error", async () => {

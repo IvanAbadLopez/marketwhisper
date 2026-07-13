@@ -9,27 +9,6 @@ vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: mockPush }),
 }));
 
-// Mock next-intl
-vi.mock("next-intl", () => ({
-  useTranslations: () => (key: string) => {
-    const translations: Record<string, string> = {
-      'textLabel': 'Text to Analyze',
-      'textPlaceholder': 'Paste any text about a company or stock here (e.g., news article, analysis, tweet)...',
-      'sourceLabel': 'Source (optional)',
-      'sourcePlaceholder': 'e.g., Twitter, Bloomberg, Reddit',
-      'analyzeButton': 'Analyze',
-      'analyzing': 'Analyzing...',
-      'clearButton': 'Clear',
-      'errorNoText': 'Please provide text to analyze',
-      'errorGeneric': 'Analysis failed',
-      'sentimentLabel': 'Sentiment',
-      'reliabilityLabel': 'Reliability',
-      'viewCompanyProfile': 'View Companies',
-    };
-    return translations[key] || key;
-  },
-}));
-
 // Mock analyzeText API
 vi.mock("../api/analyzeText", () => ({
   analyzeText: vi.fn(),

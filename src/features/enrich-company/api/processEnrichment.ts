@@ -183,6 +183,14 @@ export async function processEnrichment(
     const prompt = generateAnalysisPrompt(ticker, finnhubData, userAnalyses);
     const aiAnalysis = await generateOllamaAnalysis(prompt);
 
+    // DEBUG: Log what we're about to save
+    console.log(`[Enrich-Finnhub:${enrichmentId}] DEBUG - finnhubData keys:`, Object.keys(finnhubData));
+    console.log(`[Enrich-Finnhub:${enrichmentId}] DEBUG - has financials:`, !!finnhubData.financials);
+    console.log(`[Enrich-Finnhub:${enrichmentId}] DEBUG - has price:`, !!finnhubData.price);
+    if (finnhubData.financials) {
+      console.log(`[Enrich-Finnhub:${enrichmentId}] DEBUG - financials keys:`, Object.keys(finnhubData.financials));
+    }
+
     // 5. Store final result and mark as completed (translation deferred to on-demand)
     await prisma.companyEnrichment.update({
       where: { id: enrichmentId },

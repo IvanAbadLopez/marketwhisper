@@ -1,8 +1,28 @@
+# ⚠️ OBSOLETE - Plan de Internacionalización (i18n) — EN / ES
+
+> **🚨 ESTE PLAN HA SIDO DESCARTADO**
+> 
+> **Fecha de Obsolescencia**: 2026-07-13
+> 
+> **Decisión Final**: La UI permanece en inglés (hardcoded). No hay sistema de traducción de interfaz.
+> Solo existe traducción on-demand del análisis IA (inglés → español) mediante botón toggle en `EnrichmentDisplay`.
+> 
+> **Razón**: 
+> - Requisito TFM: Interfaz en inglés, README en español
+> - Simplificación del código: eliminar complejidad innecesaria de next-intl
+> - Enfoque en lo esencial: traducción disponible donde importa (análisis IA interpretativo)
+> 
+> **Implementación Real**: Ver `src/entities/company/ui/EnrichmentDisplay.tsx` (botón EN/ES), 
+> endpoint `/api/companies/[ticker]/enrich-finnhub/[id]/translate`, 
+> y utilidad `src/shared/lib/translationCache.ts`.
+
+---
+
 # Plan de Internacionalización (i18n) — EN / ES
 
-**Estado**: 📋 Planificación (sin código todavía)
-**Fecha**: 2026-07-04
-**Objetivo**: Portal bilingüe Inglés / Español con traducción gratuita.
+**Estado**: ❌ **OBSOLETO** - No implementar
+**Fecha**: 2026-07-04 (descartado 2026-07-13)
+**Objetivo Original**: Portal bilingüe Inglés / Español con traducción gratuita.
 
 ---
 

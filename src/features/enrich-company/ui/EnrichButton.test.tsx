@@ -5,25 +5,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { EnrichButton } from './EnrichButton';
-
-// Mock next-intl
-vi.mock('next-intl', () => ({
-  useTranslations: () => (key: string, params?: any) => {
-    if (key === 'relativeTime.hoursAgo') {
-      return params?.count === 1 ? '1 hour ago' : `${params?.count} hours ago`;
-    }
-    if (key === 'relativeTime.daysAgo') {
-      return params?.count === 1 ? '1 day ago' : `${params?.count} days ago`;
-    }
-    if (key === 'relativeTime.minutesAgo') {
-      return params?.count === 1 ? '1 minute ago' : `${params?.count} minutes ago`;
-    }
-    if (key === 'relativeTime.justNow') {
-      return 'just now';
-    }
-    return key;
-  },
-}));
+import { NotificationProvider } from '@/shared/ui/notifications';
 
 // Mock enrichCompany API
 vi.mock('../api/enrichCompany', () => ({
@@ -36,6 +18,11 @@ import { enrichCompany, getEnrichmentStatus } from '../api/enrichCompany';
 const mockEnrichCompany = vi.mocked(enrichCompany);
 const mockGetEnrichmentStatus = vi.mocked(getEnrichmentStatus);
 
+// Wrapper component to provide NotificationProvider
+function TestWrapper({ children }: { children: React.ReactNode }) {
+  return <NotificationProvider>{children}</NotificationProvider>;
+}
+
 describe('EnrichButton - timestamp display', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -47,10 +34,12 @@ describe('EnrichButton - timestamp display', () => {
     const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000);
     
     render(
-      <EnrichButton 
-        ticker="AAPL" 
-        lastEnrichment={{ createdAt: twoHoursAgo }}
-      />
+      <TestWrapper>
+        <EnrichButton 
+          ticker="AAPL" 
+          lastEnrichment={{ createdAt: twoHoursAgo.toISOString() }}
+        />
+      </TestWrapper>
     );
 
     expect(screen.getByText('2 hours ago')).toBeInTheDocument();
@@ -58,10 +47,12 @@ describe('EnrichButton - timestamp display', () => {
 
   it('does not display timestamp when lastEnrichment is null', () => {
     render(
-      <EnrichButton 
-        ticker="AAPL" 
-        lastEnrichment={null}
-      />
+      <TestWrapper>
+        <EnrichButton 
+          ticker="AAPL" 
+          lastEnrichment={null}
+        />
+      </TestWrapper>
     );
 
     // The timestamp text should not be in the document
@@ -72,10 +63,12 @@ describe('EnrichButton - timestamp display', () => {
     const tenDaysAgo = new Date(Date.now() - 10 * 24 * 60 * 60 * 1000);
     
     render(
-      <EnrichButton 
-        ticker="AAPL" 
-        lastEnrichment={{ createdAt: tenDaysAgo }}
-      />
+      <TestWrapper>
+        <EnrichButton 
+          ticker="AAPL" 
+          lastEnrichment={{ createdAt: tenDaysAgo.toISOString() }}
+        />
+      </TestWrapper>
     );
 
     const timestampDiv = screen.getByText('10 days ago').parentElement;
@@ -87,10 +80,12 @@ describe('EnrichButton - timestamp display', () => {
     const twoDaysAgo = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000);
     
     render(
-      <EnrichButton 
-        ticker="AAPL" 
-        lastEnrichment={{ createdAt: twoDaysAgo }}
-      />
+      <TestWrapper>
+        <EnrichButton 
+          ticker="AAPL" 
+          lastEnrichment={{ createdAt: twoDaysAgo.toISOString() }}
+        />
+      </TestWrapper>
     );
 
     const timestampDiv = screen.getByText('2 days ago').parentElement;
@@ -102,10 +97,12 @@ describe('EnrichButton - timestamp display', () => {
     const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
     
     render(
-      <EnrichButton 
-        ticker="AAPL" 
-        lastEnrichment={{ createdAt: oneHourAgo }}
-      />
+      <TestWrapper>
+        <EnrichButton 
+          ticker="AAPL" 
+          lastEnrichment={{ createdAt: oneHourAgo.toISOString() }}
+        />
+      </TestWrapper>
     );
 
     expect(screen.getByText('1 hour ago')).toBeInTheDocument();
@@ -116,10 +113,12 @@ describe('EnrichButton - timestamp display', () => {
     const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000);
     
     render(
-      <EnrichButton 
-        ticker="AAPL" 
-        lastEnrichment={{ createdAt: twoHoursAgo }}
-      />
+      <TestWrapper>
+        <EnrichButton 
+          ticker="AAPL" 
+          lastEnrichment={{ createdAt: twoHoursAgo.toISOString() }}
+        />
+      </TestWrapper>
     );
 
     // Initially timestamp should be visible

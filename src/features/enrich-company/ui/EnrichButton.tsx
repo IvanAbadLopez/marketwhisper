@@ -11,6 +11,7 @@ import { useState, useRef, useEffect } from "react";
 import { Sparkles, Loader2, Clock } from "lucide-react";
 import { enrichCompany, getEnrichmentStatus } from "../api/enrichCompany";
 import { formatRelativeTime } from "@/shared/lib/date";
+import { useNotifications } from "@/shared/ui/notifications";
 
 interface EnrichButtonProps {
   ticker: string;
@@ -37,6 +38,7 @@ export function EnrichButton({
   const [state, setState] = useState<JobState>("idle");
   const [error, setError] = useState<string | null>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const { addJob } = useNotifications();
 
   // Cleanup any pending timer on unmount
   useEffect(() => {
@@ -100,6 +102,9 @@ export function EnrichButton({
 
     try {
       const job = await enrichCompany(ticker);
+      console.log(`[EnrichButton] Registering job for ${ticker}, enrichmentId: ${job.enrichmentId}`);
+      // Register job in global notification system
+      addJob(ticker, job.enrichmentId);
       pollStatus(job.enrichmentId);
     } catch (err: unknown) {
       setState("error");

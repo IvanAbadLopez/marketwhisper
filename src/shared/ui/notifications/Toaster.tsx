@@ -15,6 +15,8 @@ const TOAST_DURATION = 8000; // 8 seconds
 export function Toaster() {
   const { toasts, removeToast } = useNotifications();
 
+  console.log(`[Toaster] Rendering with ${toasts.length} toasts`);
+
   useEffect(() => {
     if (toasts.length === 0) return;
 

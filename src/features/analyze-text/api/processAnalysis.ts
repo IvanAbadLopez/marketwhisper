@@ -14,6 +14,7 @@ import {
   type FinnhubData,
 } from "@/shared";
 import { recomputeCompanyValuation } from "@/entities/company/api/recomputeValuation";
+import { processEnrichment } from "@/features/enrich-company/api/processEnrichment";
 
 interface AnalysisJobResult {
   analysisIds: string[];
@@ -62,6 +63,7 @@ export async function processAnalysis(
       companyName: string;
       company: { id: string; ticker: string };
       finnhubData: FinnhubData | null;
+      isNewCompany: boolean;
     }> = [];
 
     for (const detection of detections) {
@@ -88,6 +90,7 @@ export async function processAnalysis(
         where: { ticker },
       });
 
+      let isNewCompany = false;
       if (!company) {
         company = await prisma.company.create({
           data: {
@@ -96,7 +99,8 @@ export async function processAnalysis(
             analysisCount: 0,
           },
         });
-        console.log(`[processAnalysis] Created new company: ${ticker}`);
+        isNewCompany = true;
+        console.log(`[processAnalysis] Created new company: ${ticker} - will auto-enrich`);
       }
 
       companiesData.push({
@@ -104,6 +108,7 @@ export async function processAnalysis(
         companyName: detection.companyName || company.name,
         company: { id: company.id, ticker: company.ticker },
         finnhubData: null, // Will be fetched in Phase 3
+        isNewCompany,
       });
     }
 
@@ -276,6 +281,31 @@ export async function processAnalysis(
     });
 
     console.log(`[Job ${jobId}] Analysis completed successfully: ${validResults.length} companies analyzed (2 LLM calls total)`);
+
+    // PHASE 6: Auto-enrich newly created companies in background
+    const newCompanies = companiesData.filter(cd => cd.isNewCompany);
+    if (newCompanies.length > 0) {
+      console.log(`[Job ${jobId}] Auto-enriching ${newCompanies.length} newly created companies in background...`);
+      
+      for (const companyData of newCompanies) {
+        // Create PENDING enrichment record
+        const enrichment = await prisma.companyEnrichment.create({
+          data: {
+            companyId: companyData.company.id,
+            ticker: companyData.ticker,
+            source: "FINNHUB",
+            status: "PENDING",
+          },
+        });
+
+        // Kick off enrichment in background (no await - fire and forget)
+        processEnrichment(enrichment.id, companyData.company.id, companyData.ticker).catch(error => {
+          console.error(`[processAnalysis] Background enrichment failed for ${companyData.ticker}:`, error);
+        });
+
+        console.log(`[Job ${jobId}] Started background enrichment for ${companyData.ticker} (ID: ${enrichment.id})`);
+      }
+    }
   } catch (error: unknown) {
     console.error(`[Job ${jobId}] Analysis failed:`, error);
 

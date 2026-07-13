@@ -73,12 +73,16 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   const pollJobs = useCallback(async () => {
     if (jobs.length === 0) return;
 
+    console.log(`[NotificationProvider] Polling ${jobs.length} jobs...`);
+
     for (const job of jobs) {
       try {
         const result = await getEnrichmentStatus(job.ticker, job.enrichmentId);
+        console.log(`[NotificationProvider] Job ${job.ticker} status: ${result.status}`);
 
         if (result.status === "COMPLETED") {
           // Remove job and show success toast
+          console.log(`[NotificationProvider] Job ${job.ticker} completed! Showing toast.`);
           setJobs(prev => prev.filter(j => j.enrichmentId !== job.enrichmentId));
           setToasts(prev => [
             ...prev,
@@ -125,14 +129,19 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   }, [jobs, pollJobs]);
 
   const addJob = useCallback((ticker: string, enrichmentId: string) => {
-    setJobs(prev => [
-      ...prev,
-      {
-        ticker,
-        enrichmentId,
-        startedAt: Date.now(),
-      },
-    ]);
+    console.log(`[NotificationProvider] Adding job: ${ticker} (${enrichmentId})`);
+    setJobs(prev => {
+      const newJobs = [
+        ...prev,
+        {
+          ticker,
+          enrichmentId,
+          startedAt: Date.now(),
+        },
+      ];
+      console.log(`[NotificationProvider] Jobs after add:`, newJobs);
+      return newJobs;
+    });
   }, []);
 
   const removeToast = useCallback((id: string) => {
