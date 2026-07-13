@@ -53,7 +53,7 @@ export async function detectCompanies(text: string): Promise<CompanyDetection[]>
 
   try {
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 60000); // 60s for detection
+    const timeout = setTimeout(() => controller.abort(), 120000); // 120s for detection
 
     const response = await fetch(`${OLLAMA_URL}/api/generate`, {
       method: 'POST',
@@ -96,7 +96,7 @@ export async function detectCompanies(text: string): Promise<CompanyDetection[]>
   } catch (error) {
     console.error('Ollama detection error:', error);
     if (error instanceof Error && error.name === 'AbortError') {
-      throw new Error('AI detection timed out (> 60s).');
+      throw new Error('AI detection timed out (> 120s).');
     }
     throw new Error(
       error instanceof Error 
