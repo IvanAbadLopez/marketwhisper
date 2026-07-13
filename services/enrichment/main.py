@@ -65,6 +65,9 @@ class FinancialMetrics(BaseModel):
     debtToEquity: Optional[float] = None
     dividendYield: Optional[float] = None
     profitMargins: Optional[float] = None
+    bookValuePerShare: Optional[float] = None  # For Graham Number valuation
+    roe: Optional[float] = None  # Return on Equity
+    epsGrowth: Optional[float] = None  # EPS growth rate
 
 class PriceData(BaseModel):
     """Current price and trading data"""
@@ -298,9 +301,12 @@ async def enrich_company_finnhub(ticker: str):
             netIncome=None,  # Not directly available in basic metrics
             eps=metric_data.get('epsBasic'),  # Basic EPS
             peRatio=metric_data.get('peBasicExclExtraTTM'),  # P/E ratio trailing 12 months
-            debtToEquity=None,  # Not in basic metrics
+            debtToEquity=metric_data.get('totalDebt/totalEquityQuarterly'),  # Debt to equity ratio
             dividendYield=metric_data.get('dividendYieldIndicatedAnnual'),
-            profitMargins=metric_data.get('netProfitMarginTTM')  # Net profit margin TTM
+            profitMargins=metric_data.get('netProfitMarginTTM'),  # Net profit margin TTM
+            bookValuePerShare=metric_data.get('bookValuePerShareAnnual'),  # Book value per share
+            roe=metric_data.get('roeTTM'),  # Return on equity TTM
+            epsGrowth=metric_data.get('epsGrowthTTMYoy')  # EPS growth year-over-year
         )
         
         # Extract price data (use 52-week high/low from metrics)
