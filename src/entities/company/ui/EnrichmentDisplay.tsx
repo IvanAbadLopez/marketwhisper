@@ -6,8 +6,7 @@
  * @module entities/company/ui
  */
 
-import { useState } from "react";
-import { useLocale, useTranslations } from "next-intl";
+import { useState, useEffect } from "react";
 import { 
   TrendingUp, 
   TrendingDown, 
@@ -22,6 +21,7 @@ import {
 } from "lucide-react";
 import { AnalystSentimentChart } from "./AnalystSentimentChart";
 import { calcAnalystScore, analystScoreLabel } from "@/features/enrich-company/lib/analystScore";
+import { getCachedTranslation, setCachedTranslation } from "@/shared/lib/translationCache";
 
 interface VerdictInfo {
   verdict: 'BULLISH' | 'BEARISH' | 'NEUTRAL';
@@ -114,7 +114,6 @@ interface EnrichmentData {
     strongSell: number;
   }>;
   aiAnalysis: string | null;
-  aiAnalysisEs: string | null;
   ollamaModel: string | null;
   createdAt: string; // Comes as string from JSON
 }
@@ -124,48 +123,52 @@ interface EnrichmentDisplayProps {
 }
 
 export function EnrichmentDisplay({ enrichment }: EnrichmentDisplayProps) {
-  const locale = useLocale();
-  const t = useTranslations('company.enrichment');
   const [showFullAnalysis, setShowFullAnalysis] = useState(false);
   const [showFinancials, setShowFinancials] = useState(false);
   const [showNews, setShowNews] = useState(false);
 
   // Translation state
-  const [translatedText, setTranslatedText] = useState<string | null>(
-    enrichment?.aiAnalysisEs || null
-  );
-  const [language, setLanguage] = useState<'en' | 'es'>(
-    locale === 'es' && enrichment?.aiAnalysisEs ? 'es' : 'en'
-  );
-  const [isTranslating, setIsTranslating] = useState(false);
+  const [isTranslated, setIsTranslated] = useState(false);
+  const [translatedText, setTranslatedText] = useState<string | null>(null);
+  const [translating, setTranslating] = useState(false);
   const [translateError, setTranslateError] = useState<string | null>(null);
 
-  const handleToggleTranslation = async () => {
-    // If already in Spanish and we have the translation, toggle back to English
-    if (language === 'es') {
-      setLanguage('en');
-      return;
+  // Load cached translation on mount or when enrichment changes
+  useEffect(() => {
+    if (enrichment?.aiAnalysis) {
+      const cached = getCachedTranslation(enrichment.id, enrichment.createdAt);
+      if (cached) {
+        setTranslatedText(cached);
+      } else {
+        setTranslatedText(null);
+        setIsTranslated(false);
+      }
     }
+  }, [enrichment?.id, enrichment?.createdAt, enrichment?.aiAnalysis]);
 
-    // If we already have the translation, just switch to Spanish
-    if (translatedText) {
-      setLanguage('es');
-      return;
-    }
-
-    // Otherwise, fetch translation
+  const handleTranslateToggle = async () => {
     if (!enrichment) return;
 
-    setIsTranslating(true);
+    // If already translated, just toggle back to English
+    if (isTranslated) {
+      setIsTranslated(false);
+      return;
+    }
+
+    // If translation already exists, just toggle to Spanish
+    if (translatedText) {
+      setIsTranslated(true);
+      return;
+    }
+
+    // Fetch translation from API
+    setTranslating(true);
     setTranslateError(null);
 
     try {
       const response = await fetch(
         `/api/companies/${enrichment.ticker}/enrich-finnhub/${enrichment.id}/translate`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-        }
+        { method: 'POST' }
       );
 
       if (!response.ok) {
@@ -173,13 +176,21 @@ export function EnrichmentDisplay({ enrichment }: EnrichmentDisplayProps) {
       }
 
       const data = await response.json();
-      setTranslatedText(data.aiAnalysisEs);
-      setLanguage('es');
+      
+      if (data.error) {
+        throw new Error(data.error);
+      }
+
+      setTranslatedText(data.translation);
+      setIsTranslated(true);
+
+      // Cache the translation
+      setCachedTranslation(enrichment.id, enrichment.createdAt, data.translation);
     } catch (error) {
       console.error('Translation error:', error);
-      setTranslateError(t('translateError'));
+      setTranslateError('Failed to translate. Please try again.');
     } finally {
-      setIsTranslating(false);
+      setTranslating(false);
     }
   };
 
@@ -213,12 +224,11 @@ export function EnrichmentDisplay({ enrichment }: EnrichmentDisplayProps) {
   const DayChangeIcon = (priceData?.dayChange || 0) >= 0 ? TrendingUp : TrendingDown;
 
   // Parse verdict from AI analysis
-  const displayText = language === 'es' && translatedText ? translatedText : aiAnalysis;
-  const verdictInfo = displayText ? parseVerdict(displayText) : null;
+  const verdictInfo = aiAnalysis ? parseVerdict(aiAnalysis) : null;
   // Remove the first line (VERDICT) from the display text if parsed successfully
-  const analysisBody = verdictInfo && displayText 
-    ? displayText.split('\n').slice(1).join('\n').trim()
-    : displayText;
+  const analysisBody = verdictInfo && aiAnalysis 
+    ? aiAnalysis.split('\n').slice(1).join('\n').trim()
+    : aiAnalysis;
 
   // Calculate recommendation sentiment
   const latestRec = recommendations && recommendations.length > 0 ? recommendations[recommendations.length - 1] : null;
@@ -275,24 +285,17 @@ export function EnrichmentDisplay({ enrichment }: EnrichmentDisplayProps) {
               </span>
             </div>
             <div className="flex items-center gap-2">
-              {/* Translation Toggle Button */}
+              {/* Translate Button */}
               <button
-                onClick={handleToggleTranslation}
-                disabled={isTranslating}
-                className="text-sm text-purple-400 hover:text-purple-300 flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
-                title={language === 'es' ? t('showOriginal') : t('translateToSpanish')}
+                onClick={handleTranslateToggle}
+                disabled={translating}
+                className="text-sm text-purple-400 hover:text-purple-300 flex items-center gap-1"
+                title={isTranslated ? "Show Original (EN)" : "Translate to Spanish (ES)"}
               >
-                {isTranslating ? (
-                  <>
-                    <span>{t('translating')}</span>
-                  </>
-                ) : (
-                  <>
-                    <Languages className="h-4 w-4" />
-                    <span>{language === 'es' ? t('showOriginal') : t('translateToSpanish')}</span>
-                  </>
-                )}
+                <Languages className="h-4 w-4" />
+                <span>{translating ? "Translating..." : isTranslated ? "EN" : "ES"}</span>
               </button>
+
               {/* Expand/Collapse Button */}
               <button
                 onClick={() => setShowFullAnalysis(!showFullAnalysis)}
@@ -313,8 +316,9 @@ export function EnrichmentDisplay({ enrichment }: EnrichmentDisplayProps) {
             </div>
           </div>
 
+          {/* Translation Error */}
           {translateError && (
-            <div className="mb-3 p-2 bg-red-500/10 border border-red-500/30 rounded text-xs text-red-400">
+            <div className="mb-3 p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-sm text-red-400">
               {translateError}
             </div>
           )}
@@ -336,7 +340,7 @@ export function EnrichmentDisplay({ enrichment }: EnrichmentDisplayProps) {
 
           <div className={`prose prose-invert max-w-none ${showFullAnalysis ? "" : "line-clamp-4"}`}>
             <p className="text-sm text-zinc-300 whitespace-pre-wrap">
-              {analysisBody}
+              {isTranslated && translatedText ? translatedText : analysisBody}
             </p>
           </div>
         </div>

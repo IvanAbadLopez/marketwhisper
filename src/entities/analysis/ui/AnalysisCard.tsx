@@ -9,6 +9,7 @@
 import { TrendingUp, TrendingDown, Minus, Calendar, FileText } from "lucide-react";
 import { useMemo } from "react";
 import { Analysis } from "../model/types";
+import { FinancialSnapshot } from "./FinancialSnapshot";
 
 interface AnalysisCardProps {
   analysis: Analysis;
@@ -65,6 +66,14 @@ export function AnalysisCard({ analysis, showCompany = false }: AnalysisCardProp
       <p className="text-sm text-zinc-700 dark:text-zinc-300 mb-3">
         {analysis.reasoning}
       </p>
+
+      {/* Financial Snapshot */}
+      {analysis.financialSnapshot && (
+        <FinancialSnapshot 
+          snapshot={analysis.financialSnapshot} 
+          companyName={analysis.company.name}
+        />
+      )}
 
       {/* Footer */}
       <div className="flex items-center justify-between text-xs text-zinc-500 dark:text-zinc-500 border-t border-zinc-200 dark:border-zinc-800 pt-2">

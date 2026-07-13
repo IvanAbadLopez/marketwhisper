@@ -77,7 +77,6 @@ describe("GET /api/companies/[ticker]/enrich-finnhub/[id]", () => {
       newsHeadlines: null,
       recommendations: null,
       aiAnalysis: "Test analysis",
-      aiAnalysisEs: "Análisis de prueba",
       ollamaModel: "llama3.1:8b",
       createdAt: new Date(),
       updatedAt: new Date(),
@@ -137,7 +136,6 @@ describe("GET /api/companies/[ticker]/enrich-finnhub/[id]", () => {
     expect(data.source).toBe("FINNHUB");
     expect(data.status).toBe("COMPLETED");
     expect(data.aiAnalysis).toContain("strong financial metrics");
-    expect(data.aiAnalysisEs).toContain("métricas financieras sólidas");
     expect(data.ollamaModel).toBe("llama3.1:8b");
     expect(data.updatedAt).toBeDefined();
   });

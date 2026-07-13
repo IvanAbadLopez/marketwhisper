@@ -4,7 +4,6 @@ import { useState, useEffect, useCallback } from "react";
 import { MainLayout } from "@/widgets/layout";
 import { useSession } from "next-auth/react";
 import { redirect, useRouter } from "next/navigation";
-import { useTranslations } from "next-intl";
 import { Plus } from "lucide-react";
 import { SearchBar, useCompanySearch } from "@/features/company-search";
 import { CompanyCard } from "@/entities/company";
@@ -13,8 +12,6 @@ import type { Company } from "@/entities/company";
 export default function SituationsPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
-  const t = useTranslations('situations');
-  const tCommon = useTranslations('common');
   const [companies, setCompanies] = useState<Company[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -58,7 +55,7 @@ export default function SituationsPage() {
       <MainLayout user={session?.user}>
         <div className="p-8">
           <div className="max-w-6xl mx-auto text-center">
-            <p className="text-zinc-600 dark:text-zinc-400">{tCommon('loading')}</p>
+            <p className="text-zinc-600 dark:text-zinc-400">Loading...</p>
           </div>
         </div>
       </MainLayout>
@@ -72,10 +69,10 @@ export default function SituationsPage() {
           <div className="mb-6 flex items-start justify-between">
             <div>
               <h1 className="text-3xl font-bold text-zinc-900 dark:text-zinc-100">
-                {t('title')}
+                Companies Tracked
               </h1>
               <p className="text-zinc-600 dark:text-zinc-400 mt-2">
-                {t('subtitle')}
+                Intelligence gathered across all your content sources
               </p>
             </div>
             <button
@@ -83,7 +80,7 @@ export default function SituationsPage() {
               className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
             >
               <Plus className="w-4 h-4" />
-              <span className="hidden sm:inline">{t('discoverButton')}</span>
+              <span className="hidden sm:inline">Discover Companies</span>
             </button>
           </div>
 
@@ -100,26 +97,26 @@ export default function SituationsPage() {
             <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg p-12 text-center">
               <div className="text-6xl mb-4">🏢</div>
               <h2 className="text-xl font-semibold text-zinc-900 dark:text-zinc-100 mb-2">
-                {t('noCompanies')}
+                No Companies Yet
               </h2>
               <p className="text-zinc-600 dark:text-zinc-400 mb-6">
-                {t('noCompaniesDesc')}
+                Add content to start tracking companies
               </p>
             </div>
           ) : filteredCompanies.length === 0 ? (
             <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg p-12 text-center">
               <div className="text-6xl mb-4">🔍</div>
               <h2 className="text-xl font-semibold text-zinc-900 dark:text-zinc-100 mb-2">
-                {t('noResults')}
+                No Companies Found
               </h2>
               <p className="text-zinc-600 dark:text-zinc-400 mb-4">
-                {t('noResultsDesc', { query: searchQuery })}
+                No companies match your search "{searchQuery}"
               </p>
               <button
                 onClick={() => setSearchQuery("")}
                 className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
               >
-                {t('clearSearch')}
+                Clear Search
               </button>
             </div>
           ) : (
@@ -136,10 +133,7 @@ export default function SituationsPage() {
 
           {companies.length > 0 && filteredCompanies.length > 0 && !searchQuery && (
             <div className="mt-6 text-center text-sm text-zinc-500 dark:text-zinc-400">
-              {t('trackingCount', { 
-                count: companies.length,
-                plural: companies.length === 1 ? t('company') : t('companies')
-              })}
+              Tracking {companies.length} {companies.length === 1 ? 'company' : 'companies'}
             </div>
           )}
         </div>

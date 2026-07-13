@@ -5,12 +5,10 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useTranslations } from "next-intl";
 import { navigationItems } from "../model/navigation";
 
 export function Sidebar() {
   const pathname = usePathname();
-  const t = useTranslations();
   const [activeJobsCount, setActiveJobsCount] = useState(0);
 
   // Fetch active jobs count
@@ -41,7 +39,7 @@ export function Sidebar() {
         <Link href="/" className="flex items-center gap-2">
           <span className="text-2xl">🎧</span>
           <span className="text-xl font-bold text-zinc-900 dark:text-zinc-100">
-            {t('sidebar.appName')}
+            MarketWhisper
           </span>
         </Link>
       </div>
@@ -52,6 +50,14 @@ export function Sidebar() {
           const isActive = pathname === item.href;
           const Icon = item.icon;
           const showBadge = item.href === "/jobs" && activeJobsCount > 0;
+
+          // Translate navigation item names
+          const navNames: Record<string, string> = {
+            'nav.dashboard': 'Dashboard',
+            'nav.companies': 'Companies',
+            'nav.insights': 'Insights',
+            'nav.jobs': 'Processes',
+          };
 
           return (
             <Link
@@ -67,7 +73,7 @@ export function Sidebar() {
               `}
             >
               <Icon className="w-5 h-5" />
-              <span className="flex-1">{t(item.nameKey)}</span>
+              <span className="flex-1">{navNames[item.nameKey] || item.nameKey}</span>
               {showBadge && (
                 <span className="flex items-center justify-center min-w-[20px] h-5 px-1.5 text-xs font-bold rounded-full bg-orange-500 text-white">
                   {activeJobsCount}
@@ -81,10 +87,10 @@ export function Sidebar() {
       {/* Footer info */}
       <div className="p-4 border-t border-zinc-200 dark:border-zinc-800">
         <p className="text-xs text-zinc-500 dark:text-zinc-400">
-          {t('sidebar.version')}
+          MarketWhisper v0.1.0
         </p>
         <p className="text-xs text-zinc-400 dark:text-zinc-500 mt-1">
-          {t('sidebar.tagline')}
+          AI-Powered Market Intelligence
         </p>
       </div>
     </aside>

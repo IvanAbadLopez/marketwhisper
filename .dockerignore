@@ -10,6 +10,9 @@ out
 dist
 build
 
+# Prisma generated client (regenerate in container)
+src/generated
+
 # Testing
 coverage
 .nyc_output

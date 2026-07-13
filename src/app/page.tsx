@@ -1,13 +1,11 @@
 import { auth } from "@/lib/auth";
 import { MainLayout } from "@/widgets/layout";
 import { redirect } from "next/navigation";
-import { getTranslations } from "next-intl/server";
 import { prisma } from "@/shared";
 import { RecentJobsList } from "@/widgets/job-queue/RecentJobsList";
 
 export default async function Home() {
   const session = await auth();
-  const t = await getTranslations('dashboard');
 
   if (!session?.user) {
     redirect("/login");
@@ -45,10 +43,10 @@ export default async function Home() {
           {/* Welcome section */}
           <div>
             <h2 className="text-3xl font-bold text-zinc-900 dark:text-zinc-100 mb-2">
-              {t('welcomeBack', { name: session.user.name?.split(" ")[0] || 'User' })}
+              Welcome back, {session.user.name?.split(" ")[0] || 'User'}!
             </h2>
             <p className="text-zinc-600 dark:text-zinc-400">
-              {t('subtitle')}
+              Your AI-powered market intelligence dashboard
             </p>
           </div>
 
@@ -58,7 +56,7 @@ export default async function Home() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400">
-                    {t('videosAnalyzed')}
+                    Videos Analyzed
                   </p>
                   <p className="text-3xl font-bold text-zinc-900 dark:text-zinc-100 mt-2">
                     {videoCount}
@@ -74,7 +72,7 @@ export default async function Home() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400">
-                    {t('contentItems')}
+                    Content Items
                   </p>
                   <p className="text-3xl font-bold text-zinc-900 dark:text-zinc-100 mt-2">
                     {articleCount}
@@ -90,7 +88,7 @@ export default async function Home() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400">
-                    {t('stockMentions')}
+                    Stock Mentions
                   </p>
                   <p className="text-3xl font-bold text-zinc-900 dark:text-zinc-100 mt-2">
                     {mentionCount}
@@ -106,7 +104,7 @@ export default async function Home() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400">
-                    {t('activeJobs')}
+                    Active Processes
                   </p>
                   <p className="text-3xl font-bold text-zinc-900 dark:text-zinc-100 mt-2">
                     {activeJobsCount}
@@ -122,24 +120,24 @@ export default async function Home() {
           {/* Getting started */}
           <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg p-6">
             <h3 className="text-lg font-semibold text-blue-900 dark:text-blue-100 mb-2">
-              {t('getStartedTitle')}
+              🚀 How It Works
             </h3>
             <ul className="space-y-2 text-sm text-blue-700 dark:text-blue-300">
               <li className="flex items-start gap-2">
                 <span className="text-blue-500 mt-0.5">1.</span>
-                <span>{t('getStartedStep1')}</span>
+                <span>Analyze text with AI to detect companies and sentiment</span>
               </li>
               <li className="flex items-start gap-2">
                 <span className="text-blue-500 mt-0.5">2.</span>
-                <span>{t('getStartedStep2')}</span>
+                <span>Generate comprehensive AI reports with Finnhub financial data</span>
               </li>
               <li className="flex items-start gap-2">
                 <span className="text-blue-500 mt-0.5">3.</span>
-                <span>{t('getStartedStep3')}</span>
+                <span>Track all analysis and enrichment jobs in the process queue</span>
               </li>
               <li className="flex items-start gap-2">
                 <span className="text-blue-500 mt-0.5">4.</span>
-                <span>{t('getStartedStep4')}</span>
+                <span>View detailed company profiles with aggregated insights</span>
               </li>
             </ul>
           </div>
@@ -147,7 +145,7 @@ export default async function Home() {
           {/* Recent activity */}
           <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg p-6">
             <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100 mb-4">
-              {t('recentActivity')}
+              Recent Activity
             </h3>
             <RecentJobsList />
           </div>

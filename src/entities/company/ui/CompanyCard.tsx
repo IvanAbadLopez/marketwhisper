@@ -7,7 +7,6 @@
 "use client";
 
 import { TrendingUp, TrendingDown, Minus } from "lucide-react";
-import { useTranslations } from "next-intl";
 import { Company } from "../model/types";
 import { getSentimentColor, getReliabilityColor, getSentimentLabel } from "../model/utils";
 
@@ -17,7 +16,6 @@ interface CompanyCardProps {
 }
 
 export function CompanyCard({ company, onClick }: CompanyCardProps) {
-  const t = useTranslations('company.card');
   const sentimentLabel = getSentimentLabel(company.avgSentimentScore);
   
   const SentimentIcon = sentimentLabel === "BULLISH" 
@@ -58,7 +56,7 @@ export function CompanyCard({ company, onClick }: CompanyCardProps) {
               <div className="flex items-center gap-2">
                 <SentimentIcon className="w-4 h-4 text-zinc-600 dark:text-zinc-400" />
                 <span className="text-xs text-zinc-600 dark:text-zinc-400">
-                  {t('sentiment')}: {sentimentLabel}
+                  Sentiment: {sentimentLabel}
                 </span>
               </div>
               <span className="text-xs font-medium text-zinc-700 dark:text-zinc-300">
@@ -83,7 +81,7 @@ export function CompanyCard({ company, onClick }: CompanyCardProps) {
           <div>
             <div className="flex items-center justify-between mb-1">
               <span className="text-xs text-zinc-600 dark:text-zinc-400">
-                {t('reliability')}
+                Reliability
               </span>
               <span className="text-xs font-medium text-zinc-700 dark:text-zinc-300">
                 {company.avgReliabilityScore !== null
@@ -110,8 +108,8 @@ export function CompanyCard({ company, onClick }: CompanyCardProps) {
         <span>
           {company._count?.analyses || company.analysisCount || 0}{" "}
           {(company._count?.analyses || company.analysisCount || 0) === 1 
-            ? t('analysis', { count: 1 }) 
-            : t('analyses', { count: company._count?.analyses || company.analysisCount || 0 })}
+            ? 'analysis' 
+            : 'analyses'}
         </span>
       </div>
     </div>

@@ -4,7 +4,8 @@ import { useState, useEffect, useCallback } from "react";
 import { MainLayout } from "@/widgets/layout";
 import { 
   Building2, 
-  TrendingUp, 
+  TrendingUp,
+  TrendingDown, 
   Globe, 
   FileText, 
   Calendar,
@@ -15,9 +16,9 @@ import {
 } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { redirect, useRouter } from "next/navigation";
-import { useTranslations, useLocale } from "next-intl";
 import { EnrichButton } from "@/features/enrich-company";
 import { EnrichmentDisplay } from "@/entities/company/ui/EnrichmentDisplay";
+import { InfoTooltip } from "@/shared/ui/InfoTooltip";
 
 interface Mention {
   id: string;
@@ -71,6 +72,23 @@ interface Company {
   avgSentimentScore: number | null;
   avgReliabilityScore: number | null;
   analysisCount: number;
+  globalScore: number | null;
+  globalScoreLabel: string | null;
+  targetPrice: number | null;
+  valuationBreakdown: {
+    financialHealthScore: number | null;
+    analystScore: number | null;
+    textSentimentScore: number | null;
+    weights: { financial: number; analyst: number; text: number };
+    targetPriceMethods: {
+      grahamNumber: number | null;
+      fairPE: number | null;
+      fiftyTwoWeekMid: number | null;
+    };
+    baseTarget: number | null;
+    sentimentAdjustment: number | null;
+  } | null;
+  valuationUpdatedAt: string | null;
   _count: {
     content: number;
     mentions: number;
@@ -86,7 +104,7 @@ interface Company {
     sentiment: string;
     reliabilityScore: number;
     reasoning: string;
-    reasoningEs: string | null;
+    financialSnapshot?: any; // Json type
     createdAt: string;
   }[];
   enrichments?: {
@@ -127,18 +145,44 @@ interface Company {
       strongSell: number;
     }>;
     aiAnalysis: string | null;
-    aiAnalysisEs: string | null;
     ollamaModel: string | null;
     createdAt: string; // Comes as string from JSON
   }[];
 }
 
+// UpsideIndicator Component
+function UpsideIndicator({ ticker, targetPrice }: { ticker: string; targetPrice: number }) {
+  const [livePrice, setLivePrice] = useState<number | null>(null);
+  
+  useEffect(() => {
+    fetch(`/api/companies/${ticker}/finnhub-live`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.success && data.price?.currentPrice) {
+          setLivePrice(data.price.currentPrice);
+        }
+      })
+      .catch(() => setLivePrice(null));
+  }, [ticker]);
+  
+  if (!livePrice) return null;
+  
+  const upside = ((targetPrice - livePrice) / livePrice) * 100;
+  const isPositive = upside > 0;
+  
+  return (
+    <div className={`flex items-center gap-1 text-sm font-semibold ${
+      isPositive ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
+    }`}>
+      {isPositive ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}
+      {upside > 0 ? '+' : ''}{upside.toFixed(1)}% Upside
+    </div>
+  );
+}
+
 export default function CompanyDetailPage({ params }: { params: Promise<{ ticker: string }> }) {
   const { data: session, status } = useSession();
   const router = useRouter();
-  const t = useTranslations('company.detail');
-  const tCommon = useTranslations('common');
-  const locale = useLocale();
   const [ticker, setTicker] = useState<string>("");
   const [company, setCompany] = useState<Company | null>(null);
   const [loading, setLoading] = useState(true);
@@ -173,7 +217,7 @@ export default function CompanyDetailPage({ params }: { params: Promise<{ ticker
   }, [ticker]);
 
   const handleDeleteContent = async (contentId: string, contentTitle: string | null) => {
-    if (!confirm(t('deleteConfirm', { title: contentTitle || t('untitled') }))) {
+    if (!confirm(`Are you sure you want to delete "${contentTitle || 'Untitled'}"? This will also delete all associated mentions and transcripts.`)) {
       return;
     }
 
@@ -225,7 +269,7 @@ export default function CompanyDetailPage({ params }: { params: Promise<{ ticker
       <MainLayout user={session?.user}>
         <div className="p-8">
           <div className="max-w-6xl mx-auto text-center">
-            <p className="text-zinc-600 dark:text-zinc-400">{tCommon('loading')}</p>
+            <p className="text-zinc-600 dark:text-zinc-400">Loading...</p>
           </div>
         </div>
       </MainLayout>
@@ -242,15 +286,15 @@ export default function CompanyDetailPage({ params }: { params: Promise<{ ticker
               className="mb-6 flex items-center gap-2 text-blue-600 dark:text-blue-400 hover:underline"
             >
               <ArrowLeft className="w-4 h-4" />
-              {t('back')}
+              Back
             </button>
             <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg p-12 text-center">
               <div className="text-6xl mb-4">❌</div>
               <h2 className="text-xl font-semibold text-zinc-900 dark:text-zinc-100 mb-2">
-                {t('notFound')}
+                Company Not Found
               </h2>
               <p className="text-zinc-600 dark:text-zinc-400">
-                {t('notFoundDesc', { ticker: ticker.toUpperCase() })}
+                The company {ticker.toUpperCase()} does not exist in our database.
               </p>
             </div>
           </div>
@@ -269,7 +313,7 @@ export default function CompanyDetailPage({ params }: { params: Promise<{ ticker
             className="mb-6 flex items-center gap-2 text-blue-600 dark:text-blue-400 hover:underline"
           >
             <ArrowLeft className="w-4 h-4" />
-            {t('backButton')}
+            ← Back to Companies
           </button>
 
           {/* Company Header */}
@@ -300,7 +344,48 @@ export default function CompanyDetailPage({ params }: { params: Promise<{ ticker
                   </p>
                 )}
               </div>
-              <Building2 className="w-16 h-16 text-zinc-400 dark:text-zinc-600" />
+              
+              {/* Valuation Hero */}
+              <div className="flex flex-col items-end gap-3">
+                {/* Global Score */}
+                {company.globalScore !== null && (
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-zinc-600 dark:text-zinc-400">
+                      Global Score
+                    </span>
+                    <InfoTooltip content="Combines financial health (40%), analyst consensus (35%), and your text analyses (25%). Scale 0-100." />
+                    <div className={`px-4 py-2 rounded-lg font-bold text-lg ${
+                      company.globalScore >= 75 ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-100'
+                      : company.globalScore >= 60 ? 'bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-100'
+                      : company.globalScore >= 40 ? 'bg-amber-100 dark:bg-amber-900 text-amber-800 dark:text-amber-100'
+                      : 'bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-100'
+                    }`}>
+                      {company.globalScore}/100
+                      <span className="ml-2 text-xs font-normal opacity-80">
+                        {company.globalScoreLabel}
+                      </span>
+                    </div>
+                  </div>
+                )}
+                
+                {/* Target Price */}
+                {company.targetPrice !== null && (
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-zinc-600 dark:text-zinc-400">
+                      Target Price
+                    </span>
+                    <InfoTooltip content="Fair value estimate using Graham Number, fair P/E, and 52-week midpoint, adjusted by global sentiment." />
+                    <div className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">
+                      ${company.targetPrice.toFixed(2)}
+                    </div>
+                  </div>
+                )}
+                
+                {/* Upside (requires live price - fetch from finnhub-live endpoint) */}
+                {company.targetPrice !== null && (
+                  <UpsideIndicator ticker={company.ticker} targetPrice={company.targetPrice} />
+                )}
+              </div>
             </div>
 
             {/* Company Metadata */}
@@ -309,7 +394,7 @@ export default function CompanyDetailPage({ params }: { params: Promise<{ ticker
                 <div className="p-4 bg-zinc-50 dark:bg-zinc-800 rounded-lg">
                   <div className="flex items-center gap-2 mb-1">
                     <TrendingUp className="w-4 h-4 text-zinc-500" />
-                    <span className="text-xs text-zinc-500 dark:text-zinc-400">{t('sector')}</span>
+                    <span className="text-xs text-zinc-500 dark:text-zinc-400">Sector</span>
                   </div>
                   <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
                     {company.sector}
@@ -318,7 +403,7 @@ export default function CompanyDetailPage({ params }: { params: Promise<{ ticker
               )}
               {company.industry && (
                 <div className="p-4 bg-zinc-50 dark:bg-zinc-800 rounded-lg">
-                  <span className="text-xs text-zinc-500 dark:text-zinc-400 block mb-1">{t('industry')}</span>
+                  <span className="text-xs text-zinc-500 dark:text-zinc-400 block mb-1">Industry</span>
                   <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
                     {company.industry}
                   </p>
@@ -326,7 +411,7 @@ export default function CompanyDetailPage({ params }: { params: Promise<{ ticker
               )}
               {company.marketCap && (
                 <div className="p-4 bg-zinc-50 dark:bg-zinc-800 rounded-lg">
-                  <span className="text-xs text-zinc-500 dark:text-zinc-400 block mb-1">{t('marketCap')}</span>
+                  <span className="text-xs text-zinc-500 dark:text-zinc-400 block mb-1">Market Cap</span>
                   <p className="text-lg font-bold text-zinc-900 dark:text-zinc-100">
                     {formatMarketCap(company.marketCap)}
                   </p>
@@ -334,7 +419,7 @@ export default function CompanyDetailPage({ params }: { params: Promise<{ ticker
               )}
               {company.website && (
                 <div className="p-4 bg-zinc-50 dark:bg-zinc-800 rounded-lg">
-                  <span className="text-xs text-zinc-500 dark:text-zinc-400 block mb-1">{t('website')}</span>
+                  <span className="text-xs text-zinc-500 dark:text-zinc-400 block mb-1">Website</span>
                   <a
                     href={company.website}
                     target="_blank"
@@ -342,7 +427,7 @@ export default function CompanyDetailPage({ params }: { params: Promise<{ ticker
                     className="flex items-center gap-1 text-sm font-semibold text-blue-600 dark:text-blue-400 hover:underline"
                   >
                     <Globe className="w-4 h-4" />
-                    {t('visit')}
+                    Visit
                     <ExternalLink className="w-3 h-3" />
                   </a>
                 </div>
@@ -357,7 +442,7 @@ export default function CompanyDetailPage({ params }: { params: Promise<{ ticker
                   {company._count.content}
                 </span>
                 <span className="text-zinc-600 dark:text-zinc-400">
-                  {company._count.content === 1 ? t('article') : t('articles')}
+                  {company._count.content === 1 ? 'article' : 'articles'}
                 </span>
               </div>
               <div className="flex items-center gap-2">
@@ -366,7 +451,7 @@ export default function CompanyDetailPage({ params }: { params: Promise<{ ticker
                   {company._count.mentions}
                 </span>
                 <span className="text-zinc-600 dark:text-zinc-400">
-                  {company._count.mentions === 1 ? t('mention') : t('mentions')}
+                  {company._count.mentions === 1 ? 'mention' : 'mentions'}
                 </span>
               </div>
               {company._count.analyses > 0 && (
@@ -376,18 +461,121 @@ export default function CompanyDetailPage({ params }: { params: Promise<{ ticker
                     {company._count.analyses}
                   </span>
                   <span className="text-zinc-600 dark:text-zinc-400">
-                    AI {company._count.analyses === 1 ? t('aiAnalysis') : t('aiAnalyses')}
+                    AI {company._count.analyses === 1 ? 'analysis' : 'analyses'}
                   </span>
                 </div>
               )}
             </div>
+            
+            {/* Valuation Breakdown (Detail Section) */}
+            {company.valuationBreakdown && (
+              <div className="mt-6 p-4 bg-zinc-50 dark:bg-zinc-800 rounded-lg">
+                <h3 className="text-sm font-semibold text-zinc-700 dark:text-zinc-300 mb-3">
+                  Valuation Methods
+                </h3>
+                <div className="grid grid-cols-3 gap-4 text-xs">
+                  {/* Financial Health */}
+                  {company.valuationBreakdown.financialHealthScore !== null && (
+                    <div>
+                      <div className="flex items-center gap-1 mb-1">
+                        <span className="text-zinc-600 dark:text-zinc-400">
+                          Financial Health
+                        </span>
+                        <InfoTooltip content="Based on P/E ratio, profit margin, ROE, debt/equity, and dividend yield." />
+                      </div>
+                      <div className="font-semibold text-zinc-900 dark:text-zinc-100">
+                        {company.valuationBreakdown.financialHealthScore.toFixed(0)}/100
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Analyst */}
+                  {company.valuationBreakdown.analystScore !== null && (
+                    <div>
+                      <div className="flex items-center gap-1 mb-1">
+                        <span className="text-zinc-600 dark:text-zinc-400">
+                          Analyst Consensus
+                        </span>
+                        <InfoTooltip content="Consensus from analyst recommendations (strong buy, buy, hold, sell, strong sell)." />
+                      </div>
+                      <div className="font-semibold text-zinc-900 dark:text-zinc-100">
+                        {company.valuationBreakdown.analystScore.toFixed(0)}/100
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Text Sentiment */}
+                  {company.valuationBreakdown.textSentimentScore !== null && (
+                    <div>
+                      <div className="flex items-center gap-1 mb-1">
+                        <span className="text-zinc-600 dark:text-zinc-400">
+                          Text Sentiment
+                        </span>
+                        <InfoTooltip content="Aggregate sentiment from your text analyses, weighted by reliability and volume." />
+                      </div>
+                      <div className="font-semibold text-zinc-900 dark:text-zinc-100">
+                        {company.valuationBreakdown.textSentimentScore.toFixed(0)}/100
+                      </div>
+                    </div>
+                  )}
+                </div>
+                
+                {/* Target Price Methods */}
+                {company.targetPrice && (
+                  <div className="mt-4 pt-4 border-t border-zinc-200 dark:border-zinc-700">
+                    <div className="grid grid-cols-4 gap-3 text-xs">
+                      {company.valuationBreakdown.targetPriceMethods.grahamNumber && (
+                        <div>
+                          <div className="text-zinc-600 dark:text-zinc-400 mb-1">
+                            Graham Number
+                          </div>
+                          <div className="font-semibold text-zinc-900 dark:text-zinc-100">
+                            ${company.valuationBreakdown.targetPriceMethods.grahamNumber.toFixed(2)}
+                          </div>
+                        </div>
+                      )}
+                      {company.valuationBreakdown.targetPriceMethods.fairPE && (
+                        <div>
+                          <div className="text-zinc-600 dark:text-zinc-400 mb-1">
+                            Fair P/E
+                          </div>
+                          <div className="font-semibold text-zinc-900 dark:text-zinc-100">
+                            ${company.valuationBreakdown.targetPriceMethods.fairPE.toFixed(2)}
+                          </div>
+                        </div>
+                      )}
+                      {company.valuationBreakdown.targetPriceMethods.fiftyTwoWeekMid && (
+                        <div>
+                          <div className="text-zinc-600 dark:text-zinc-400 mb-1">
+                            52-Week Midpoint
+                          </div>
+                          <div className="font-semibold text-zinc-900 dark:text-zinc-100">
+                            ${company.valuationBreakdown.targetPriceMethods.fiftyTwoWeekMid.toFixed(2)}
+                          </div>
+                        </div>
+                      )}
+                      <div>
+                        <div className="text-zinc-600 dark:text-zinc-400 mb-1">
+                          Sentiment Adjustment
+                        </div>
+                        <div className="font-semibold text-zinc-900 dark:text-zinc-100">
+                          {company.valuationBreakdown.sentimentAdjustment 
+                            ? `${company.valuationBreakdown.sentimentAdjustment > 0 ? '+' : ''}${company.valuationBreakdown.sentimentAdjustment.toFixed(1)}%`
+                            : 'N/A'}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Enrichment Section */}
           <div className="mb-6">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">
-                {t('financialData')}
+                Financial Data & AI Analysis
               </h3>
               <EnrichButton
                 ticker={ticker}
@@ -406,20 +594,20 @@ export default function CompanyDetailPage({ params }: { params: Promise<{ ticker
             <div className="mb-6">
               <h3 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100 mb-4 flex items-center gap-2">
                 <TrendingUp className="w-6 h-6 text-blue-600 dark:text-blue-400" />
-                {t('aiTextAnalyses')}
+                AI Text Analyses
               </h3>
 
               {/* Aggregated Scores */}
               <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-6 mb-4">
                 <h4 className="text-sm font-semibold text-zinc-700 dark:text-zinc-300 mb-4">
-                  {t('overallSentiment')}
+                  Overall Sentiment & Reliability
                 </h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {/* Sentiment Score */}
                   <div>
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
-                        {t('averageSentiment')}
+                        Average Sentiment
                       </span>
                       <span className="text-sm font-bold text-zinc-900 dark:text-zinc-100">
                         {company.avgSentimentScore !== null
@@ -454,7 +642,7 @@ export default function CompanyDetailPage({ params }: { params: Promise<{ ticker
                   <div>
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
-                        {t('averageReliability')}
+                        Average Reliability
                       </span>
                       <span className="text-sm font-bold text-zinc-900 dark:text-zinc-100">
                         {company.avgReliabilityScore?.toFixed(1) || '0'} / 10
@@ -507,7 +695,7 @@ export default function CompanyDetailPage({ params }: { params: Promise<{ ticker
                         {/* Reliability Score */}
                         <div className="flex items-center gap-1">
                           <span className="text-xs text-zinc-500 dark:text-zinc-400">
-                            {t('reliability')}:
+                            Reliability:
                           </span>
                           <span
                             className={`text-xs font-bold ${
@@ -535,7 +723,7 @@ export default function CompanyDetailPage({ params }: { params: Promise<{ ticker
                         </div>
                         {analysis.source && (
                           <div className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
-                            {t('source')}: {analysis.source}
+                            Source: {analysis.source}
                           </div>
                         )}
                       </div>
@@ -544,19 +732,17 @@ export default function CompanyDetailPage({ params }: { params: Promise<{ ticker
                     {/* AI Reasoning */}
                     <div className="mb-3 p-3 bg-blue-50 dark:bg-blue-900/20 rounded border border-blue-100 dark:border-blue-800">
                       <p className="text-xs font-medium text-blue-700 dark:text-blue-300 mb-1">
-                        {t('aiReasoning')}
+                        AI Reasoning:
                       </p>
                       <p className="text-sm text-zinc-700 dark:text-zinc-300 italic">
-                        {locale === 'es' && analysis.reasoningEs 
-                          ? analysis.reasoningEs 
-                          : analysis.reasoning}
+                        {analysis.reasoning}
                       </p>
                     </div>
 
                     {/* Original Text */}
                     <div>
                       <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400 mb-1">
-                        {t('originalText')}
+                        Original Text:
                       </p>
                       <p className="text-sm text-zinc-600 dark:text-zinc-400 line-clamp-3">
                         {analysis.text}
@@ -571,11 +757,11 @@ export default function CompanyDetailPage({ params }: { params: Promise<{ ticker
           {/* Content Section */}
           <div className="mb-6">
             <h3 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100 mb-4">
-              {t('relatedContent')}
+              Related Content
             </h3>
             {company.content.length === 0 ? (
               <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg p-8 text-center">
-                <p className="text-zinc-600 dark:text-zinc-400">{t('noContent')}</p>
+                <p className="text-zinc-600 dark:text-zinc-400">No content found for this company.</p>
               </div>
             ) : (
               <div className="space-y-4">
@@ -587,7 +773,7 @@ export default function CompanyDetailPage({ params }: { params: Promise<{ ticker
                     {/* Header */}
                     <div className="flex items-start justify-between mb-3">
                       <h4 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100 flex-1">
-                        {content.title || t('untitled')}
+                        {content.title || 'Untitled'}
                       </h4>
                       <span className={`px-2 py-1 text-xs font-medium rounded ${getTypeBadgeColor(content.contentType)}`}>
                         {content.contentType}

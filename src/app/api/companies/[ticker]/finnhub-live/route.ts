@@ -5,7 +5,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-import { fetchFinnhubData, normalizeTicker } from "@/features/enrich-company/api/processEnrichment";
+import { fetchFinnhubData, normalizeTicker } from "@/shared";
 
 /**
  * GET /api/companies/[ticker]/finnhub-live

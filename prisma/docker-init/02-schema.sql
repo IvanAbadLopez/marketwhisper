@@ -175,7 +175,6 @@ CREATE TABLE "Analysis" (
     "sentiment" "Sentiment" NOT NULL,
     "reliabilityScore" INTEGER NOT NULL,
     "reasoning" TEXT NOT NULL,
-    "reasoningEs" TEXT,
     "jobId" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
@@ -195,7 +194,6 @@ CREATE TABLE "CompanyEnrichment" (
     "newsHeadlines" JSONB,
     "recommendations" JSONB,
     "aiAnalysis" TEXT,
-    "aiAnalysisEs" TEXT,
     "ollamaModel" TEXT,
     "jobId" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,

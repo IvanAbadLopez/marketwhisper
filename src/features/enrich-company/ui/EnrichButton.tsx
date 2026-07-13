@@ -9,7 +9,6 @@
 
 import { useState, useRef, useEffect } from "react";
 import { Sparkles, Loader2, Clock } from "lucide-react";
-import { useTranslations } from "next-intl";
 import { enrichCompany, getEnrichmentStatus } from "../api/enrichCompany";
 import { formatRelativeTime } from "@/shared/lib/date";
 
@@ -35,7 +34,6 @@ export function EnrichButton({
   className = "",
   lastEnrichment,
 }: EnrichButtonProps) {
-  const t = useTranslations();
   const [state, setState] = useState<JobState>("idle");
   const [error, setError] = useState<string | null>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -151,7 +149,7 @@ export function EnrichButton({
         {lastEnrichment && !loading && (
           <div className={`flex items-center gap-1 text-xs ${ageColor}`}>
             <Clock className="w-3 h-3" />
-            <span>{formatRelativeTime(new Date(lastEnrichment.createdAt), t)}</span>
+            <span>{formatRelativeTime(new Date(lastEnrichment.createdAt))}</span>
           </div>
         )}
       </div>
@@ -204,7 +202,7 @@ export function EnrichButton({
       {lastEnrichment && !loading && (
         <div className={`flex items-center gap-1.5 text-sm ${ageColor}`}>
           <Clock className="w-4 h-4" />
-          <span>{formatRelativeTime(new Date(lastEnrichment.createdAt), t)}</span>
+          <span>{formatRelativeTime(new Date(lastEnrichment.createdAt))}</span>
         </div>
       )}
     </div>

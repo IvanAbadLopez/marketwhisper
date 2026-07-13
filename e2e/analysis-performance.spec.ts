@@ -106,52 +106,9 @@ Tesla (TSLA) faces increased competition in the EV market.
     await expect(page.getByText(/strong fundamentals|robust earnings/i)).toBeVisible({ timeout: 5000 });
   });
 
-  test("should handle deferred translation (reasoningEs initially null)", async ({ page }) => {
-    // Navigate to Analyze page
-    await page.goto("/analyze");
-
-    const sampleText = "Apple reported record revenue in Q4 2024, beating expectations by 10%.";
-
-    await page.getByPlaceholder(/paste.*news/i).fill(sampleText);
-    await page.getByRole("button", { name: /analyze/i }).click();
-
-    // Wait for job to start
-    await expect(page.getByText("Analysis Started!")).toBeVisible({ timeout: 5000 });
-
-    // Wait for analysis to complete (~15s)
-    await page.waitForTimeout(20000);
-
-    // Navigate to company detail page
-    await page.goto("/companies");
-    
-    // Find and click AAPL
-    const appleCard = page.locator("text=AAPL").first();
-    await expect(appleCard).toBeVisible({ timeout: 5000 });
-    await appleCard.click();
-
-    // At this point, reasoningEs might still be null (translation in background)
-    // The UI should show English reasoning as fallback
-    await expect(page.getByText(/record revenue|beating expectations/i)).toBeVisible();
-
-    // Wait additional time for background translation to complete (~10-20s more)
-    console.log("\n⏳ Waiting for background translations to complete...\n");
-    await page.waitForTimeout(25000); // Additional 25 seconds
-
-    // Reload to get updated data
-    await page.reload();
-
-    // Spanish translation should now be available if locale is 'es'
-    // (In English locale, we'll still see English text)
-    // This test mainly verifies the system doesn't crash with null translations
-    await expect(page.getByText(/record revenue|beating expectations/i)).toBeVisible();
-    
-    console.log("✅ Deferred translation system working correctly\n");
-  });
-
-  test("performance benchmark: batch translation is faster", async ({ page }) => {
-    // This test verifies that analyzing multiple companies is significantly faster
-    // With batching: 5 companies should take ~15-20s total
-    // Without batching: 5 companies would take ~50-70s
+  test("performance benchmark: analyze multiple companies efficiently", async ({ page }) => {
+    // This test verifies that analyzing multiple companies completes successfully
+    // Expected: ~15-20s total for analysis
 
     await page.goto("/analyze");
 

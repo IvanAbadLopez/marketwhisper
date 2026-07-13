@@ -3,13 +3,11 @@
 import { useState } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { registerUser } from "../api/register";
 
 export function RegisterForm() {
   const router = useRouter();
-  const t = useTranslations('auth.register');
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -22,12 +20,12 @@ export function RegisterForm() {
     setError("");
 
     if (password !== confirmPassword) {
-      setError(t('passwordMismatch'));
+      setError('Passwords do not match');
       return;
     }
 
     if (password.length < 8) {
-      setError(t('passwordTooShort'));
+      setError('Password must be at least 8 characters');
       return;
     }
 
@@ -37,7 +35,7 @@ export function RegisterForm() {
       const result = await registerUser({ name, email, password, confirmPassword });
 
       if (!result.success) {
-        setError(result.error || t('registrationFailed'));
+        setError(result.error || 'Registration failed');
         setLoading(false);
         return;
       }
@@ -50,14 +48,14 @@ export function RegisterForm() {
       });
 
       if (loginResult?.error) {
-        setError(t('registrationSuccess'));
+        setError('Registration successful but login failed. Please sign in.');
         router.push("/login");
       } else {
         router.push("/");
         router.refresh();
       }
     } catch {
-      setError(t('genericError'));
+      setError('Something went wrong. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -68,9 +66,9 @@ export function RegisterForm() {
       {/* Logo */}
       <div className="text-center mb-8">
         <h1 className="text-3xl font-bold text-white">
-          🎧 {t('title')}
+          🎧 MarketWhisper
         </h1>
-        <p className="text-gray-400 mt-2">{t('subtitle')}</p>
+        <p className="text-gray-400 mt-2">Create your account</p>
       </div>
 
       {/* Card */}
@@ -86,7 +84,7 @@ export function RegisterForm() {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label htmlFor="name" className="block text-sm font-medium text-gray-300 mb-1">
-              {t('nameLabel')}
+              Name
             </label>
             <input
               id="name"
@@ -95,13 +93,13 @@ export function RegisterForm() {
               onChange={(e) => setName(e.target.value)}
               required
               className="w-full px-4 py-2.5 bg-[#0a0a0f] border border-[#1e1e2e] rounded-md text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              placeholder={t('namePlaceholder')}
+              placeholder="John Doe"
             />
           </div>
 
           <div>
             <label htmlFor="email" className="block text-sm font-medium text-gray-300 mb-1">
-              {t('emailLabel')}
+              Email
             </label>
             <input
               id="email"
@@ -110,13 +108,13 @@ export function RegisterForm() {
               onChange={(e) => setEmail(e.target.value)}
               required
               className="w-full px-4 py-2.5 bg-[#0a0a0f] border border-[#1e1e2e] rounded-md text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              placeholder={t('emailPlaceholder')}
+              placeholder="you@example.com"
             />
           </div>
 
           <div>
             <label htmlFor="password" className="block text-sm font-medium text-gray-300 mb-1">
-              {t('passwordLabel')}
+              Password
             </label>
             <input
               id="password"
@@ -125,14 +123,14 @@ export function RegisterForm() {
               onChange={(e) => setPassword(e.target.value)}
               required
               className="w-full px-4 py-2.5 bg-[#0a0a0f] border border-[#1e1e2e] rounded-md text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              placeholder={t('passwordPlaceholder')}
+              placeholder="••••••••"
             />
-            <p className="text-xs text-gray-500 mt-1">{t('passwordTooShort')}</p>
+            <p className="text-xs text-gray-500 mt-1">Password must be at least 8 characters</p>
           </div>
 
           <div>
             <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-300 mb-1">
-              {t('confirmPasswordLabel')}
+              Confirm Password
             </label>
             <input
               id="confirmPassword"
@@ -141,7 +139,7 @@ export function RegisterForm() {
               onChange={(e) => setConfirmPassword(e.target.value)}
               required
               className="w-full px-4 py-2.5 bg-[#0a0a0f] border border-[#1e1e2e] rounded-md text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              placeholder={t('confirmPasswordPlaceholder')}
+              placeholder="••••••••"
             />
           </div>
 
@@ -150,15 +148,15 @@ export function RegisterForm() {
             disabled={loading}
             className="w-full py-2.5 px-4 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-600/50 text-white font-medium rounded-md transition-colors"
           >
-            {loading ? t('submitting') : t('submitButton')}
+            {loading ? 'Creating account...' : 'Create Account'}
           </button>
         </form>
 
         {/* Login link */}
         <p className="text-center text-gray-400 text-sm mt-6">
-          {t('hasAccount')}{" "}
+          Already have an account?{" "}
           <Link href="/login" className="text-blue-400 hover:text-blue-300">
-            {t('signInLink')}
+            Sign in
           </Link>
         </p>
       </div>

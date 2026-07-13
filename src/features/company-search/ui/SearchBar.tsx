@@ -1,7 +1,6 @@
 "use client";
 
 import { Search } from "lucide-react";
-import { useTranslations } from "next-intl";
 
 interface SearchBarProps {
   value: string;
@@ -16,8 +15,7 @@ export function SearchBar({
   placeholder,
   resultsCount 
 }: SearchBarProps) {
-  const t = useTranslations('company.search');
-  const defaultPlaceholder = placeholder || t('placeholder');
+  const defaultPlaceholder = placeholder || "Search companies...";
   
   return (
     <div className="mb-6">
@@ -41,7 +39,7 @@ export function SearchBar({
       </div>
       {value && resultsCount !== undefined && (
         <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
-          {t('resultsCount', { count: resultsCount })}
+          {resultsCount} {resultsCount === 1 ? 'company' : 'companies'} found
         </p>
       )}
     </div>

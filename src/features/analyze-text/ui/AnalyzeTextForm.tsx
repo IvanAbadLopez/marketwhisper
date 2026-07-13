@@ -3,12 +3,10 @@
 import { useState } from "react";
 import { Brain, Sparkles, RotateCcw, ArrowRight, CheckCircle2 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useTranslations } from "next-intl";
 import { analyzeText } from "../api/analyzeText";
 
 export function AnalyzeTextForm() {
   const router = useRouter();
-  const t = useTranslations('analyze');
   const [analyzing, setAnalyzing] = useState(false);
   const [text, setText] = useState("");
   const [source, setSource] = useState("");
@@ -17,7 +15,7 @@ export function AnalyzeTextForm() {
 
   const handleAnalyze = async () => {
     if (!text.trim()) {
-      setError(t('errorNoText'));
+      setError("Please provide text to analyze");
       return;
     }
 
@@ -30,7 +28,7 @@ export function AnalyzeTextForm() {
       setJobId(data.jobId);
     } catch (err) {
       console.error("Analysis error:", err);
-      setError(err instanceof Error ? err.message : t('errorGeneric'));
+      setError(err instanceof Error ? err.message : "Analysis failed");
     } finally {
       setAnalyzing(false);
     }
@@ -49,12 +47,12 @@ export function AnalyzeTextForm() {
         <div className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
-              {t('textLabel')}
+              Text to Analyze
             </label>
             <textarea
               value={text}
               onChange={(e) => setText(e.target.value)}
-              placeholder={t('textPlaceholder')}
+              placeholder="Paste any text about a company or stock here (e.g., news article, analysis, tweet)..."
               rows={8}
               className="w-full px-4 py-3 text-sm border border-zinc-300 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               disabled={analyzing}
@@ -63,13 +61,13 @@ export function AnalyzeTextForm() {
           
           <div>
             <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
-              {t('sourceLabel')}
+              Source (optional)
             </label>
             <input
               type="text"
               value={source}
               onChange={(e) => setSource(e.target.value)}
-              placeholder={t('sourcePlaceholder')}
+              placeholder="e.g., Twitter, Bloomberg, Reddit"
               className="w-full px-4 py-3 text-sm border border-zinc-300 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               disabled={analyzing}
             />
@@ -92,12 +90,12 @@ export function AnalyzeTextForm() {
               {analyzing ? (
                 <>
                   <Sparkles className="w-5 h-5 animate-pulse" />
-                  {t('analyzing')}
+                  Analyzing...
                 </>
               ) : (
                 <>
                   <Brain className="w-5 h-5" />
-                  {t('analyzeButton')}
+                  Analyze with AI
                 </>
               )}
             </button>
@@ -106,7 +104,7 @@ export function AnalyzeTextForm() {
               <button
                 onClick={handleClear}
                 className="px-4 py-3 rounded-lg border border-zinc-300 dark:border-zinc-700 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
-                title={t('clearButton')}
+                title="Clear"
               >
                 <RotateCcw className="w-5 h-5" />
               </button>

@@ -149,6 +149,9 @@ export async function processAnalysis(
               debtToEquity: null,
               dividendYield: null,
               profitMargins: null,
+              bookValuePerShare: null,
+              roe: null,
+              epsGrowth: null,
             },
             recommendations: cached.analystConsensus ? [{
               strongBuy: 0, buy: 0, hold: 0, sell: 0, strongSell: 0,

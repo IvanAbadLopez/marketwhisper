@@ -1,6 +1,6 @@
 /**
  * On-demand Translation Endpoint for Finnhub Enrichment AI Analysis
- * Translates aiAnalysis to Spanish and caches result in aiAnalysisEs
+ * Translates AI analysis from English to Spanish using Ollama
  */
 
 import { NextRequest, NextResponse } from "next/server";
@@ -9,7 +9,7 @@ import { translateToSpanish } from "@/shared/api/translate";
 
 /**
  * POST /api/companies/[ticker]/enrich-finnhub/[id]/translate
- * Translate the AI analysis to Spanish on-demand
+ * Translates the AI analysis to Spanish
  */
 export async function POST(
   request: NextRequest,
@@ -35,7 +35,6 @@ export async function POST(
         ticker: true,
         source: true,
         aiAnalysis: true,
-        aiAnalysisEs: true,
       },
     });
 
@@ -46,42 +45,22 @@ export async function POST(
       );
     }
 
-    // 3. Check if translation already exists (cache hit)
-    if (enrichment.aiAnalysisEs) {
-      return NextResponse.json({
-        aiAnalysisEs: enrichment.aiAnalysisEs,
-        cached: true,
-      });
-    }
-
-    // 4. Validate that aiAnalysis exists
     if (!enrichment.aiAnalysis) {
       return NextResponse.json(
         { error: "No AI analysis available to translate" },
-        { status: 400 }
+        { status: 404 }
       );
     }
 
-    // 5. Translate to Spanish
-    console.log(`[Translate:${id}] Translating AI analysis for ${normalizedTicker}...`);
-    const aiAnalysisEs = await translateToSpanish(enrichment.aiAnalysis);
+    // 3. Translate to Spanish using Ollama
+    const translation = await translateToSpanish(enrichment.aiAnalysis);
 
-    // 6. Persist translation in database
-    await prisma.companyEnrichment.update({
-      where: { id },
-      data: { aiAnalysisEs },
-    });
-
-    console.log(`[Translate:${id}] Successfully translated and cached for ${normalizedTicker}`);
-
-    // 7. Return translation
     return NextResponse.json({
-      aiAnalysisEs,
-      cached: false,
+      translation,
     });
   } catch (error: unknown) {
     console.error("[Translate] Error:", error);
-    const message = error instanceof Error ? error.message : "Failed to translate analysis";
+    const message = error instanceof Error ? error.message : "Translation failed";
     return NextResponse.json(
       { error: message },
       { status: 500 }

@@ -45,7 +45,6 @@ export async function GET(
       status: enrichment.status,
       errorMessage: enrichment.errorMessage,
       aiAnalysis: enrichment.aiAnalysis,
-      aiAnalysisEs: enrichment.aiAnalysisEs,
       ollamaModel: enrichment.ollamaModel,
       updatedAt: enrichment.updatedAt,
     });

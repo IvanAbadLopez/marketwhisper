@@ -7,11 +7,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { after } from "next/server";
 import { auth } from "@/lib/auth";
-import {
-  fetchFinnhubData,
-  processEnrichment,
-  normalizeTicker,
-} from "@/features/enrich-company/api/processEnrichment";
+import { processEnrichment } from "@/features/enrich-company/api/processEnrichment";
+import { fetchFinnhubData, normalizeTicker } from "@/shared";
 
 export async function POST(request: NextRequest) {
   const { prisma } = await import("@/shared/api/prisma");
