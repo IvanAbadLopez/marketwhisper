@@ -191,6 +191,12 @@ model Company {
   avgSentimentScore    Float?           // Aggregated sentiment score (-1 to +1)
   avgReliabilityScore  Float?           // Aggregated reliability score (1-10)
   analysisCount        Int              @default(0) // Total number of analyses
+  // Valuation fields (computed from formulas)
+  globalScore          Float?           // 0-100
+  globalScoreLabel     String?          // Strong/Moderate/Neutral/Weak
+  targetPrice          Float?           // USD
+  valuationBreakdown   Json?            // Detailed calculation breakdown
+  valuationUpdatedAt   DateTime?        // Last recalculation timestamp
   content              ContentCompany[] // Many-to-many relation with Content
   mentions             Mention[]        // Direct mentions in content
   analyses             Analysis[]       // AI text analyses
@@ -220,18 +226,18 @@ model ContentCompany {
 // ==========================================
 
 model Analysis {
-  id               String    @id @default(cuid())
-  text             String    // Original text input from user
-  source           String?   // Optional source name (e.g., "Twitter", "Bloomberg")
-  companyId        String    // Detected company
-  company          Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  ticker           String    // Detected ticker symbol
-  sentiment        Sentiment // AI-detected sentiment
-  reliabilityScore Int       // AI confidence score (1-10)
-  reasoning        String    // AI explanation for the analysis (English)
-  reasoningEs      String?   // Spanish translation of reasoning
-  jobId            String?   @unique // Optional job relation for tracking
-  createdAt        DateTime  @default(now())
+  id                 String    @id @default(cuid())
+  text               String    // Original text input from user
+  source             String?   // Optional source name (e.g., "Twitter", "Bloomberg")
+  companyId          String    // Detected company
+  company            Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  ticker             String    // Detected ticker symbol
+  sentiment          Sentiment // AI-detected sentiment
+  reliabilityScore   Int       // AI confidence score (1-10)
+  reasoning          String    // AI explanation for the analysis (English)
+  financialSnapshot  Json?     // Snapshot of financial data at analysis time (price, P/E, EPS, 52w range, analyst consensus)
+  jobId              String?   @unique // Optional job relation for tracking
+  createdAt          DateTime  @default(now())
 
   @@index([companyId])
   @@index([ticker])
@@ -259,7 +265,6 @@ model CompanyEnrichment {
   recommendations Json?             // Analyst recommendations (strong buy, buy, hold, sell, strong sell)
   // AI Analysis (Ollama-generated insights)
   aiAnalysis      String?           // Comprehensive AI-generated summary and insights (English)
-  aiAnalysisEs    String?           // Spanish translation of AI analysis
   ollamaModel     String?           // Model used for analysis (e.g., "llama3.1:8b")
   jobId           String?           @unique // Optional job relation for tracking
   // Metadata
