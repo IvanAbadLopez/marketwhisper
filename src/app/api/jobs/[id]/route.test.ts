@@ -4,7 +4,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { GET } from "./route";
+import { GET, PATCH } from "./route";
 import { NextRequest } from "next/server";
 import type { Session } from "next-auth";
 import type { Job, JobType, JobStatus } from "@prisma/client";
@@ -21,12 +21,32 @@ vi.mock("@/shared/api/prisma", () => ({
     },
     job: {
       findUnique: vi.fn(),
+      updateMany: vi.fn(),
+      update: vi.fn(),
+    },
+    analysis: {
+      findMany: vi.fn(),
+      deleteMany: vi.fn(),
+    },
+    companyEnrichment: {
+      findMany: vi.fn(),
+      deleteMany: vi.fn(),
     },
   },
 }));
 
+vi.mock("@/features/analyze-text/api/processAnalysis", () => ({
+  recalculateCompanyAggregatesFromScratch: vi.fn(),
+}));
+
+vi.mock("@/entities/company/api/recomputeValuation", () => ({
+  recomputeCompanyValuation: vi.fn(),
+}));
+
 const mockAuth = vi.mocked(await import("@/lib/auth")).auth;
 const mockPrisma = vi.mocked(await import("@/shared/api/prisma")).prisma;
+const mockRecalculate = vi.mocked(await import("@/features/analyze-text/api/processAnalysis")).recalculateCompanyAggregatesFromScratch;
+const mockRecompute = vi.mocked(await import("@/entities/company/api/recomputeValuation")).recomputeCompanyValuation;
 
 describe("GET /api/jobs/[id]", () => {
   beforeEach(() => {
@@ -315,5 +335,266 @@ describe("GET /api/jobs/[id]", () => {
     expect(mockPrisma.job.findUnique).toHaveBeenCalledWith({
       where: { id: "specific-job-id" },
     });
+  });
+});
+
+describe("PATCH /api/jobs/[id] - Cancel Job", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("should return 401 if not authenticated", async () => {
+    mockAuth.mockResolvedValue(null);
+
+    const request = new NextRequest("http://localhost:3000/api/jobs/job123", { method: "PATCH" });
+    const params = Promise.resolve({ id: "job123" });
+    const response = await PATCH(request, { params });
+    const data = await response.json();
+
+    expect(response.status).toBe(401);
+    expect(data).toEqual({ error: "Unauthorized" });
+  });
+
+  it("should return 404 if job does not exist", async () => {
+    mockAuth.mockResolvedValue({
+      user: { id: "user1", email: "test@example.com" },
+      expires: "2026-12-31",
+    } as Session);
+
+    mockPrisma.user.findUnique.mockResolvedValue({ id: "user1", email: "test@example.com" } as any);
+    mockPrisma.job.findUnique.mockResolvedValue(null);
+
+    const request = new NextRequest("http://localhost:3000/api/jobs/nonexistent", { method: "PATCH" });
+    const params = Promise.resolve({ id: "nonexistent" });
+    const response = await PATCH(request, { params });
+    const data = await response.json();
+
+    expect(response.status).toBe(404);
+    expect(data).toEqual({ error: "Job not found" });
+  });
+
+  it("should return 403 if job belongs to different user", async () => {
+    mockAuth.mockResolvedValue({
+      user: { id: "user1", email: "test@example.com" },
+      expires: "2026-12-31",
+    } as Session);
+
+    mockPrisma.user.findUnique.mockResolvedValue({ id: "user1", email: "test@example.com" } as any);
+    mockPrisma.job.findUnique.mockResolvedValue({
+      id: "job123",
+      userId: "user2", // Different user
+      type: "ANALYSIS",
+      status: "PENDING",
+    } as Job);
+
+    const request = new NextRequest("http://localhost:3000/api/jobs/job123", { method: "PATCH" });
+    const params = Promise.resolve({ id: "job123" });
+    const response = await PATCH(request, { params });
+    const data = await response.json();
+
+    expect(response.status).toBe(403);
+    expect(data).toEqual({ error: "Forbidden" });
+  });
+
+  it("should return 400 if job is already COMPLETED", async () => {
+    mockAuth.mockResolvedValue({
+      user: { id: "user1", email: "test@example.com" },
+      expires: "2026-12-31",
+    } as Session);
+
+    mockPrisma.user.findUnique.mockResolvedValue({ id: "user1", email: "test@example.com" } as any);
+    mockPrisma.job.findUnique.mockResolvedValue({
+      id: "job123",
+      userId: "user1",
+      type: "ANALYSIS",
+      status: "COMPLETED",
+    } as Job);
+
+    const request = new NextRequest("http://localhost:3000/api/jobs/job123", { method: "PATCH" });
+    const params = Promise.resolve({ id: "job123" });
+    const response = await PATCH(request, { params });
+    const data = await response.json();
+
+    expect(response.status).toBe(400);
+    expect(data.error).toContain("Job cannot be cancelled");
+  });
+
+  it("should cancel a PENDING job successfully", async () => {
+    mockAuth.mockResolvedValue({
+      user: { id: "user1", email: "test@example.com" },
+      expires: "2026-12-31",
+    } as Session);
+
+    mockPrisma.user.findUnique.mockResolvedValue({ id: "user1", email: "test@example.com" } as any);
+    mockPrisma.job.findUnique.mockResolvedValue({
+      id: "job123",
+      userId: "user1",
+      type: "ANALYSIS",
+      status: "PENDING",
+    } as Job);
+
+    mockPrisma.job.updateMany.mockResolvedValue({ count: 1 });
+    mockPrisma.analysis.findMany.mockResolvedValue([]); // No analyses yet
+
+    const request = new NextRequest("http://localhost:3000/api/jobs/job123", { method: "PATCH" });
+    const params = Promise.resolve({ id: "job123" });
+    const response = await PATCH(request, { params });
+    const data = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(data).toEqual({
+      success: true,
+      status: "CANCELLED",
+      message: "Job cancelled successfully",
+    });
+
+    expect(mockPrisma.job.updateMany).toHaveBeenCalledWith({
+      where: {
+        id: "job123",
+        status: { in: ["PENDING", "PROCESSING"] },
+      },
+      data: {
+        status: "CANCELLED",
+        errorMessage: "Cancelled by user",
+      },
+    });
+  });
+
+  it("should cancel a PROCESSING ANALYSIS job and revert analyses", async () => {
+    mockAuth.mockResolvedValue({
+      user: { id: "user1", email: "test@example.com" },
+      expires: "2026-12-31",
+    } as Session);
+
+    mockPrisma.user.findUnique.mockResolvedValue({ id: "user1", email: "test@example.com" } as any);
+    mockPrisma.job.findUnique.mockResolvedValue({
+      id: "job123",
+      userId: "user1",
+      type: "ANALYSIS",
+      status: "PROCESSING",
+    } as Job);
+
+    mockPrisma.job.updateMany.mockResolvedValue({ count: 1 });
+    mockPrisma.job.update.mockResolvedValue({} as any);
+    mockPrisma.analysis.findMany.mockResolvedValue([
+      { id: "analysis1", companyId: "company1" },
+      { id: "analysis2", companyId: "company1" },
+      { id: "analysis3", companyId: "company2" },
+    ] as any);
+    mockPrisma.analysis.deleteMany.mockResolvedValue({ count: 3 });
+
+    const request = new NextRequest("http://localhost:3000/api/jobs/job123", { method: "PATCH" });
+    const params = Promise.resolve({ id: "job123" });
+    const response = await PATCH(request, { params });
+    const data = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(data.success).toBe(true);
+
+    // Should clear analysisId reference first
+    expect(mockPrisma.job.update).toHaveBeenCalledWith({
+      where: { id: "job123" },
+      data: { analysisId: null },
+    });
+
+    // Should delete analyses
+    expect(mockPrisma.analysis.deleteMany).toHaveBeenCalledWith({
+      where: { jobId: "job123" },
+    });
+
+    // Should recalculate for both companies
+    expect(mockRecalculate).toHaveBeenCalledTimes(2);
+    expect(mockRecalculate).toHaveBeenCalledWith("company1");
+    expect(mockRecalculate).toHaveBeenCalledWith("company2");
+
+    expect(mockRecompute).toHaveBeenCalledTimes(2);
+    expect(mockRecompute).toHaveBeenCalledWith("company1");
+    expect(mockRecompute).toHaveBeenCalledWith("company2");
+  });
+
+  it("should cancel a PROCESSING ENRICHMENT job and revert enrichment", async () => {
+    mockAuth.mockResolvedValue({
+      user: { id: "user1", email: "test@example.com" },
+      expires: "2026-12-31",
+    } as Session);
+
+    mockPrisma.user.findUnique.mockResolvedValue({ id: "user1", email: "test@example.com" } as any);
+    mockPrisma.job.findUnique.mockResolvedValue({
+      id: "job456",
+      userId: "user1",
+      type: "ENRICHMENT",
+      status: "PROCESSING",
+    } as Job);
+
+    mockPrisma.job.updateMany.mockResolvedValue({ count: 1 });
+    mockPrisma.job.update.mockResolvedValue({} as any);
+    mockPrisma.companyEnrichment.findMany.mockResolvedValue([
+      { id: "enrich1" },
+    ] as any);
+    mockPrisma.companyEnrichment.deleteMany.mockResolvedValue({ count: 1 });
+
+    const request = new NextRequest("http://localhost:3000/api/jobs/job456", { method: "PATCH" });
+    const params = Promise.resolve({ id: "job456" });
+    const response = await PATCH(request, { params });
+    const data = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(data.success).toBe(true);
+
+    // Should clear enrichmentId reference first
+    expect(mockPrisma.job.update).toHaveBeenCalledWith({
+      where: { id: "job456" },
+      data: { enrichmentId: null },
+    });
+
+    // Should delete enrichment
+    expect(mockPrisma.companyEnrichment.deleteMany).toHaveBeenCalledWith({
+      where: { jobId: "job456" },
+    });
+
+    // Should not call analysis recalculation functions
+    expect(mockRecalculate).not.toHaveBeenCalled();
+  });
+
+  it("should return 409 if job status changed before update", async () => {
+    mockAuth.mockResolvedValue({
+      user: { id: "user1", email: "test@example.com" },
+      expires: "2026-12-31",
+    } as Session);
+
+    mockPrisma.user.findUnique.mockResolvedValue({ id: "user1", email: "test@example.com" } as any);
+    mockPrisma.job.findUnique.mockResolvedValue({
+      id: "job123",
+      userId: "user1",
+      type: "ANALYSIS",
+      status: "PROCESSING",
+    } as Job);
+
+    mockPrisma.job.updateMany.mockResolvedValue({ count: 0 }); // Race condition - job completed
+
+    const request = new NextRequest("http://localhost:3000/api/jobs/job123", { method: "PATCH" });
+    const params = Promise.resolve({ id: "job123" });
+    const response = await PATCH(request, { params });
+    const data = await response.json();
+
+    expect(response.status).toBe(409);
+    expect(data.error).toContain("Job status changed before cancellation");
+  });
+
+  it("should return 500 on internal error", async () => {
+    mockAuth.mockResolvedValue({
+      user: { id: "user1", email: "test@example.com" },
+      expires: "2026-12-31",
+    } as Session);
+
+    mockPrisma.user.findUnique.mockRejectedValue(new Error("Database error"));
+
+    const request = new NextRequest("http://localhost:3000/api/jobs/job123", { method: "PATCH" });
+    const params = Promise.resolve({ id: "job123" });
+    const response = await PATCH(request, { params });
+    const data = await response.json();
+
+    expect(response.status).toBe(500);
+    expect(data.error).toBe("Database error"); // Error message is propagated
   });
 });

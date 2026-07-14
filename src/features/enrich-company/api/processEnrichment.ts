@@ -9,6 +9,8 @@ import {
   formatFinancialsBlock,
   calcAnalystScore,
   analystScoreLabel,
+  assertJobNotCancelled,
+  JobCancelledError,
   type FinnhubData,
   type AnalystRecommendation,
 } from "@/shared";
@@ -136,6 +138,11 @@ export async function processEnrichment(
       });
     }
 
+    // Checkpoint: check if job was cancelled before starting
+    if (jobId) {
+      await assertJobNotCancelled(jobId);
+    }
+
     // 1. Fetch financial data from Finnhub (via enrichment service)
     console.log(`[Enrich-Finnhub:${enrichmentId}] Fetching Finnhub data for ${ticker}...`);
     const finnhubData = await fetchFinnhubData(ticker);
@@ -178,6 +185,11 @@ export async function processEnrichment(
       },
     });
 
+    // Checkpoint: check cancellation before expensive LLM call
+    if (jobId) {
+      await assertJobNotCancelled(jobId);
+    }
+
     // 4. Generate AI analysis with Ollama (combining Finnhub data + user texts)
     console.log(`[Enrich-Finnhub:${enrichmentId}] Generating Ollama analysis for ${ticker} (${userAnalyses.length} user analyses)...`);
     const prompt = generateAnalysisPrompt(ticker, finnhubData, userAnalyses);
@@ -189,6 +201,11 @@ export async function processEnrichment(
     console.log(`[Enrich-Finnhub:${enrichmentId}] DEBUG - has price:`, !!finnhubData.price);
     if (finnhubData.financials) {
       console.log(`[Enrich-Finnhub:${enrichmentId}] DEBUG - financials keys:`, Object.keys(finnhubData.financials));
+    }
+
+    // Checkpoint: check cancellation before writing final data
+    if (jobId) {
+      await assertJobNotCancelled(jobId);
     }
 
     // 5. Store final result and mark as completed (translation deferred to on-demand)
@@ -208,10 +225,13 @@ export async function processEnrichment(
     // 5b. Recalculate valuation (global score + target price)
     await recomputeCompanyValuation(companyId);
 
-    // 6. Update job status if exists
+    // 6. Update job status if exists (use updateMany to avoid overwriting CANCELLED)
     if (jobId) {
-      await prisma.job.update({
-        where: { id: jobId },
+      await prisma.job.updateMany({
+        where: { 
+          id: jobId,
+          status: "PROCESSING", // Only update if still PROCESSING (not CANCELLED)
+        },
         data: {
           status: "COMPLETED",
           result: {
@@ -224,6 +244,12 @@ export async function processEnrichment(
 
     console.log(`[Enrich-Finnhub:${enrichmentId}] Successfully enriched ${ticker}`);
   } catch (error: unknown) {
+    // If job was cancelled, don't mark as FAILED (already CANCELLED)
+    if (error instanceof JobCancelledError) {
+      console.log(`[Enrich-Finnhub:${enrichmentId}] Enrichment cancelled by user`);
+      return;
+    }
+
     console.error(`[Enrich-Finnhub:${enrichmentId}] Failed to enrich ${ticker}:`, error);
     const errorMessage = error instanceof Error ? error.message : "Failed to enrich company with Finnhub";
     

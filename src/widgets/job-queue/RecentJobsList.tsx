@@ -8,12 +8,12 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Clock, Loader2, CheckCircle2, XCircle, Brain, Sparkles, ArrowRight } from "lucide-react";
+import { Clock, Loader2, CheckCircle2, XCircle, Brain, Sparkles, ArrowRight, Ban } from "lucide-react";
 
 interface Job {
   id: string;
   type: "ANALYSIS" | "ENRICHMENT";
-  status: "PENDING" | "PROCESSING" | "COMPLETED" | "FAILED";
+  status: "PENDING" | "PROCESSING" | "COMPLETED" | "FAILED" | "CANCELLED";
   ticker: string;
   createdAt: string;
 }
@@ -58,6 +58,8 @@ export function RecentJobsList() {
         return <CheckCircle2 className="w-4 h-4 text-green-500" />;
       case "FAILED":
         return <XCircle className="w-4 h-4 text-red-500" />;
+      case "CANCELLED":
+        return <Ban className="w-4 h-4 text-orange-500" />;
     }
   };
 

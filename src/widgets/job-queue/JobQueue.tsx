@@ -13,7 +13,7 @@ import { JobCard } from "./JobCard";
 interface Job {
   id: string;
   type: "ANALYSIS" | "ENRICHMENT";
-  status: "PENDING" | "PROCESSING" | "COMPLETED" | "FAILED";
+  status: "PENDING" | "PROCESSING" | "COMPLETED" | "FAILED" | "CANCELLED";
   ticker: string;
   result: any;
   errorMessage: string | null;
@@ -25,7 +25,7 @@ export function JobQueue() {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(true);
   const [typeFilter, setTypeFilter] = useState<"ALL" | "ANALYSIS" | "ENRICHMENT">("ALL");
-  const [statusFilter, setStatusFilter] = useState<"ALL" | "ACTIVE" | "COMPLETED" | "FAILED">("ALL");
+  const [statusFilter, setStatusFilter] = useState<"ALL" | "ACTIVE" | "COMPLETED" | "FAILED" | "CANCELLED">("ALL");
 
   // Fetch jobs
   const fetchJobs = async () => {
@@ -112,6 +112,7 @@ export function JobQueue() {
             <option value="ACTIVE">Active (Pending + Processing)</option>
             <option value="COMPLETED">Completed</option>
             <option value="FAILED">Failed</option>
+            <option value="CANCELLED">Cancelled</option>
           </select>
 
           {/* Active jobs indicator */}
@@ -139,7 +140,7 @@ export function JobQueue() {
       ) : (
         <div className="space-y-3">
           {jobs.map((job) => (
-            <JobCard key={job.id} job={job} />
+            <JobCard key={job.id} job={job} onCancelled={fetchJobs} />
           ))}
         </div>
       )}

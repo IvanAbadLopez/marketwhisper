@@ -11,6 +11,8 @@ import {
   createFinancialSnapshot,
   getCachedFinnhub,
   prisma,
+  assertJobNotCancelled,
+  JobCancelledError,
   type FinnhubData,
 } from "@/shared";
 import { recomputeCompanyValuation } from "@/entities/company/api/recomputeValuation";
@@ -38,6 +40,9 @@ export async function processAnalysis(
       where: { id: jobId },
       data: { status: "PROCESSING" },
     });
+
+    // Checkpoint: check if job was cancelled before starting
+    await assertJobNotCancelled(jobId);
 
     // PHASE 1: Detect companies (LLM call #1 - lightweight)
     console.log(`[Job ${jobId}] Phase 1: Detecting companies...`);
@@ -174,6 +179,9 @@ export async function processAnalysis(
       }
     }
 
+    // Checkpoint: check cancellation before expensive LLM call
+    await assertJobNotCancelled(jobId);
+
     // PHASE 4: Analyze with financials (LLM call #2 - single call for ALL companies)
     console.log(`[Job ${jobId}] Phase 4: Analyzing with financial data (1 LLM call for all companies)...`);
     const enrichedAnalyses = await analyzeWithFinancials(
@@ -195,6 +203,9 @@ export async function processAnalysis(
       });
       return;
     }
+
+    // Checkpoint: CRITICAL - check cancellation before writing data
+    await assertJobNotCancelled(jobId);
 
     // PHASE 5: Create Analysis records with financial snapshots
     console.log(`[Job ${jobId}] Phase 5: Saving analyses with financial snapshots...`);
@@ -270,9 +281,12 @@ export async function processAnalysis(
     const firstTicker = firstCompany?.ticker || 'UNKNOWN';
     const tickerDisplay = validResults.length > 1 ? `${firstTicker} +${validResults.length - 1}` : firstTicker;
 
-    // Update job status to COMPLETED
-    await prisma.job.update({
-      where: { id: jobId },
+    // Update job status to COMPLETED (use updateMany to avoid overwriting CANCELLED)
+    await prisma.job.updateMany({
+      where: { 
+        id: jobId,
+        status: "PROCESSING", // Only update if still PROCESSING (not CANCELLED)
+      },
       data: {
         status: "COMPLETED",
         ticker: tickerDisplay,
@@ -307,6 +321,12 @@ export async function processAnalysis(
       }
     }
   } catch (error: unknown) {
+    // If job was cancelled, don't mark as FAILED (already CANCELLED)
+    if (error instanceof JobCancelledError) {
+      console.log(`[Job ${jobId}] Analysis cancelled by user`);
+      return;
+    }
+
     console.error(`[Job ${jobId}] Analysis failed:`, error);
 
     await prisma.job.update({

@@ -8,6 +8,7 @@
 export { cn } from "./lib/utils";
 export { parseAnalysisBullets } from "./lib/parseAnalysis";
 export type { ParsedContent, ParsedBullet, ParsedParagraph, IconKey } from "./lib/parseAnalysis";
+export { JobCancelledError, assertJobNotCancelled } from "./lib/jobCancellation";
 
 // ===== UI =====
 export { AnalysisContent } from "./ui/AnalysisContent";

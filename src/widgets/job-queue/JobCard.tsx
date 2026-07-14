@@ -17,13 +17,14 @@ import {
   ChevronUp,
   Brain,
   Sparkles,
-  ExternalLink
+  ExternalLink,
+  Ban,
 } from "lucide-react";
 
 interface Job {
   id: string;
   type: "ANALYSIS" | "ENRICHMENT";
-  status: "PENDING" | "PROCESSING" | "COMPLETED" | "FAILED";
+  status: "PENDING" | "PROCESSING" | "COMPLETED" | "FAILED" | "CANCELLED";
   ticker: string;
   result: any;
   errorMessage: string | null;
@@ -33,10 +34,12 @@ interface Job {
 
 interface JobCardProps {
   job: Job;
+  onCancelled?: () => void; // Callback when job is cancelled
 }
 
-export function JobCard({ job }: JobCardProps) {
+export function JobCard({ job, onCancelled }: JobCardProps) {
   const [expanded, setExpanded] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
   const router = useRouter();
 
   // Get status icon and color
@@ -70,6 +73,13 @@ export function JobCard({ job }: JobCardProps) {
           bg: "bg-red-100 dark:bg-red-900/30",
           label: "Failed",
         };
+      case "CANCELLED":
+        return {
+          icon: <Ban className="w-5 h-5" />,
+          color: "text-orange-600 dark:text-orange-400",
+          bg: "bg-orange-100 dark:bg-orange-900/30",
+          label: "Cancelled",
+        };
     }
   };
 
@@ -85,7 +95,7 @@ export function JobCard({ job }: JobCardProps) {
   // Calculate elapsed time
   const getElapsedTime = () => {
     const start = new Date(job.createdAt).getTime();
-    const end = job.status === "COMPLETED" || job.status === "FAILED"
+    const end = job.status === "COMPLETED" || job.status === "FAILED" || job.status === "CANCELLED"
       ? new Date(job.updatedAt).getTime()
       : Date.now();
     const elapsed = Math.floor((end - start) / 1000);
@@ -100,6 +110,33 @@ export function JobCard({ job }: JobCardProps) {
     if (job.status === "COMPLETED" && job.ticker && job.ticker !== "PENDING") {
       const ticker = job.ticker.split(" ")[0]; // Handle "AAPL +2" format
       router.push(`/companies/${ticker.toLowerCase()}`);
+    }
+  };
+
+  // Cancel the job
+  const handleCancel = async () => {
+    if (!confirm(`Cancel this ${job.type.toLowerCase()} job for ${job.ticker}?`)) {
+      return;
+    }
+
+    setCancelling(true);
+    try {
+      const response = await fetch(`/api/jobs/${job.id}`, {
+        method: "PATCH",
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || "Failed to cancel job");
+      }
+
+      // Notify parent to refresh
+      onCancelled?.();
+    } catch (error) {
+      console.error("Error cancelling job:", error);
+      alert(error instanceof Error ? error.message : "Failed to cancel job");
+    } finally {
+      setCancelling(false);
     }
   };
 
@@ -139,6 +176,22 @@ export function JobCard({ job }: JobCardProps) {
 
         {/* Actions */}
         <div className="flex items-center gap-2">
+          {/* Cancel button for PENDING/PROCESSING jobs */}
+          {(job.status === "PENDING" || job.status === "PROCESSING") && (
+            <button
+              onClick={handleCancel}
+              disabled={cancelling}
+              className="p-2 rounded-md hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              title="Cancel job"
+            >
+              {cancelling ? (
+                <Loader2 className="w-4 h-4 text-red-600 dark:text-red-400 animate-spin" />
+              ) : (
+                <Ban className="w-4 h-4 text-red-600 dark:text-red-400" />
+              )}
+            </button>
+          )}
+
           {job.status === "COMPLETED" && job.ticker !== "PENDING" && (
             <button
               onClick={viewResult}
