@@ -32,10 +32,17 @@ vi.mock("@/shared/api/prisma", () => ({
   },
 }));
 
+vi.mock("@/shared", async () => {
+  const actual = await vi.importActual("@/shared");
+  return {
+    ...actual,
+    fetchFinnhubData: vi.fn(),
+    normalizeTicker: (ticker: string) => ticker.toUpperCase().trim(),
+  };
+});
+
 vi.mock("@/features/enrich-company/api/processEnrichment", () => ({
-  fetchFinnhubData: vi.fn(),
   processEnrichment: vi.fn(),
-  normalizeTicker: (ticker: string) => ticker.toUpperCase().trim(),
 }));
 
 // Mock Next.js after() for background tasks
@@ -52,9 +59,7 @@ vi.mock("next/server", async () => {
 
 const mockAuth = vi.mocked(await import("@/lib/auth")).auth;
 const mockPrisma = vi.mocked(await import("@/shared/api/prisma")).prisma;
-const mockFetchFinnhubData = vi.mocked(
-  await import("@/features/enrich-company/api/processEnrichment")
-).fetchFinnhubData;
+const mockFetchFinnhubData = vi.mocked(await import("@/shared")).fetchFinnhubData;
 
 describe("POST /api/companies/import", () => {
   beforeEach(() => {

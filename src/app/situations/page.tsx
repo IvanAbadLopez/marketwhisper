@@ -72,7 +72,7 @@ export default function SituationsPage() {
                 Companies Tracked
               </h1>
               <p className="text-zinc-600 dark:text-zinc-400 mt-2">
-                Intelligence gathered across all your content sources
+                AI-analyzed companies from your text analyses and reports
               </p>
             </div>
             <button
@@ -100,7 +100,7 @@ export default function SituationsPage() {
                 No Companies Yet
               </h2>
               <p className="text-zinc-600 dark:text-zinc-400 mb-6">
-                Add content to start tracking companies
+                Discover companies to start tracking
               </p>
             </div>
           ) : filteredCompanies.length === 0 ? (

@@ -16,12 +16,11 @@ import {
   ChevronDown,
   ChevronUp,
   Calendar,
-  Activity,
-  Languages
+  Activity
 } from "lucide-react";
 import { AnalystSentimentChart } from "./AnalystSentimentChart";
 import { calcAnalystScore, analystScoreLabel } from "@/features/enrich-company/lib/analystScore";
-import { getCachedTranslation, setCachedTranslation } from "@/shared/lib/translationCache";
+import { AnalysisContent } from "@/shared/ui/AnalysisContent";
 
 interface VerdictInfo {
   verdict: 'BULLISH' | 'BEARISH' | 'NEUTRAL';
@@ -120,79 +119,13 @@ interface EnrichmentData {
 
 interface EnrichmentDisplayProps {
   enrichment: EnrichmentData | null;
+  mode?: 'full' | 'financial' | 'ai'; // Control what sections to show
 }
 
-export function EnrichmentDisplay({ enrichment }: EnrichmentDisplayProps) {
+export function EnrichmentDisplay({ enrichment, mode = 'full' }: EnrichmentDisplayProps) {
   const [showFullAnalysis, setShowFullAnalysis] = useState(false);
   const [showFinancials, setShowFinancials] = useState(false);
   const [showNews, setShowNews] = useState(false);
-
-  // Translation state
-  const [isTranslated, setIsTranslated] = useState(false);
-  const [translatedText, setTranslatedText] = useState<string | null>(null);
-  const [translating, setTranslating] = useState(false);
-  const [translateError, setTranslateError] = useState<string | null>(null);
-
-  // Load cached translation on mount or when enrichment changes
-  useEffect(() => {
-    if (enrichment?.aiAnalysis) {
-      const cached = getCachedTranslation(enrichment.id, enrichment.createdAt);
-      if (cached) {
-        setTranslatedText(cached);
-      } else {
-        setTranslatedText(null);
-        setIsTranslated(false);
-      }
-    }
-  }, [enrichment?.id, enrichment?.createdAt, enrichment?.aiAnalysis]);
-
-  const handleTranslateToggle = async () => {
-    if (!enrichment) return;
-
-    // If already translated, just toggle back to English
-    if (isTranslated) {
-      setIsTranslated(false);
-      return;
-    }
-
-    // If translation already exists, just toggle to Spanish
-    if (translatedText) {
-      setIsTranslated(true);
-      return;
-    }
-
-    // Fetch translation from API
-    setTranslating(true);
-    setTranslateError(null);
-
-    try {
-      const response = await fetch(
-        `/api/companies/${enrichment.ticker}/enrich-finnhub/${enrichment.id}/translate`,
-        { method: 'POST' }
-      );
-
-      if (!response.ok) {
-        throw new Error('Translation failed');
-      }
-
-      const data = await response.json();
-      
-      if (data.error) {
-        throw new Error(data.error);
-      }
-
-      setTranslatedText(data.translation);
-      setIsTranslated(true);
-
-      // Cache the translation
-      setCachedTranslation(enrichment.id, enrichment.createdAt, data.translation);
-    } catch (error) {
-      console.error('Translation error:', error);
-      setTranslateError('Failed to translate. Please try again.');
-    } finally {
-      setTranslating(false);
-    }
-  };
 
   if (!enrichment) {
     return (
@@ -237,7 +170,7 @@ export function EnrichmentDisplay({ enrichment }: EnrichmentDisplayProps) {
   return (
     <div className="space-y-4">
       {/* Price Summary */}
-      {priceData && (
+      {(mode === 'full' || mode === 'financial') && priceData && (
         <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-6">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
@@ -274,7 +207,7 @@ export function EnrichmentDisplay({ enrichment }: EnrichmentDisplayProps) {
       )}
 
       {/* AI Analysis */}
-      {aiAnalysis && (
+      {(mode === 'full' || mode === 'ai') && aiAnalysis && (
         <div className="bg-gradient-to-br from-purple-900/20 to-blue-900/20 border border-purple-500/30 rounded-lg p-6">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
@@ -284,44 +217,24 @@ export function EnrichmentDisplay({ enrichment }: EnrichmentDisplayProps) {
                 {enrichment.ollamaModel || "llama3.1:8b"}
               </span>
             </div>
-            <div className="flex items-center gap-2">
-              {/* Translate Button */}
-              <button
-                onClick={handleTranslateToggle}
-                disabled={translating}
-                className="text-sm text-purple-400 hover:text-purple-300 flex items-center gap-1"
-                title={isTranslated ? "Show Original (EN)" : "Translate to Spanish (ES)"}
-              >
-                <Languages className="h-4 w-4" />
-                <span>{translating ? "Translating..." : isTranslated ? "EN" : "ES"}</span>
-              </button>
-
-              {/* Expand/Collapse Button */}
-              <button
-                onClick={() => setShowFullAnalysis(!showFullAnalysis)}
-                className="text-sm text-purple-400 hover:text-purple-300 flex items-center gap-1"
-              >
-                {showFullAnalysis ? (
-                  <>
-                    <span>Collapse</span>
-                    <ChevronUp className="h-4 w-4" />
-                  </>
-                ) : (
-                  <>
-                    <span>Expand</span>
-                    <ChevronDown className="h-4 w-4" />
-                  </>
-                )}
-              </button>
-            </div>
+            {/* Expand/Collapse Button */}
+            <button
+              onClick={() => setShowFullAnalysis(!showFullAnalysis)}
+              className="text-sm text-purple-400 hover:text-purple-300 flex items-center gap-1"
+            >
+              {showFullAnalysis ? (
+                <>
+                  <span>Collapse</span>
+                  <ChevronUp className="h-4 w-4" />
+                </>
+              ) : (
+                <>
+                  <span>Expand</span>
+                  <ChevronDown className="h-4 w-4" />
+                </>
+              )}
+            </button>
           </div>
-
-          {/* Translation Error */}
-          {translateError && (
-            <div className="mb-3 p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-sm text-red-400">
-              {translateError}
-            </div>
-          )}
 
           {/* Verdict Badge */}
           {verdictInfo && (
@@ -338,16 +251,14 @@ export function EnrichmentDisplay({ enrichment }: EnrichmentDisplayProps) {
             </div>
           )}
 
-          <div className={`prose prose-invert max-w-none ${showFullAnalysis ? "" : "line-clamp-4"}`}>
-            <p className="text-sm text-zinc-300 whitespace-pre-wrap">
-              {isTranslated && translatedText ? translatedText : analysisBody}
-            </p>
+          <div className={showFullAnalysis ? "" : "max-h-48 overflow-hidden"}>
+            <AnalysisContent text={analysisBody} />
           </div>
         </div>
       )}
 
       {/* Financials Collapsible */}
-      {financialData && (
+      {(mode === 'full' || mode === 'financial') && financialData && (
         <div className="bg-zinc-900 border border-zinc-800 rounded-lg overflow-hidden">
           <button
             onClick={() => setShowFinancials(!showFinancials)}
@@ -396,7 +307,7 @@ export function EnrichmentDisplay({ enrichment }: EnrichmentDisplayProps) {
       )}
 
       {/* News Collapsible */}
-      {newsHeadlines && newsHeadlines.length > 0 && (
+      {(mode === 'full' || mode === 'financial') && newsHeadlines && newsHeadlines.length > 0 && (
         <div className="bg-zinc-900 border border-zinc-800 rounded-lg overflow-hidden">
           <button
             onClick={() => setShowNews(!showNews)}
@@ -443,7 +354,7 @@ export function EnrichmentDisplay({ enrichment }: EnrichmentDisplayProps) {
       )}
 
       {/* Analyst Recommendations */}
-      {recommendations && recommendations.length > 0 ? (
+      {(mode === 'full' || mode === 'financial') && recommendations && recommendations.length > 0 && (
         <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-6">
           <div className="flex items-center gap-2 mb-4">
             <Calendar className="h-5 w-5 text-green-400" />
@@ -505,18 +416,6 @@ export function EnrichmentDisplay({ enrichment }: EnrichmentDisplayProps) {
             </div>
           )}
         </div>
-      ) : (
-        recommendations !== undefined && (
-          <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-6">
-            <div className="flex items-center gap-2 mb-3">
-              <Calendar className="h-5 w-5 text-zinc-500" />
-              <h3 className="text-lg font-semibold text-white">Analyst Sentiment</h3>
-            </div>
-            <p className="text-sm text-zinc-500 text-center">
-              Analyst recommendations not available for this ticker
-            </p>
-          </div>
-        )
       )}
     </div>
   );

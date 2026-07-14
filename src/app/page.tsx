@@ -18,14 +18,10 @@ export default async function Home() {
   });
 
   // Fetch stats from database
-  const [videoCount, articleCount, mentionCount, activeJobsCount] = await Promise.all([
-    prisma.content.count({ where: { contentType: "VIDEO" } }),
-    prisma.content.count({
-      where: {
-        contentType: { in: ["WEB_ARTICLE", "BLOG_POST", "SPECIAL_EVENT", "NEWS"] },
-      },
-    }),
-    prisma.mention.count(),
+  const [companyCount, analysisCount, reportCount, activeJobsCount] = await Promise.all([
+    prisma.company.count(),
+    prisma.analysis.count(),
+    prisma.companyEnrichment.count({ where: { status: "COMPLETED" } }),
     user
       ? prisma.job.count({
           where: {
@@ -56,14 +52,14 @@ export default async function Home() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400">
-                    Videos Analyzed
+                    Companies Tracked
                   </p>
                   <p className="text-3xl font-bold text-zinc-900 dark:text-zinc-100 mt-2">
-                    {videoCount}
+                    {companyCount}
                   </p>
                 </div>
                 <div className="h-12 w-12 bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-center">
-                  <span className="text-2xl">🎥</span>
+                  <span className="text-2xl">🏢</span>
                 </div>
               </div>
             </div>
@@ -72,14 +68,14 @@ export default async function Home() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400">
-                    Content Items
+                    Text Analyses
                   </p>
                   <p className="text-3xl font-bold text-zinc-900 dark:text-zinc-100 mt-2">
-                    {articleCount}
+                    {analysisCount}
                   </p>
                 </div>
                 <div className="h-12 w-12 bg-green-100 dark:bg-green-900 rounded-lg flex items-center justify-center">
-                  <span className="text-2xl">📰</span>
+                  <span className="text-2xl">🧠</span>
                 </div>
               </div>
             </div>
@@ -88,10 +84,10 @@ export default async function Home() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400">
-                    Stock Mentions
+                    AI Reports
                   </p>
                   <p className="text-3xl font-bold text-zinc-900 dark:text-zinc-100 mt-2">
-                    {mentionCount}
+                    {reportCount}
                   </p>
                 </div>
                 <div className="h-12 w-12 bg-purple-100 dark:bg-purple-900 rounded-lg flex items-center justify-center">

@@ -6,6 +6,11 @@
 
 // ===== LIB =====
 export { cn } from "./lib/utils";
+export { parseAnalysisBullets } from "./lib/parseAnalysis";
+export type { ParsedContent, ParsedBullet, ParsedParagraph, IconKey } from "./lib/parseAnalysis";
+
+// ===== UI =====
+export { AnalysisContent } from "./ui/AnalysisContent";
 
 // ===== API =====
 export { prisma } from "./api/prisma";

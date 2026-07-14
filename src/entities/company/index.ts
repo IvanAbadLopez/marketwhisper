@@ -7,8 +7,6 @@
 export type {
   Company,
   CompanyWithDetails,
-  ContentCompany,
-  ContentSummary,
   AnalysisSummary,
 } from "./model/types";
 

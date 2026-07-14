@@ -7,57 +7,19 @@ import {
   TrendingUp,
   TrendingDown, 
   Globe, 
-  FileText, 
   Calendar,
   ArrowLeft,
   ExternalLink,
-  MessageSquare,
-  Trash2
+  Trash2,
+  ChevronDown,
+  ChevronUp
 } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { redirect, useRouter } from "next/navigation";
 import { EnrichButton } from "@/features/enrich-company";
 import { EnrichmentDisplay } from "@/entities/company/ui/EnrichmentDisplay";
 import { InfoTooltip } from "@/shared/ui/InfoTooltip";
-
-interface Mention {
-  id: string;
-  timestamp: number | null;
-  context: string | null;
-  sentiment: string | null;
-  content: {
-    id: string;
-    title: string | null;
-    contentType: string;
-    date: string;
-  };
-}
-
-interface Transcript {
-  id: string;
-  text: string;
-  startTime: number | null;
-  endTime: number | null;
-}
-
-interface ContentDetail {
-  id: string;
-  title: string | null;
-  description: string | null;
-  sourceUrl: string;
-  sourceName: string;
-  contentType: string;
-  date: string;
-  status: string;
-  summary: string | null;
-  transcripts: Transcript[];
-  mentions: Mention[];
-}
-
-interface ContentCompany {
-  id: string;
-  content: ContentDetail;
-}
+import { AnalysisContent } from "@/shared/ui/AnalysisContent";
 
 interface Company {
   id: string;
@@ -90,12 +52,8 @@ interface Company {
   } | null;
   valuationUpdatedAt: string | null;
   _count: {
-    content: number;
-    mentions: number;
     analyses: number;
   };
-  content: ContentCompany[];
-  mentions: Mention[];
   analyses?: {
     id: string;
     text: string;
@@ -186,6 +144,22 @@ export default function CompanyDetailPage({ params }: { params: Promise<{ ticker
   const [ticker, setTicker] = useState<string>("");
   const [company, setCompany] = useState<Company | null>(null);
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<'financial' | 'text-analyses'>('financial');
+  const [isValuationExpanded, setIsValuationExpanded] = useState(false);
+  const [deletingAnalysisId, setDeletingAnalysisId] = useState<string | null>(null);
+  const [expandedAnalyses, setExpandedAnalyses] = useState<Set<string>>(new Set());
+
+  const toggleAnalysisExpanded = (analysisId: string) => {
+    setExpandedAnalyses(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(analysisId)) {
+        newSet.delete(analysisId);
+      } else {
+        newSet.add(analysisId);
+      }
+      return newSet;
+    });
+  };
 
   useEffect(() => {
     params.then(p => setTicker(p.ticker));
@@ -236,6 +210,33 @@ export default function CompanyDetailPage({ params }: { params: Promise<{ ticker
     } catch (error) {
       console.error("Error deleting content:", error);
       alert('Failed to delete content. Please try again.');
+    }
+  };
+
+  const handleDeleteAnalysis = async (analysisId: string, analysisText: string) => {
+    const truncatedText = analysisText.length > 60 ? analysisText.substring(0, 60) + '...' : analysisText;
+    if (!confirm(`Are you sure you want to delete this analysis?\n\n"${truncatedText}"\n\nThis will recalculate company metrics.`)) {
+      return;
+    }
+
+    setDeletingAnalysisId(analysisId);
+    try {
+      const response = await fetch(`/api/analysis/${analysisId}`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        // Refresh company data after deletion
+        await fetchCompany();
+      } else {
+        const error = await response.json();
+        alert(`Failed to delete analysis: ${error.message || 'Unknown error'}`);
+      }
+    } catch (error) {
+      console.error("Error deleting analysis:", error);
+      alert('Failed to delete analysis. Please try again.');
+    } finally {
+      setDeletingAnalysisId(null);
     }
   };
 
@@ -317,258 +318,237 @@ export default function CompanyDetailPage({ params }: { params: Promise<{ ticker
           </button>
 
           {/* Company Header */}
-          <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg p-8 mb-6">
-            <div className="flex items-start justify-between mb-6">
-              <div>
-                <div className="flex items-center gap-3 mb-2">
-                  {company.logoUrl && (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={company.logoUrl}
-                      alt={company.name}
-                      className="w-12 h-12 rounded-lg"
-                    />
-                  )}
-                  <div>
-                    <h1 className="text-3xl font-bold text-zinc-900 dark:text-zinc-100">
+          <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg p-6 mb-6">
+            {/* Main Info Grid */}
+            <div className="grid grid-cols-1 lg:grid-cols-[1fr_auto] gap-6 items-start">
+              {/* Left: Company Info */}
+              <div className="flex gap-4">
+                {company.logoUrl && (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={company.logoUrl}
+                    alt={company.name}
+                    className="w-16 h-16 rounded-lg flex-shrink-0"
+                  />
+                )}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-3 mb-1">
+                    <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100 truncate">
                       {company.name}
                     </h1>
-                    <p className="text-lg font-mono text-blue-600 dark:text-blue-400">
+                    <span className="text-sm font-mono text-blue-600 dark:text-blue-400 flex-shrink-0">
                       {company.ticker}
-                    </p>
+                    </span>
+                    {company._count.analyses > 0 && (
+                      <span className="text-xs text-zinc-500 dark:text-zinc-400 flex-shrink-0">
+                        • {company._count.analyses} {company._count.analyses === 1 ? 'analysis' : 'analyses'}
+                      </span>
+                    )}
                   </div>
+                  
+                  {/* Metadata Row */}
+                  <div className="flex flex-wrap items-center gap-3 text-xs text-zinc-600 dark:text-zinc-400 mb-2">
+                    {company.sector && (
+                      <span className="flex items-center gap-1">
+                        <TrendingUp className="w-3 h-3" />
+                        {company.sector}
+                      </span>
+                    )}
+                    {company.industry && (
+                      <>
+                        <span className="text-zinc-400">•</span>
+                        <span>{company.industry}</span>
+                      </>
+                    )}
+                    {company.marketCap && (
+                      <>
+                        <span className="text-zinc-400">•</span>
+                        <span className="font-semibold">{formatMarketCap(company.marketCap)}</span>
+                      </>
+                    )}
+                    {company.website && (
+                      <>
+                        <span className="text-zinc-400">•</span>
+                        <a
+                          href={company.website}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-1 text-blue-600 dark:text-blue-400 hover:underline"
+                        >
+                          <Globe className="w-3 h-3" />
+                          Website
+                          <ExternalLink className="w-2.5 h-2.5" />
+                        </a>
+                      </>
+                    )}
+                  </div>
+                  
+                  {company.description && (
+                    <p className="text-sm text-zinc-600 dark:text-zinc-400 line-clamp-2 mb-3">
+                      {company.description}
+                    </p>
+                  )}
+                  
+                  {/* Valuation Breakdown (Detail Section) - Compact */}
+                  {company.valuationBreakdown && (
+                    <div className="mt-3 pt-3 border-t border-zinc-200 dark:border-zinc-700">
+                      <button
+                        onClick={() => setIsValuationExpanded(!isValuationExpanded)}
+                        className="flex items-center gap-2 text-xs text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors mb-2"
+                      >
+                        {isValuationExpanded ? (
+                          <ChevronUp className="w-3 h-3" />
+                        ) : (
+                          <ChevronDown className="w-3 h-3" />
+                        )}
+                        <span className="font-medium">Valuation Breakdown</span>
+                      </button>
+                      
+                      {isValuationExpanded && (
+                        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs">
+                          {/* Scores Row */}
+                          {company.valuationBreakdown.financialHealthScore !== null && (
+                            <div className="flex items-center gap-1">
+                              <span className="text-zinc-600 dark:text-zinc-400">Financial:</span>
+                              <span className="font-semibold text-zinc-900 dark:text-zinc-100">
+                                {company.valuationBreakdown.financialHealthScore.toFixed(0)}/100
+                              </span>
+                              <InfoTooltip content="Based on P/E ratio, profit margin, ROE, debt/equity, and dividend yield." />
+                            </div>
+                          )}
+                          
+                          {company.valuationBreakdown.analystScore !== null && (
+                            <>
+                              <span className="text-zinc-300 dark:text-zinc-600">•</span>
+                              <div className="flex items-center gap-1">
+                                <span className="text-zinc-600 dark:text-zinc-400">Analyst:</span>
+                                <span className="font-semibold text-zinc-900 dark:text-zinc-100">
+                                  {company.valuationBreakdown.analystScore.toFixed(0)}/100
+                                </span>
+                                <InfoTooltip content="Consensus from analyst recommendations (strong buy, buy, hold, sell, strong sell)." />
+                              </div>
+                            </>
+                          )}
+                          
+                          {company.valuationBreakdown.textSentimentScore !== null && (
+                            <>
+                              <span className="text-zinc-300 dark:text-zinc-600">•</span>
+                              <div className="flex items-center gap-1">
+                                <span className="text-zinc-600 dark:text-zinc-400">Text:</span>
+                                <span className="font-semibold text-zinc-900 dark:text-zinc-100">
+                                  {company.valuationBreakdown.textSentimentScore.toFixed(0)}/100
+                                </span>
+                                <InfoTooltip content="Aggregate sentiment from your text analyses, weighted by reliability and volume." />
+                              </div>
+                            </>
+                          )}
+                          
+                          {/* Target Price Methods */}
+                          {company.targetPrice && (
+                            <>
+                              {company.valuationBreakdown.targetPriceMethods.grahamNumber && (
+                                <>
+                                  <span className="text-zinc-300 dark:text-zinc-600">|</span>
+                                  <div>
+                                    <span className="text-zinc-600 dark:text-zinc-400">Graham: </span>
+                                    <span className="font-semibold text-zinc-900 dark:text-zinc-100">
+                                      ${company.valuationBreakdown.targetPriceMethods.grahamNumber.toFixed(2)}
+                                    </span>
+                                  </div>
+                                </>
+                              )}
+                              
+                              {company.valuationBreakdown.targetPriceMethods.fairPE && (
+                                <>
+                                  <span className="text-zinc-300 dark:text-zinc-600">•</span>
+                                  <div>
+                                    <span className="text-zinc-600 dark:text-zinc-400">Fair P/E: </span>
+                                    <span className="font-semibold text-zinc-900 dark:text-zinc-100">
+                                      ${company.valuationBreakdown.targetPriceMethods.fairPE.toFixed(2)}
+                                    </span>
+                                  </div>
+                                </>
+                              )}
+                              
+                              {company.valuationBreakdown.targetPriceMethods.fiftyTwoWeekMid && (
+                                <>
+                                  <span className="text-zinc-300 dark:text-zinc-600">•</span>
+                                  <div>
+                                    <span className="text-zinc-600 dark:text-zinc-400">52W Mid: </span>
+                                    <span className="font-semibold text-zinc-900 dark:text-zinc-100">
+                                      ${company.valuationBreakdown.targetPriceMethods.fiftyTwoWeekMid.toFixed(2)}
+                                    </span>
+                                  </div>
+                                </>
+                              )}
+                              
+                              {company.valuationBreakdown.sentimentAdjustment !== null && (
+                                <>
+                                  <span className="text-zinc-300 dark:text-zinc-600">•</span>
+                                  <div>
+                                    <span className="text-zinc-600 dark:text-zinc-400">Sentiment Adj: </span>
+                                    <span className="font-semibold text-zinc-900 dark:text-zinc-100">
+                                      {company.valuationBreakdown.sentimentAdjustment > 0 ? '+' : ''}
+                                      {company.valuationBreakdown.sentimentAdjustment.toFixed(1)}%
+                                    </span>
+                                  </div>
+                                </>
+                              )}
+                            </>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
-                {company.description && (
-                  <p className="text-zinc-600 dark:text-zinc-400 max-w-3xl mt-4">
-                    {company.description}
-                  </p>
-                )}
               </div>
               
-              {/* Valuation Hero */}
-              <div className="flex flex-col items-end gap-3">
-                {/* Global Score */}
-                {company.globalScore !== null && (
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm text-zinc-600 dark:text-zinc-400">
-                      Global Score
-                    </span>
-                    <InfoTooltip content="Combines financial health (40%), analyst consensus (35%), and your text analyses (25%). Scale 0-100." />
-                    <div className={`px-4 py-2 rounded-lg font-bold text-lg ${
-                      company.globalScore >= 75 ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-100'
-                      : company.globalScore >= 60 ? 'bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-100'
-                      : company.globalScore >= 40 ? 'bg-amber-100 dark:bg-amber-900 text-amber-800 dark:text-amber-100'
-                      : 'bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-100'
-                    }`}>
-                      {company.globalScore}/100
-                      <span className="ml-2 text-xs font-normal opacity-80">
+              {/* Right: Valuation Metrics */}
+              {(company.globalScore !== null || company.targetPrice !== null) && (
+                <div className="flex gap-3">
+                  {/* Global Score */}
+                  {company.globalScore !== null && (
+                    <div className="flex flex-col items-center justify-center min-w-[110px] px-4 py-3 bg-zinc-50 dark:bg-zinc-800 rounded-lg">
+                      <div className="flex items-center gap-1 mb-1.5">
+                        <span className="text-xs text-zinc-600 dark:text-zinc-400">
+                          Global Score
+                        </span>
+                        <InfoTooltip content="Combines financial health (40%), analyst consensus (35%), and your text analyses (25%). Scale 0-100." />
+                      </div>
+                      <div className={`px-3 py-1 rounded-lg font-bold text-lg ${
+                        company.globalScore >= 75 ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-100'
+                        : company.globalScore >= 60 ? 'bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-100'
+                        : company.globalScore >= 40 ? 'bg-amber-100 dark:bg-amber-900 text-amber-800 dark:text-amber-100'
+                        : 'bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-100'
+                      }`}>
+                        {company.globalScore}/100
+                      </div>
+                      <span className="text-[10px] text-zinc-500 dark:text-zinc-400 mt-1">
                         {company.globalScoreLabel}
                       </span>
                     </div>
-                  </div>
-                )}
-                
-                {/* Target Price */}
-                {company.targetPrice !== null && (
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm text-zinc-600 dark:text-zinc-400">
-                      Target Price
-                    </span>
-                    <InfoTooltip content="Fair value estimate using Graham Number, fair P/E, and 52-week midpoint, adjusted by global sentiment." />
-                    <div className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">
-                      ${company.targetPrice.toFixed(2)}
-                    </div>
-                  </div>
-                )}
-                
-                {/* Upside (requires live price - fetch from finnhub-live endpoint) */}
-                {company.targetPrice !== null && (
-                  <UpsideIndicator ticker={company.ticker} targetPrice={company.targetPrice} />
-                )}
-              </div>
-            </div>
-
-            {/* Company Metadata */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {company.sector && (
-                <div className="p-4 bg-zinc-50 dark:bg-zinc-800 rounded-lg">
-                  <div className="flex items-center gap-2 mb-1">
-                    <TrendingUp className="w-4 h-4 text-zinc-500" />
-                    <span className="text-xs text-zinc-500 dark:text-zinc-400">Sector</span>
-                  </div>
-                  <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
-                    {company.sector}
-                  </p>
-                </div>
-              )}
-              {company.industry && (
-                <div className="p-4 bg-zinc-50 dark:bg-zinc-800 rounded-lg">
-                  <span className="text-xs text-zinc-500 dark:text-zinc-400 block mb-1">Industry</span>
-                  <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
-                    {company.industry}
-                  </p>
-                </div>
-              )}
-              {company.marketCap && (
-                <div className="p-4 bg-zinc-50 dark:bg-zinc-800 rounded-lg">
-                  <span className="text-xs text-zinc-500 dark:text-zinc-400 block mb-1">Market Cap</span>
-                  <p className="text-lg font-bold text-zinc-900 dark:text-zinc-100">
-                    {formatMarketCap(company.marketCap)}
-                  </p>
-                </div>
-              )}
-              {company.website && (
-                <div className="p-4 bg-zinc-50 dark:bg-zinc-800 rounded-lg">
-                  <span className="text-xs text-zinc-500 dark:text-zinc-400 block mb-1">Website</span>
-                  <a
-                    href={company.website}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-1 text-sm font-semibold text-blue-600 dark:text-blue-400 hover:underline"
-                  >
-                    <Globe className="w-4 h-4" />
-                    Visit
-                    <ExternalLink className="w-3 h-3" />
-                  </a>
-                </div>
-              )}
-            </div>
-
-            {/* Stats */}
-            <div className="mt-6 flex items-center gap-6 text-sm">
-              <div className="flex items-center gap-2">
-                <FileText className="w-4 h-4 text-zinc-500" />
-                <span className="font-bold text-zinc-900 dark:text-zinc-100">
-                  {company._count.content}
-                </span>
-                <span className="text-zinc-600 dark:text-zinc-400">
-                  {company._count.content === 1 ? 'article' : 'articles'}
-                </span>
-              </div>
-              <div className="flex items-center gap-2">
-                <MessageSquare className="w-4 h-4 text-zinc-500" />
-                <span className="font-bold text-zinc-900 dark:text-zinc-100">
-                  {company._count.mentions}
-                </span>
-                <span className="text-zinc-600 dark:text-zinc-400">
-                  {company._count.mentions === 1 ? 'mention' : 'mentions'}
-                </span>
-              </div>
-              {company._count.analyses > 0 && (
-                <div className="flex items-center gap-2">
-                  <TrendingUp className="w-4 h-4 text-blue-500" />
-                  <span className="font-bold text-zinc-900 dark:text-zinc-100">
-                    {company._count.analyses}
-                  </span>
-                  <span className="text-zinc-600 dark:text-zinc-400">
-                    AI {company._count.analyses === 1 ? 'analysis' : 'analyses'}
-                  </span>
-                </div>
-              )}
-            </div>
-            
-            {/* Valuation Breakdown (Detail Section) */}
-            {company.valuationBreakdown && (
-              <div className="mt-6 p-4 bg-zinc-50 dark:bg-zinc-800 rounded-lg">
-                <h3 className="text-sm font-semibold text-zinc-700 dark:text-zinc-300 mb-3">
-                  Valuation Methods
-                </h3>
-                <div className="grid grid-cols-3 gap-4 text-xs">
-                  {/* Financial Health */}
-                  {company.valuationBreakdown.financialHealthScore !== null && (
-                    <div>
-                      <div className="flex items-center gap-1 mb-1">
-                        <span className="text-zinc-600 dark:text-zinc-400">
-                          Financial Health
-                        </span>
-                        <InfoTooltip content="Based on P/E ratio, profit margin, ROE, debt/equity, and dividend yield." />
-                      </div>
-                      <div className="font-semibold text-zinc-900 dark:text-zinc-100">
-                        {company.valuationBreakdown.financialHealthScore.toFixed(0)}/100
-                      </div>
-                    </div>
                   )}
                   
-                  {/* Analyst */}
-                  {company.valuationBreakdown.analystScore !== null && (
-                    <div>
-                      <div className="flex items-center gap-1 mb-1">
-                        <span className="text-zinc-600 dark:text-zinc-400">
-                          Analyst Consensus
+                  {/* Target Price */}
+                  {company.targetPrice !== null && (
+                    <div className="flex flex-col items-center justify-center min-w-[110px] px-4 py-3 bg-zinc-50 dark:bg-zinc-800 rounded-lg">
+                      <div className="flex items-center gap-1 mb-1.5">
+                        <span className="text-xs text-zinc-600 dark:text-zinc-400">
+                          Target Price
                         </span>
-                        <InfoTooltip content="Consensus from analyst recommendations (strong buy, buy, hold, sell, strong sell)." />
+                        <InfoTooltip content="Fair value estimate using Graham Number, fair P/E, and 52-week midpoint, adjusted by global sentiment." />
                       </div>
-                      <div className="font-semibold text-zinc-900 dark:text-zinc-100">
-                        {company.valuationBreakdown.analystScore.toFixed(0)}/100
+                      <div className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">
+                        ${company.targetPrice.toFixed(2)}
                       </div>
-                    </div>
-                  )}
-                  
-                  {/* Text Sentiment */}
-                  {company.valuationBreakdown.textSentimentScore !== null && (
-                    <div>
-                      <div className="flex items-center gap-1 mb-1">
-                        <span className="text-zinc-600 dark:text-zinc-400">
-                          Text Sentiment
-                        </span>
-                        <InfoTooltip content="Aggregate sentiment from your text analyses, weighted by reliability and volume." />
-                      </div>
-                      <div className="font-semibold text-zinc-900 dark:text-zinc-100">
-                        {company.valuationBreakdown.textSentimentScore.toFixed(0)}/100
+                      <div className="mt-1 h-4">
+                        <UpsideIndicator ticker={company.ticker} targetPrice={company.targetPrice} />
                       </div>
                     </div>
                   )}
                 </div>
-                
-                {/* Target Price Methods */}
-                {company.targetPrice && (
-                  <div className="mt-4 pt-4 border-t border-zinc-200 dark:border-zinc-700">
-                    <div className="grid grid-cols-4 gap-3 text-xs">
-                      {company.valuationBreakdown.targetPriceMethods.grahamNumber && (
-                        <div>
-                          <div className="text-zinc-600 dark:text-zinc-400 mb-1">
-                            Graham Number
-                          </div>
-                          <div className="font-semibold text-zinc-900 dark:text-zinc-100">
-                            ${company.valuationBreakdown.targetPriceMethods.grahamNumber.toFixed(2)}
-                          </div>
-                        </div>
-                      )}
-                      {company.valuationBreakdown.targetPriceMethods.fairPE && (
-                        <div>
-                          <div className="text-zinc-600 dark:text-zinc-400 mb-1">
-                            Fair P/E
-                          </div>
-                          <div className="font-semibold text-zinc-900 dark:text-zinc-100">
-                            ${company.valuationBreakdown.targetPriceMethods.fairPE.toFixed(2)}
-                          </div>
-                        </div>
-                      )}
-                      {company.valuationBreakdown.targetPriceMethods.fiftyTwoWeekMid && (
-                        <div>
-                          <div className="text-zinc-600 dark:text-zinc-400 mb-1">
-                            52-Week Midpoint
-                          </div>
-                          <div className="font-semibold text-zinc-900 dark:text-zinc-100">
-                            ${company.valuationBreakdown.targetPriceMethods.fiftyTwoWeekMid.toFixed(2)}
-                          </div>
-                        </div>
-                      )}
-                      <div>
-                        <div className="text-zinc-600 dark:text-zinc-400 mb-1">
-                          Sentiment Adjustment
-                        </div>
-                        <div className="font-semibold text-zinc-900 dark:text-zinc-100">
-                          {company.valuationBreakdown.sentimentAdjustment 
-                            ? `${company.valuationBreakdown.sentimentAdjustment > 0 ? '+' : ''}${company.valuationBreakdown.sentimentAdjustment.toFixed(1)}%`
-                            : 'N/A'}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
+              )}
+            </div>
           </div>
 
           {/* Enrichment Section */}
@@ -584,18 +564,55 @@ export default function CompanyDetailPage({ params }: { params: Promise<{ ticker
                 variant="default"
               />
             </div>
-            <EnrichmentDisplay
-              enrichment={company.enrichments?.find(e => e.source === "FINNHUB") || null}
-            />
-          </div>
 
-          {/* AI Analyses Section */}
-          {company.analyses && company.analyses.length > 0 && (
+            {/* AI Analysis (synthesized verdict) - always visible above tabs */}
             <div className="mb-6">
-              <h3 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100 mb-4 flex items-center gap-2">
-                <TrendingUp className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+              <EnrichmentDisplay
+                enrichment={company.enrichments?.find(e => e.source === "FINNHUB") || null}
+                mode="ai"
+              />
+            </div>
+
+            {/* Tabs */}
+            <div className="flex gap-2 mb-4 border-b border-zinc-200 dark:border-zinc-800">
+              <button
+                onClick={() => setActiveTab('financial')}
+                className={`px-4 py-2 font-medium transition-colors relative ${
+                  activeTab === 'financial'
+                    ? 'text-purple-600 dark:text-purple-400'
+                    : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200'
+                }`}
+              >
+                Financial Data
+                {activeTab === 'financial' && (
+                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-purple-600 dark:bg-purple-400" />
+                )}
+              </button>
+              <button
+                onClick={() => setActiveTab('text-analyses')}
+                className={`px-4 py-2 font-medium transition-colors relative ${
+                  activeTab === 'text-analyses'
+                    ? 'text-purple-600 dark:text-purple-400'
+                    : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200'
+                }`}
+              >
                 AI Text Analyses
-              </h3>
+                {activeTab === 'text-analyses' && (
+                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-purple-600 dark:bg-purple-400" />
+                )}
+              </button>
+            </div>
+
+            {/* Content based on active tab */}
+            {activeTab === 'financial' ? (
+              <EnrichmentDisplay
+                enrichment={company.enrichments?.find(e => e.source === "FINNHUB") || null}
+                mode="financial"
+              />
+            ) : (
+              /* AI Text Analyses Content */
+              company.analyses && company.analyses.length > 0 ? (
+            <div>
 
               {/* Aggregated Scores */}
               <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-6 mb-4">
@@ -678,7 +695,7 @@ export default function CompanyDetailPage({ params }: { params: Promise<{ ticker
                   >
                     {/* Header */}
                     <div className="flex items-start justify-between mb-4">
-                      <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-3 flex-1">
                         {/* Sentiment Badge */}
                         <div
                           className={`px-3 py-1 rounded-full text-xs font-bold ${
@@ -712,20 +729,32 @@ export default function CompanyDetailPage({ params }: { params: Promise<{ ticker
                       </div>
 
                       {/* Date & Source */}
-                      <div className="text-right">
-                        <div className="flex items-center gap-1 text-xs text-zinc-500 dark:text-zinc-400">
-                          <Calendar className="w-3 h-3" />
-                          {new Date(analysis.createdAt).toLocaleDateString('en-US', {
-                            month: 'short',
-                            day: 'numeric',
-                            year: 'numeric',
-                          })}
-                        </div>
-                        {analysis.source && (
-                          <div className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
-                            Source: {analysis.source}
+                      <div className="flex items-start gap-3">
+                        <div className="text-right">
+                          <div className="flex items-center gap-1 text-xs text-zinc-500 dark:text-zinc-400">
+                            <Calendar className="w-3 h-3" />
+                            {new Date(analysis.createdAt).toLocaleDateString('en-US', {
+                              month: 'short',
+                              day: 'numeric',
+                              year: 'numeric',
+                            })}
                           </div>
-                        )}
+                          {analysis.source && (
+                            <div className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
+                              Source: {analysis.source}
+                            </div>
+                          )}
+                        </div>
+                        
+                        {/* Delete Button */}
+                        <button
+                          onClick={() => handleDeleteAnalysis(analysis.id, analysis.text)}
+                          disabled={deletingAnalysisId === analysis.id}
+                          className="text-zinc-400 hover:text-red-500 dark:hover:text-red-400 transition-colors disabled:opacity-50"
+                          title="Delete analysis"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
                       </div>
                     </div>
 
@@ -741,10 +770,32 @@ export default function CompanyDetailPage({ params }: { params: Promise<{ ticker
 
                     {/* Original Text */}
                     <div>
-                      <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400 mb-1">
-                        Original Text:
-                      </p>
-                      <p className="text-sm text-zinc-600 dark:text-zinc-400 line-clamp-3">
+                      <div className="flex items-center justify-between mb-1">
+                        <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
+                          Original Text:
+                        </p>
+                        {analysis.text.length > 250 && (
+                          <button
+                            onClick={() => toggleAnalysisExpanded(analysis.id)}
+                            className="text-xs text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 flex items-center gap-1"
+                          >
+                            {expandedAnalyses.has(analysis.id) ? (
+                              <>
+                                <span>Collapse</span>
+                                <ChevronUp className="w-3 h-3" />
+                              </>
+                            ) : (
+                              <>
+                                <span>Expand</span>
+                                <ChevronDown className="w-3 h-3" />
+                              </>
+                            )}
+                          </button>
+                        )}
+                      </div>
+                      <p className={`text-sm text-zinc-600 dark:text-zinc-400 ${
+                        analysis.text.length > 250 && !expandedAnalyses.has(analysis.id) ? 'line-clamp-3' : ''
+                      }`}>
                         {analysis.text}
                       </p>
                     </div>
@@ -752,163 +803,15 @@ export default function CompanyDetailPage({ params }: { params: Promise<{ ticker
                 ))}
               </div>
             </div>
-          )}
-
-          {/* Content Section */}
-          <div className="mb-6">
-            <h3 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100 mb-4">
-              Related Content
-            </h3>
-            {company.content.length === 0 ? (
-              <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg p-8 text-center">
-                <p className="text-zinc-600 dark:text-zinc-400">No content found for this company.</p>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {company.content.map(({ content }) => (
-                  <div
-                    key={content.id}
-                    className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg p-6"
-                  >
-                    {/* Header */}
-                    <div className="flex items-start justify-between mb-3">
-                      <h4 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100 flex-1">
-                        {content.title || 'Untitled'}
-                      </h4>
-                      <span className={`px-2 py-1 text-xs font-medium rounded ${getTypeBadgeColor(content.contentType)}`}>
-                        {content.contentType}
-                      </span>
-                    </div>
-
-                    {/* Source */}
-                    <div className="flex items-center gap-2 mb-3">
-                      <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">Source:</span>
-                      <span className="text-xs font-semibold text-blue-600 dark:text-blue-400">
-                        {content.sourceName}
-                      </span>
-                    </div>
-
-                    {/* Description */}
-                    {content.description && (
-                      <p className="text-sm text-zinc-600 dark:text-zinc-400 mb-4">
-                        {content.description}
-                      </p>
-                    )}
-
-                    {/* Summary */}
-                    {content.summary && (
-                      <div className="mb-4 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-md">
-                        <h5 className="text-xs font-semibold text-blue-900 dark:text-blue-300 mb-2">AI Summary</h5>
-                        <p className="text-sm text-blue-800 dark:text-blue-200">
-                          {content.summary}
-                        </p>
-                      </div>
-                    )}
-
-                    {/* Mentions in this content */}
-                    {content.mentions && content.mentions.length > 0 && (
-                      <div className="mb-4">
-                        <h5 className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase mb-2">
-                          Mentions in this content
-                        </h5>
-                        <div className="space-y-2">
-                          {content.mentions.map((mention) => (
-                            <div
-                              key={mention.id}
-                              className="p-3 bg-zinc-50 dark:bg-zinc-800 rounded-md"
-                            >
-                              {mention.timestamp !== null && (
-                                <div className="flex items-center gap-2 mb-1">
-                                  <Calendar className="w-3 h-3 text-zinc-500" />
-                                  <span className="text-xs text-zinc-500 dark:text-zinc-400">
-                                    Timestamp: {formatTimestamp(mention.timestamp)}
-                                  </span>
-                                </div>
-                              )}
-                              {mention.context && (
-                                <p className="text-sm text-zinc-700 dark:text-zinc-300 mb-1">
-                                  &quot;{mention.context}&quot;
-                                </p>
-                              )}
-                              {mention.sentiment && (
-                                <span className={`inline-block px-2 py-0.5 text-xs font-medium rounded ${getSentimentColor(mention.sentiment)}`}>
-                                  {mention.sentiment}
-                                </span>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Footer */}
-                    <div className="flex items-center justify-between text-xs text-zinc-500 dark:text-zinc-400">
-                      <div className="flex items-center gap-1">
-                        <Calendar className="w-3 h-3" />
-                        <span>{new Date(content.date).toLocaleDateString()}</span>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <span className={`px-2 py-0.5 rounded font-medium ${getStatusBadgeColor(content.status)}`}>
-                          {content.status}
-                        </span>
-                        <a
-                          href={content.sourceUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1 text-blue-600 dark:text-blue-400 hover:underline"
-                        >
-                          <ExternalLink className="w-3 h-3" />
-                          Source
-                        </a>
-                        <button
-                          onClick={() => handleDeleteContent(content.id, content.title)}
-                          className="inline-flex items-center gap-1 text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 transition-colors"
-                          title="Delete this content"
-                        >
-                          <Trash2 className="w-3 h-3" />
-                          Delete
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
+              ) : (
+                <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg p-8 text-center">
+                  <p className="text-zinc-600 dark:text-zinc-400">No text analyses found for this company.</p>
+                </div>
+              )
             )}
           </div>
         </div>
       </div>
     </MainLayout>
   );
-}
-
-function getTypeBadgeColor(type: string): string {
-  const colors: Record<string, string> = {
-    VIDEO: "bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300",
-    WEB_ARTICLE: "bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300",
-    BLOG_POST: "bg-yellow-100 dark:bg-yellow-900 text-yellow-700 dark:text-yellow-300",
-    SPECIAL_EVENT: "bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300",
-    NEWS: "bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300",
-  };
-  return colors[type] || "bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300";
-}
-
-function getStatusBadgeColor(status: string): string {
-  const colors: Record<string, string> = {
-    PENDING: "bg-yellow-100 dark:bg-yellow-900 text-yellow-700 dark:text-yellow-300",
-    DOWNLOADING: "bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300",
-    TRANSCRIBING: "bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300",
-    PROCESSING: "bg-orange-100 dark:bg-orange-900 text-orange-700 dark:text-orange-300",
-    COMPLETED: "bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300",
-    FAILED: "bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300",
-  };
-  return colors[status] || "bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300";
-}
-
-function getSentimentColor(sentiment: string): string {
-  const colors: Record<string, string> = {
-    POSITIVE: "bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300",
-    NEGATIVE: "bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300",
-    NEUTRAL: "bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300",
-  };
-  return colors[sentiment.toUpperCase()] || "bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300";
 }
