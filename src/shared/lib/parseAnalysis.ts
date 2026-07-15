@@ -178,7 +178,17 @@ export function parseAnalysisBullets(text: string): ParsedContent[] {
     return [];
   }
   
-  const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+  const lines = text
+    .split('\n')
+    .map(l => l.trim())
+    .filter(l => {
+      if (l.length === 0) return false;
+      // Filter out Markdown headers (###, ####, etc.)
+      if (/^#{1,6}\s/.test(l)) return false;
+      // Filter out standalone category labels without content
+      if (/^(\/)?[A-Z][a-z]+(\s*\/\s*[A-Z][a-z]+)*:\s*$/.test(l)) return false;
+      return true;
+    });
   const result: ParsedContent[] = [];
   
   for (const line of lines) {
