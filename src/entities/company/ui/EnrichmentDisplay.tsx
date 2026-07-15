@@ -58,7 +58,6 @@ interface EnrichmentData {
     strongSell: number;
   }>;
   aiAnalysis: string | null;
-  aiAnalysisEs: string | null;
   ollamaModel: string | null;
   createdAt: Date;
 }
@@ -84,7 +83,7 @@ export function EnrichmentDisplay({ enrichment }: EnrichmentDisplayProps) {
     );
   }
 
-  const { priceData, financialData, newsHeadlines, recommendations, aiAnalysis, aiAnalysisEs, createdAt } = enrichment;
+  const { priceData, financialData, newsHeadlines, recommendations, aiAnalysis, createdAt } = enrichment;
 
   const formatCurrency = (value: number | null | undefined, compact = true) => {
     if (value === null || value === undefined) return "N/A";
