@@ -112,13 +112,29 @@ function generateAnalysisPrompt(
   }
 
   prompt += `\n**Your Task:**
-Provide a structured analysis with the following sections:
-1. **Executive Summary** (2-3 sentences combining Finnhub metrics and user sentiment)
-2. **Financial Health** (assess profitability, valuation from Finnhub data)
-3. **Market Sentiment** (synthesize insights from user text analyses)
-4. **Investment Outlook** (bullish, bearish, or neutral with reasoning based on ALL available data)
+Provide a concise investment analysis using bullet points organized by category. Use this format:
 
-Keep your analysis concise, objective, and data-driven. Integrate both quantitative metrics (Finnhub) and qualitative insights (user texts) to provide actionable investment guidance.`;
+- **Key Strengths:**
+  - [specific strength point with data]
+  - [another strength point]
+
+- **Financial Health:**
+  - [profitability assessment with metrics]
+  - [valuation insights from Finnhub data]
+
+- **Market Sentiment:**
+  - [synthesis from user text analyses]
+  - [sentiment trends]
+
+- **Investment Outlook:**
+  - [bullish/bearish/neutral stance with reasoning]
+  - [risk factors to consider]
+
+- **Weaknesses/Risks:**
+  - [concern or risk point]
+  - [another concern]
+
+Keep each bullet point concise (1-2 sentences max). Integrate both quantitative metrics (Finnhub) and qualitative insights (user texts) to provide actionable investment guidance.`;
 
   return prompt;
 }
