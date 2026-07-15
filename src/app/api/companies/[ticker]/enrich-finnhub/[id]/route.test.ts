@@ -94,7 +94,7 @@ describe("GET /api/companies/[ticker]/enrich-finnhub/[id]", () => {
     expect(data.error).toBe("Finnhub enrichment not found");
   });
 
-  it("returns enrichment status with all fields including aiAnalysisEs", async () => {
+  it("returns enrichment status with all fields", async () => {
     const { auth } = await import("@/lib/auth");
     const { prisma } = await import("@/shared/api/prisma");
 
@@ -116,7 +116,6 @@ describe("GET /api/companies/[ticker]/enrich-finnhub/[id]", () => {
       newsHeadlines: null,
       recommendations: null,
       aiAnalysis: "Apple shows strong financial metrics with solid EPS and reasonable P/E ratio.",
-      aiAnalysisEs: "Apple muestra métricas financieras sólidas con un EPS sólido y un P/E razonable.",
       ollamaModel: "llama3.1:8b",
       createdAt: now,
       updatedAt: now,

@@ -14,7 +14,7 @@ import {
   Trash2
 } from "lucide-react";
 import { useSession } from "next-auth/react";
-import { redirect, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { EnrichButton } from "@/features/enrich-company";
 import { EnrichmentDisplay } from "@/entities/company/ui/EnrichmentDisplay";
 import { AnalysisContent } from "@/shared";
@@ -127,7 +127,6 @@ interface Company {
       strongSell: number;
     }>;
     aiAnalysis: string | null;
-    aiAnalysisEs: string | null;
     ollamaModel: string | null;
     createdAt: Date;
   }[];
@@ -146,9 +145,9 @@ export default function CompanyDetailPage({ params }: { params: Promise<{ ticker
 
   useEffect(() => {
     if (status === "unauthenticated") {
-      redirect("/login");
+      router.push("/login");
     }
-  }, [status]);
+  }, [status, router]);
 
   const fetchCompany = useCallback(async () => {
     if (!ticker) return; // Don't fetch if ticker is empty
