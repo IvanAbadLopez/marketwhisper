@@ -112,7 +112,11 @@ function generateAnalysisPrompt(
   }
 
   prompt += `\n**Your Task:**
-Provide a concise investment analysis using bullet points organized by category. Use this format:
+Provide a concise investment analysis using bullet points organized by category. 
+
+IMPORTANT: Do NOT include any "VERDICT" line, executive summary, or introductory paragraph at the start. Begin directly with the bullet points below.
+
+Use this exact format:
 
 - **Key Strengths:**
   - [specific strength point with data]
