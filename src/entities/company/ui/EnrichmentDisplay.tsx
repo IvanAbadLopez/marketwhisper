@@ -138,8 +138,8 @@ export function EnrichmentDisplay({ enrichment, mode = 'full' }: EnrichmentDispl
               </button>
             </div>
 
-            <div className={`${showFullAnalysis ? "" : "line-clamp-4"}`}>
-              <AnalysisContent text={aiAnalysis} className="text-sm" />
+            <div>
+              <AnalysisContent text={aiAnalysis} className="text-sm" collapsed={!showFullAnalysis} />
             </div>
           </div>
         )}
@@ -215,8 +215,8 @@ export function EnrichmentDisplay({ enrichment, mode = 'full' }: EnrichmentDispl
             </button>
           </div>
 
-          <div className={`${showFullAnalysis ? "" : "line-clamp-6"}`}>
-            <AnalysisContent text={aiAnalysis} className="text-sm" />
+          <div>
+            <AnalysisContent text={aiAnalysis} className="text-sm" collapsed={!showFullAnalysis} />
           </div>
         </div>
       )}

@@ -68,6 +68,7 @@ const sectionOrder: IconKey[] = ['strength', 'financial', 'sentiment', 'outlook'
 interface AnalysisContentProps {
   text: string | null | undefined;
   className?: string;
+  collapsed?: boolean;
 }
 
 /**
@@ -90,7 +91,7 @@ function groupBulletsBySection(items: ParsedContent[]): Map<IconKey, ParsedBulle
 /**
  * Render structured analysis content with icons, grouped by section
  */
-export function AnalysisContent({ text, className = "" }: AnalysisContentProps) {
+export function AnalysisContent({ text, className = "", collapsed = false }: AnalysisContentProps) {
   if (!text) {
     return (
       <p className={`text-sm text-zinc-400 italic ${className}`}>
@@ -102,8 +103,13 @@ export function AnalysisContent({ text, className = "" }: AnalysisContentProps) 
   // Parse verdict summary (if present)
   const verdict = parseVerdict(text);
   
-  // Remove SUMMARY line from text before parsing bullets
-  const cleanText = text.replace(/---\s*\n?\s*SUMMARY:.*?\n?/gi, '').trim();
+  // Remove SUMMARY line and separator from text before parsing bullets
+  // Match: optional ---, optional whitespace/newlines, SUMMARY: and everything until end of line
+  const cleanText = text
+    .replace(/---\s*[\r\n]+\s*SUMMARY:[^\n]*/gi, '')
+    .replace(/^\s*SUMMARY:[^\n]*/gim, '')
+    .replace(/---\s*$/gm, '')
+    .trim();
   
   const parsed = parseAnalysisBullets(cleanText);
 
@@ -137,7 +143,7 @@ export function AnalysisContent({ text, className = "" }: AnalysisContentProps) 
   const grouped = groupBulletsBySection(parsed);
 
   return (
-    <div className={`space-y-5 ${className}`}>
+    <div className={`space-y-5 ${className} ${collapsed ? 'max-h-48 overflow-hidden relative' : ''}`}>
       {/* Verdict Summary Badges */}
       {verdict && (
         <div className="flex flex-wrap gap-2 pb-3 border-b border-zinc-700/50">
@@ -220,6 +226,11 @@ export function AnalysisContent({ text, className = "" }: AnalysisContentProps) 
               </p>
             ))}
         </div>
+      )}
+      
+      {/* Fade gradient when collapsed */}
+      {collapsed && (
+        <div className="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-purple-900/40 via-purple-900/20 to-transparent pointer-events-none" />
       )}
     </div>
   );
