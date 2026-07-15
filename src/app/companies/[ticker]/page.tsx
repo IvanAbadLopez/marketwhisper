@@ -759,13 +759,11 @@ export default function CompanyDetailPage({ params }: { params: Promise<{ ticker
                     </div>
 
                     {/* AI Reasoning */}
-                    <div className="mb-3 p-3 bg-blue-50 dark:bg-blue-900/20 rounded border border-blue-100 dark:border-blue-800">
-                      <p className="text-xs font-medium text-blue-700 dark:text-blue-300 mb-1">
+                    <div className="mb-3 p-3 bg-purple-50 dark:bg-purple-900/20 rounded border border-purple-200 dark:border-purple-800">
+                      <p className="text-xs font-medium text-purple-700 dark:text-purple-300 mb-2">
                         AI Reasoning:
                       </p>
-                      <p className="text-sm text-zinc-700 dark:text-zinc-300 italic">
-                        {analysis.reasoning}
-                      </p>
+                      <AnalysisContent text={analysis.reasoning} className="text-sm" />
                     </div>
 
                     {/* Original Text */}

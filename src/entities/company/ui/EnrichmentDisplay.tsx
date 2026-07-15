@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { AnalystSentimentChart } from "./AnalystSentimentChart";
 import { calcAnalystScore, analystScoreLabel } from "@/features/enrich-company/lib/analystScore";
+import { AnalysisContent } from "@/shared/ui/AnalysisContent";
 
 interface EnrichmentData {
   id: string;
@@ -216,10 +217,8 @@ export function EnrichmentDisplay({ enrichment, mode = 'full' }: EnrichmentDispl
             </button>
           </div>
 
-          <div className={`prose prose-invert max-w-none ${showFullAnalysis ? "" : "line-clamp-4"}`}>
-            <p className="text-sm text-zinc-300 whitespace-pre-wrap">
-              {aiAnalysis}
-            </p>
+          <div className={`${showFullAnalysis ? "" : "line-clamp-6"}`}>
+            <AnalysisContent text={aiAnalysis} className="text-sm" />
           </div>
         </div>
       )}
