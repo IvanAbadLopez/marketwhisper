@@ -10,9 +10,11 @@ import {
   BarChart3, 
   Activity, 
   Target,
-  CircleDot
+  CircleDot,
+  Shield,
+  Award
 } from "lucide-react";
-import { parseAnalysisBullets, type ParsedContent, type ParsedBullet, type IconKey } from "@/shared/lib/parseAnalysis";
+import { parseAnalysisBullets, parseVerdict, type ParsedContent, type ParsedBullet, type IconKey } from "@/shared/lib/parseAnalysis";
 
 interface IconConfig {
   Component: typeof TrendingUp;
@@ -97,7 +99,13 @@ export function AnalysisContent({ text, className = "" }: AnalysisContentProps) 
     );
   }
 
-  const parsed = parseAnalysisBullets(text);
+  // Parse verdict summary (if present)
+  const verdict = parseVerdict(text);
+  
+  // Remove SUMMARY line from text before parsing bullets
+  const cleanText = text.replace(/---\s*\n?\s*SUMMARY:.*?\n?/gi, '').trim();
+  
+  const parsed = parseAnalysisBullets(cleanText);
 
   // Fallback: if no structured content, show as clean paragraph
   if (parsed.length === 0) {
@@ -130,6 +138,41 @@ export function AnalysisContent({ text, className = "" }: AnalysisContentProps) 
 
   return (
     <div className={`space-y-5 ${className}`}>
+      {/* Verdict Summary Badges */}
+      {verdict && (
+        <div className="flex flex-wrap gap-2 pb-3 border-b border-zinc-700/50">
+          {/* Verdict Badge */}
+          <div className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold ${
+            verdict.verdict === 'BULLISH' 
+              ? 'bg-green-500/20 text-green-300 border border-green-500/30'
+              : verdict.verdict === 'BEARISH'
+              ? 'bg-red-500/20 text-red-300 border border-red-500/30'
+              : 'bg-blue-500/20 text-blue-300 border border-blue-500/30'
+          }`}>
+            <Target className="h-3.5 w-3.5" />
+            <span>{verdict.verdict}</span>
+          </div>
+          
+          {/* Risk Badge */}
+          <div className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold ${
+            verdict.risk === 'Low'
+              ? 'bg-green-500/20 text-green-300 border border-green-500/30'
+              : verdict.risk === 'High'
+              ? 'bg-red-500/20 text-red-300 border border-red-500/30'
+              : 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+          }`}>
+            <Shield className="h-3.5 w-3.5" />
+            <span>Risk: {verdict.risk}</span>
+          </div>
+          
+          {/* Confidence Badge */}
+          <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-purple-500/20 text-purple-300 border border-purple-500/30">
+            <Award className="h-3.5 w-3.5" />
+            <span>Confidence: {verdict.confidence}/10</span>
+          </div>
+        </div>
+      )}
+
       {/* Render sections in logical order */}
       {sectionOrder.map(sectionKey => {
         const sectionBullets = grouped.get(sectionKey);

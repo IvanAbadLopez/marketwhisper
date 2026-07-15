@@ -187,6 +187,10 @@ export function parseAnalysisBullets(text: string): ParsedContent[] {
       if (/^#{1,6}\s/.test(l)) return false;
       // Filter out standalone category labels without content
       if (/^(\/)?[A-Z][a-z]+(\s*\/\s*[A-Z][a-z]+)*:\s*$/.test(l)) return false;
+      // Filter out separator lines (---)
+      if (/^-{3,}$/.test(l)) return false;
+      // Filter out SUMMARY line
+      if (/^SUMMARY:/i.test(l)) return false;
       return true;
     });
   const result: ParsedContent[] = [];
@@ -221,4 +225,34 @@ export function parseAnalysisBullets(text: string): ParsedContent[] {
   }
   
   return result;
+}
+
+/**
+ * Verdict summary extracted from analysis
+ */
+export interface VerdictSummary {
+  verdict: 'BULLISH' | 'BEARISH' | 'NEUTRAL';
+  risk: 'Low' | 'Medium' | 'High';
+  confidence: number; // 1-10
+}
+
+/**
+ * Parse verdict summary line from analysis text
+ * Format: "SUMMARY: BULLISH | Risk: Medium | Confidence: 7/10"
+ */
+export function parseVerdict(text: string): VerdictSummary | null {
+  if (!text || typeof text !== 'string') return null;
+  
+  // Look for the SUMMARY line (case-insensitive)
+  const summaryMatch = text.match(/SUMMARY:\s*(BULLISH|BEARISH|NEUTRAL)\s*\|\s*Risk:\s*(Low|Medium|High)\s*\|\s*Confidence:\s*(\d+)\/10/i);
+  
+  if (!summaryMatch) return null;
+  
+  const verdict = summaryMatch[1].toUpperCase() as 'BULLISH' | 'BEARISH' | 'NEUTRAL';
+  const risk = summaryMatch[2] as 'Low' | 'Medium' | 'High';
+  const confidence = parseInt(summaryMatch[3], 10);
+  
+  if (confidence < 1 || confidence > 10 || isNaN(confidence)) return null;
+  
+  return { verdict, risk, confidence };
 }

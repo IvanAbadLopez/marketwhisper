@@ -138,6 +138,10 @@ Use this exact format:
   - [concern or risk point]
   - [another concern]
 
+After the bullets, add a summary line with this EXACT format:
+---
+SUMMARY: [BULLISH/BEARISH/NEUTRAL] | Risk: [Low/Medium/High] | Confidence: [1-10]/10
+
 Keep each bullet point concise (1-2 sentences max). Integrate both quantitative metrics (Finnhub) and qualitative insights (user texts) to provide actionable investment guidance.`;
 
   return prompt;

@@ -6,7 +6,7 @@
 
 // ===== LIB =====
 export { cn } from "./lib/utils";
-export { parseAnalysisBullets } from "./lib/parseAnalysis";
+export { parseAnalysisBullets, parseVerdict, type VerdictSummary } from "./lib/parseAnalysis";
 export type { ParsedContent, ParsedBullet, ParsedParagraph, IconKey } from "./lib/parseAnalysis";
 // Note: JobCancelledError and assertJobNotCancelled are server-only (import prisma)
 // Import directly from "@/shared/lib/jobCancellation" in server-side code only
