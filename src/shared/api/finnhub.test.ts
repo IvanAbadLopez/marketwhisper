@@ -3,7 +3,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { resolveTicker } from './finnhub';
+import { resolveTicker, fetchCompanyNews } from './finnhub';
 
 // Mock fetch globally
 global.fetch = vi.fn();
@@ -159,5 +159,125 @@ describe('resolveTicker', () => {
     const ticker = await resolveTicker('Apple');
     
     expect(ticker).toBe('AAPL');
+  });
+});
+
+describe('fetchCompanyNews', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('should fetch news for a ticker successfully', async () => {
+    const mockResponse = {
+      success: true,
+      ticker: 'AAPL',
+      news: [
+        {
+          title: 'Apple announces new product',
+          summary: 'Apple Inc. announced...',
+          publisher: 'Bloomberg',
+          link: 'https://example.com/news1',
+          publishedAt: '2026-07-15T10:00:00Z',
+          image: 'https://example.com/image1.jpg',
+        },
+        {
+          title: 'Apple stock rises',
+          summary: 'Apple shares gained...',
+          publisher: 'Reuters',
+          link: 'https://example.com/news2',
+          publishedAt: '2026-07-14T15:00:00Z',
+          image: null,
+        },
+      ],
+      count: 2,
+      fromDate: '2026-07-08',
+      toDate: '2026-07-15',
+      timestamp: '2026-07-15T12:00:00Z',
+    };
+
+    (global.fetch as any).mockResolvedValueOnce({
+      ok: true,
+      json: async () => mockResponse,
+    });
+
+    const news = await fetchCompanyNews('AAPL', 7);
+    
+    expect(news).toHaveLength(2);
+    expect(news[0].title).toBe('Apple announces new product');
+    expect(news[0].summary).toBe('Apple Inc. announced...');
+    expect(news[1].publisher).toBe('Reuters');
+    expect(global.fetch).toHaveBeenCalledWith(
+      expect.stringContaining('/api/news-finnhub/AAPL?days=7')
+    );
+  });
+
+  it('should return empty array for invalid ticker', async () => {
+    (global.fetch as any).mockResolvedValueOnce({
+      ok: false,
+      status: 404,
+      statusText: 'Not Found',
+    });
+
+    const news = await fetchCompanyNews('INVALID');
+    
+    expect(news).toEqual([]);
+  });
+
+  it('should handle rate limit errors', async () => {
+    (global.fetch as any).mockResolvedValueOnce({
+      ok: false,
+      status: 429,
+      statusText: 'Too Many Requests',
+    });
+
+    await expect(fetchCompanyNews('AAPL')).rejects.toThrow('rate limit exceeded');
+  });
+
+  it('should handle service unavailable errors', async () => {
+    (global.fetch as any).mockResolvedValueOnce({
+      ok: false,
+      status: 503,
+      statusText: 'Service Unavailable',
+    });
+
+    await expect(fetchCompanyNews('AAPL')).rejects.toThrow('service unavailable');
+  });
+
+  it('should return empty array for empty ticker', async () => {
+    const news1 = await fetchCompanyNews('');
+    const news2 = await fetchCompanyNews('   ');
+    
+    expect(news1).toEqual([]);
+    expect(news2).toEqual([]);
+    expect(global.fetch).not.toHaveBeenCalled();
+  });
+
+  it('should handle network errors', async () => {
+    (global.fetch as any).mockRejectedValueOnce(new Error('Network error'));
+
+    await expect(fetchCompanyNews('AAPL')).rejects.toThrow('Network error');
+  });
+
+  it('should normalize ticker to uppercase', async () => {
+    const mockResponse = {
+      success: true,
+      ticker: 'AAPL',
+      news: [],
+      count: 0,
+      fromDate: '2026-07-08',
+      toDate: '2026-07-15',
+      timestamp: '2026-07-15T12:00:00Z',
+    };
+
+    (global.fetch as any).mockResolvedValueOnce({
+      ok: true,
+      json: async () => mockResponse,
+    });
+
+    await fetchCompanyNews('aapl', 7);
+    
+    expect(global.fetch).toHaveBeenCalledWith(
+      expect.stringContaining('/api/news-finnhub/AAPL?days=7')
+    );
   });
 });

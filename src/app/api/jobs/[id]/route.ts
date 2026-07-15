@@ -5,7 +5,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-import { prisma } from "@/shared";
+import { prisma } from "@/shared/api/prisma";
 import { recalculateCompanyAggregatesFromScratch } from "@/features/analyze-text/api/processAnalysis";
 import { recomputeCompanyValuation } from "@/entities/company/api/recomputeValuation";
 

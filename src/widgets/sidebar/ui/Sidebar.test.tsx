@@ -15,7 +15,7 @@ describe("Sidebar Component", () => {
     expect(screen.getByText("Dashboard")).toBeInTheDocument();
     expect(screen.getByText("Analyze")).toBeInTheDocument();
     expect(screen.getByText("Companies")).toBeInTheDocument();
-    expect(screen.getByText("Insights")).toBeInTheDocument();
+    expect(screen.getByText("News")).toBeInTheDocument();
   });
 
   it("renders MarketWhisper logo", () => {

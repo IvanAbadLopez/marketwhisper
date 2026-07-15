@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { after } from "next/server";
 import { auth } from "@/lib/auth";
-import { prisma } from "@/shared";
+import { prisma } from "@/shared/api/prisma";
 import { processAnalysis } from "@/features/analyze-text/api/processAnalysis";
 
 /**

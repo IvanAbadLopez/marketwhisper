@@ -56,7 +56,7 @@ export function Sidebar() {
             'nav.dashboard': 'Dashboard',
             'nav.analyze': 'Analyze',
             'nav.companies': 'Companies',
-            'nav.insights': 'Insights',
+            'nav.news': 'News',
             'nav.jobs': 'Processes',
           };
 

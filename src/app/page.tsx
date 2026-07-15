@@ -1,7 +1,7 @@
 import { auth } from "@/lib/auth";
 import { MainLayout } from "@/widgets/layout";
 import { redirect } from "next/navigation";
-import { prisma } from "@/shared";
+import { prisma } from "@/shared/api/prisma";
 import { RecentJobsList } from "@/widgets/job-queue/RecentJobsList";
 
 export default async function Home() {

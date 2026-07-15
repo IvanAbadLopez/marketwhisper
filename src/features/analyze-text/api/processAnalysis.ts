@@ -9,12 +9,11 @@ import {
   resolveTicker,
   fetchFinnhubData,
   createFinancialSnapshot,
-  getCachedFinnhub,
-  prisma,
-  assertJobNotCancelled,
-  JobCancelledError,
   type FinnhubData,
 } from "@/shared";
+import { getCachedFinnhub } from "@/shared/api/finnhub-server";
+import { prisma } from "@/shared/api/prisma";
+import { assertJobNotCancelled, JobCancelledError } from "@/shared/lib/jobCancellation";
 import { recomputeCompanyValuation } from "@/entities/company/api/recomputeValuation";
 import { processEnrichment } from "@/features/enrich-company/api/processEnrichment";
 

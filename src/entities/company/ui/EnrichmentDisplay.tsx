@@ -6,7 +6,7 @@
  * @module entities/company/ui
  */
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { 
   TrendingUp, 
   TrendingDown, 
@@ -20,61 +20,6 @@ import {
 } from "lucide-react";
 import { AnalystSentimentChart } from "./AnalystSentimentChart";
 import { calcAnalystScore, analystScoreLabel } from "@/features/enrich-company/lib/analystScore";
-import { AnalysisContent } from "@/shared/ui/AnalysisContent";
-
-interface VerdictInfo {
-  verdict: 'BULLISH' | 'BEARISH' | 'NEUTRAL';
-  risk: 'Low' | 'Medium' | 'High';
-  confidence: number;
-}
-
-/**
- * Parse VERDICT line from AI analysis
- * Expected format: "VERDICT: BULLISH | Risk: Medium | Confidence: 7/10"
- */
-function parseVerdict(text: string): VerdictInfo | null {
-  const firstLine = text.split('\n')[0];
-  const verdictMatch = firstLine.match(/VERDICT:\s*(BULLISH|BEARISH|NEUTRAL)/i);
-  const riskMatch = firstLine.match(/Risk:\s*(Low|Medium|High)/i);
-  const confidenceMatch = firstLine.match(/Confidence:\s*(\d+)\/10/i);
-
-  if (verdictMatch && riskMatch && confidenceMatch) {
-    return {
-      verdict: verdictMatch[1].toUpperCase() as 'BULLISH' | 'BEARISH' | 'NEUTRAL',
-      risk: riskMatch[1] as 'Low' | 'Medium' | 'High',
-      confidence: parseInt(confidenceMatch[1], 10),
-    };
-  }
-  return null;
-}
-
-/**
- * Get color classes for verdict badge
- */
-function getVerdictColor(verdict: 'BULLISH' | 'BEARISH' | 'NEUTRAL'): string {
-  switch (verdict) {
-    case 'BULLISH':
-      return 'bg-green-500/20 text-green-400 border-green-500/30';
-    case 'BEARISH':
-      return 'bg-red-500/20 text-red-400 border-red-500/30';
-    case 'NEUTRAL':
-      return 'bg-zinc-500/20 text-zinc-400 border-zinc-500/30';
-  }
-}
-
-/**
- * Get color classes for risk badge
- */
-function getRiskColor(risk: 'Low' | 'Medium' | 'High'): string {
-  switch (risk) {
-    case 'Low':
-      return 'bg-blue-500/20 text-blue-400 border-blue-500/30';
-    case 'Medium':
-      return 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30';
-    case 'High':
-      return 'bg-orange-500/20 text-orange-400 border-orange-500/30';
-  }
-}
 
 interface EnrichmentData {
   id: string;
@@ -113,16 +58,16 @@ interface EnrichmentData {
     strongSell: number;
   }>;
   aiAnalysis: string | null;
+  aiAnalysisEs: string | null;
   ollamaModel: string | null;
-  createdAt: string; // Comes as string from JSON
+  createdAt: Date;
 }
 
 interface EnrichmentDisplayProps {
   enrichment: EnrichmentData | null;
-  mode?: 'full' | 'financial' | 'ai'; // Control what sections to show
 }
 
-export function EnrichmentDisplay({ enrichment, mode = 'full' }: EnrichmentDisplayProps) {
+export function EnrichmentDisplay({ enrichment }: EnrichmentDisplayProps) {
   const [showFullAnalysis, setShowFullAnalysis] = useState(false);
   const [showFinancials, setShowFinancials] = useState(false);
   const [showNews, setShowNews] = useState(false);
@@ -139,7 +84,7 @@ export function EnrichmentDisplay({ enrichment, mode = 'full' }: EnrichmentDispl
     );
   }
 
-  const { priceData, financialData, newsHeadlines, recommendations, aiAnalysis, createdAt } = enrichment;
+  const { priceData, financialData, newsHeadlines, recommendations, aiAnalysis, aiAnalysisEs, createdAt } = enrichment;
 
   const formatCurrency = (value: number | null | undefined, compact = true) => {
     if (value === null || value === undefined) return "N/A";
@@ -156,13 +101,6 @@ export function EnrichmentDisplay({ enrichment, mode = 'full' }: EnrichmentDispl
   const dayChangeColor = (priceData?.dayChange || 0) >= 0 ? "text-green-400" : "text-red-400";
   const DayChangeIcon = (priceData?.dayChange || 0) >= 0 ? TrendingUp : TrendingDown;
 
-  // Parse verdict from AI analysis
-  const verdictInfo = aiAnalysis ? parseVerdict(aiAnalysis) : null;
-  // Remove the first line (VERDICT) from the display text if parsed successfully
-  const analysisBody = verdictInfo && aiAnalysis 
-    ? aiAnalysis.split('\n').slice(1).join('\n').trim()
-    : aiAnalysis;
-
   // Calculate recommendation sentiment
   const latestRec = recommendations && recommendations.length > 0 ? recommendations[recommendations.length - 1] : null;
   const totalRecs = latestRec ? latestRec.strongBuy + latestRec.buy + latestRec.hold + latestRec.sell + latestRec.strongSell : 0;
@@ -170,7 +108,7 @@ export function EnrichmentDisplay({ enrichment, mode = 'full' }: EnrichmentDispl
   return (
     <div className="space-y-4">
       {/* Price Summary */}
-      {(mode === 'full' || mode === 'financial') && priceData && (
+      {priceData && (
         <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-6">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
@@ -207,7 +145,7 @@ export function EnrichmentDisplay({ enrichment, mode = 'full' }: EnrichmentDispl
       )}
 
       {/* AI Analysis */}
-      {(mode === 'full' || mode === 'ai') && aiAnalysis && (
+      {aiAnalysis && (
         <div className="bg-gradient-to-br from-purple-900/20 to-blue-900/20 border border-purple-500/30 rounded-lg p-6">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
@@ -217,7 +155,6 @@ export function EnrichmentDisplay({ enrichment, mode = 'full' }: EnrichmentDispl
                 {enrichment.ollamaModel || "llama3.1:8b"}
               </span>
             </div>
-            {/* Expand/Collapse Button */}
             <button
               onClick={() => setShowFullAnalysis(!showFullAnalysis)}
               className="text-sm text-purple-400 hover:text-purple-300 flex items-center gap-1"
@@ -236,29 +173,16 @@ export function EnrichmentDisplay({ enrichment, mode = 'full' }: EnrichmentDispl
             </button>
           </div>
 
-          {/* Verdict Badge */}
-          {verdictInfo && (
-            <div className="flex flex-wrap items-center gap-2 mb-3">
-              <span className={`px-3 py-1 rounded-full text-sm font-semibold border ${getVerdictColor(verdictInfo.verdict)}`}>
-                {verdictInfo.verdict}
-              </span>
-              <span className={`px-3 py-1 rounded-full text-sm font-semibold border ${getRiskColor(verdictInfo.risk)}`}>
-                Risk: {verdictInfo.risk}
-              </span>
-              <span className="px-3 py-1 rounded-full text-sm font-semibold border bg-purple-500/20 text-purple-400 border-purple-500/30">
-                Confidence: {verdictInfo.confidence}/10
-              </span>
-            </div>
-          )}
-
-          <div className={showFullAnalysis ? "" : "max-h-48 overflow-hidden"}>
-            <AnalysisContent text={analysisBody} />
+          <div className={`prose prose-invert max-w-none ${showFullAnalysis ? "" : "line-clamp-4"}`}>
+            <p className="text-sm text-zinc-300 whitespace-pre-wrap">
+              {aiAnalysis}
+            </p>
           </div>
         </div>
       )}
 
       {/* Financials Collapsible */}
-      {(mode === 'full' || mode === 'financial') && financialData && (
+      {financialData && (
         <div className="bg-zinc-900 border border-zinc-800 rounded-lg overflow-hidden">
           <button
             onClick={() => setShowFinancials(!showFinancials)}
@@ -307,7 +231,7 @@ export function EnrichmentDisplay({ enrichment, mode = 'full' }: EnrichmentDispl
       )}
 
       {/* News Collapsible */}
-      {(mode === 'full' || mode === 'financial') && newsHeadlines && newsHeadlines.length > 0 && (
+      {newsHeadlines && newsHeadlines.length > 0 && (
         <div className="bg-zinc-900 border border-zinc-800 rounded-lg overflow-hidden">
           <button
             onClick={() => setShowNews(!showNews)}
@@ -354,7 +278,7 @@ export function EnrichmentDisplay({ enrichment, mode = 'full' }: EnrichmentDispl
       )}
 
       {/* Analyst Recommendations */}
-      {(mode === 'full' || mode === 'financial') && recommendations && recommendations.length > 0 && (
+      {recommendations && recommendations.length > 0 ? (
         <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-6">
           <div className="flex items-center gap-2 mb-4">
             <Calendar className="h-5 w-5 text-green-400" />
@@ -416,6 +340,18 @@ export function EnrichmentDisplay({ enrichment, mode = 'full' }: EnrichmentDispl
             </div>
           )}
         </div>
+      ) : (
+        recommendations !== undefined && (
+          <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-6">
+            <div className="flex items-center gap-2 mb-3">
+              <Calendar className="h-5 w-5 text-zinc-500" />
+              <h3 className="text-lg font-semibold text-white">Analyst Sentiment</h3>
+            </div>
+            <p className="text-sm text-zinc-500 text-center">
+              Analyst recommendations not available for this ticker
+            </p>
+          </div>
+        )
       )}
     </div>
   );

@@ -17,7 +17,7 @@ export const ROUTES = {
   SITUATIONS: "/situations",
   VIDEOS: "/videos",
   SEARCH: "/search",
-  INSIGHTS: "/insights",
+  NEWS: "/news",
   CHAT: "/chat",
   DEBUG: "/debug",
 } as const;
@@ -30,6 +30,7 @@ export const API_ROUTES = {
   ANALYZE: "/api/analyze",
   COMPANIES: "/api/companies",
   COMPANY_DETAIL: (ticker: string) => `/api/companies/${ticker}`,
+  NEWS: "/api/news",
   CONTENT: "/api/content",
   CONTENT_DETAIL: (id: string) => `/api/content/${id}`,
 } as const;

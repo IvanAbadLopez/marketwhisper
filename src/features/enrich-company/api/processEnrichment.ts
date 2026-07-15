@@ -4,17 +4,7 @@
  */
 
 import { env } from "@/shared/config/env";
-import { 
-  fetchFinnhubData, 
-  formatFinancialsBlock,
-  calcAnalystScore,
-  analystScoreLabel,
-  assertJobNotCancelled,
-  JobCancelledError,
-  type FinnhubData,
-  type AnalystRecommendation,
-} from "@/shared";
-import { recomputeCompanyValuation } from "@/entities/company/api/recomputeValuation";
+import { calcAnalystScore, analystScoreLabel, type AnalystRecommendation } from "../lib/analystScore";
 
 interface UserAnalysis {
   text: string;
@@ -25,7 +15,40 @@ interface UserAnalysis {
   createdAt: Date;
 }
 
-// FinnhubData and AnalystRecommendation now imported from @/shared
+interface FinnhubData {
+  success: boolean;
+  ticker: string;
+  companyInfo?: {
+    ticker: string;
+    name: string | null;
+    sector: string | null;
+    industry: string | null;
+    description: string | null;
+    website: string | null;
+    employees: number | null;
+    marketCap: number | null;
+  };
+  financials?: {
+    revenue: number | null;
+    netIncome: number | null;
+    eps: number | null;
+    peRatio: number | null;
+    debtToEquity: number | null;
+    dividendYield: number | null;
+    profitMargins: number | null;
+  };
+  price?: {
+    currentPrice: number | null;
+    previousClose: number | null;
+    dayChange: number | null;
+    dayChangePercent: number | null;
+    fiftyTwoWeekHigh: number | null;
+    fiftyTwoWeekLow: number | null;
+    volume: number | null;
+    avgVolume: number | null;
+  };
+  recommendations?: AnalystRecommendation[];
+}
 
 interface OllamaResponse {
   model: string;
@@ -42,44 +65,76 @@ function generateAnalysisPrompt(
   data: FinnhubData, 
   userAnalyses: UserAnalysis[]
 ): string {
-  // Use shared formatFinancialsBlock for consistency
-  let prompt = `You are a financial analyst AI. Analyze ${ticker} using Finnhub data and user analyses.\n\n**Data:**\n${formatFinancialsBlock(ticker, data)}`;
+  const { companyInfo, financials, price } = data;
 
-  // Add user text analyses if available (limit to 5, shorter excerpts)
+  let prompt = `You are a financial analyst AI. Analyze the following data for ${ticker} (${companyInfo?.name || "Unknown Company"}) sourced from Finnhub and user-submitted text analyses, then provide a comprehensive investment analysis.
+
+**Company Overview:**
+- Sector: ${companyInfo?.sector || "N/A"}
+- Industry: ${companyInfo?.industry || "N/A"}
+- Market Cap: ${companyInfo?.marketCap ? `$${(companyInfo.marketCap / 1e9).toFixed(2)}B` : "N/A"}
+- Website: ${companyInfo?.website || "N/A"}
+
+**Financial Metrics:**
+- EPS: ${financials?.eps?.toFixed(2) || "N/A"}
+- P/E Ratio: ${financials?.peRatio?.toFixed(2) || "N/A"}
+- Dividend Yield: ${financials?.dividendYield ? `${(financials.dividendYield * 100).toFixed(2)}%` : "N/A"}
+- Profit Margin: ${financials?.profitMargins ? `${(financials.profitMargins * 100).toFixed(2)}%` : "N/A"}
+
+**52-Week Performance:**
+- 52-Week High: $${price?.fiftyTwoWeekHigh?.toFixed(2) || "N/A"}
+- 52-Week Low: $${price?.fiftyTwoWeekLow?.toFixed(2) || "N/A"}`;
+
+  // Add analyst recommendations if available
+  if (data.recommendations && data.recommendations.length > 0) {
+    const latest = data.recommendations[data.recommendations.length - 1];
+    const score = calcAnalystScore(latest);
+    const label = analystScoreLabel(score);
+    
+    prompt += `\n\n**Analyst Recommendations (Latest Period: ${latest.period}):**
+- Strong Buy: ${latest.strongBuy} | Buy: ${latest.buy} | Hold: ${latest.hold} | Sell: ${latest.sell} | Strong Sell: ${latest.strongSell}
+- Consensus Score: ${score !== null ? score.toFixed(2) : "N/A"} (${label})`;
+  }
+
+  // Add user text analyses if available
   if (userAnalyses.length > 0) {
-    prompt += `\n\n**User Analyses (${userAnalyses.length} total):**`;
-    userAnalyses.slice(0, 5).forEach((analysis, idx) => {
-      prompt += `\n${idx + 1}. ${analysis.sentiment} (${analysis.reliabilityScore}/10): "${analysis.text.substring(0, 120)}${analysis.text.length > 120 ? '...' : ''}" - ${analysis.reasoning}`;
+    prompt += `\n\n**User Text Analyses (${userAnalyses.length} total):**\n`;
+    userAnalyses.slice(0, 10).forEach((analysis, idx) => {
+      const source = analysis.source ? ` from ${analysis.source}` : '';
+      prompt += `\n${idx + 1}. **${analysis.sentiment}** (Reliability: ${analysis.reliabilityScore}/10)${source}
+   Text: "${analysis.text.substring(0, 200)}${analysis.text.length > 200 ? '...' : ''}"
+   AI Reasoning: ${analysis.reasoning}\n`;
     });
     
-    if (userAnalyses.length > 5) {
-      prompt += `\n... (${userAnalyses.length - 5} more)`;
+    if (userAnalyses.length > 10) {
+      prompt += `\n... and ${userAnalyses.length - 10} more analyses.\n`;
     }
   }
 
-  prompt += `\n\n**Task:**
-Provide a concise investment recommendation starting with:
-VERDICT: [BULLISH/BEARISH/NEUTRAL] | Risk: [Low/Medium/High] | Confidence: [1-10]/10
+  prompt += `\n**Your Task:**
+Provide a structured analysis with the following sections:
+1. **Executive Summary** (2-3 sentences combining Finnhub metrics and user sentiment)
+2. **Financial Health** (assess profitability, valuation from Finnhub data)
+3. **Market Sentiment** (synthesize insights from user text analyses)
+4. **Investment Outlook** (bullish, bearish, or neutral with reasoning based on ALL available data)
 
-Then 3-5 bullet points with:
-• Key strengths/weaknesses
-• Financial health assessment
-• Market sentiment synthesis
-• Investment outlook
-
-Be concise, data-driven, and actionable.`;
+Keep your analysis concise, objective, and data-driven. Integrate both quantitative metrics (Finnhub) and qualitative insights (user texts) to provide actionable investment guidance.`;
 
   return prompt;
 }
 
-// normalizeTicker now imported from @/shared
+/**
+ * Normalize ticker by removing special characters like $
+ */
+export function normalizeTicker(ticker: string): string {
+  return ticker.replace(/^\$/, '').trim().toUpperCase();
+}
 
 /**
  * Call Ollama API to generate AI analysis
  */
-async function generateOllamaAnalysis(prompt: string): Promise<string> {
+async function generateOllamaAnalysis(prompt: string, model: string = "llama3.1:8b"): Promise<string> {
   const ollamaUrl = env.OLLAMA_URL;
-  const model = env.OLLAMA_MODEL;
   
   try {
     const response = await fetch(`${ollamaUrl}/api/generate`, {
@@ -89,11 +144,10 @@ async function generateOllamaAnalysis(prompt: string): Promise<string> {
         model,
         prompt,
         stream: false,
-        keep_alive: '30m', // Keep model in memory for 30 minutes (avoids cold-start)
         options: {
           temperature: 0.7,
           top_p: 0.9,
-          num_predict: 400, // Reduced for concise output
+          num_predict: 1000,
         }
       }),
     });
@@ -110,7 +164,46 @@ async function generateOllamaAnalysis(prompt: string): Promise<string> {
   }
 }
 
-// fetchFinnhubData now imported from @/shared
+/**
+ * Fetch financial data from enrichment service (Python FastAPI + Finnhub)
+ */
+export async function fetchFinnhubData(ticker: string): Promise<FinnhubData> {
+  const enrichmentUrl = env.ENRICHMENT_SERVICE_URL;
+  const normalizedTicker = normalizeTicker(ticker);
+  
+  try {
+    const response = await fetch(`${enrichmentUrl}/api/enrich-finnhub/${normalizedTicker}`);
+    
+    if (!response.ok) {
+      let errorDetail = response.statusText;
+      try {
+        const errorData = await response.json();
+        if (errorData.detail) {
+          errorDetail = errorData.detail;
+        }
+      } catch {
+        // If can't parse JSON, use statusText
+      }
+
+      if (response.status === 404) {
+        throw new Error(`Ticker ${ticker} not found in Finnhub. Please verify the ticker symbol.`);
+      }
+      if (response.status === 429) {
+        throw new Error(`Finnhub rate limit exceeded. Please wait a few minutes before trying again.`);
+      }
+      if (response.status === 503) {
+        throw new Error(`Finnhub service unavailable. FINNHUB_API_KEY may not be configured.`);
+      }
+      throw new Error(`Enrichment service error: ${errorDetail}`);
+    }
+
+    const data: FinnhubData = await response.json();
+    return data;
+  } catch (error: unknown) {
+    console.error("Failed to fetch Finnhub data:", error);
+    throw error;
+  }
+}
 
 /**
  * Process Finnhub enrichment in the background
@@ -136,11 +229,6 @@ export async function processEnrichment(
         where: { id: jobId },
         data: { status: "PROCESSING" },
       });
-    }
-
-    // Checkpoint: check if job was cancelled before starting
-    if (jobId) {
-      await assertJobNotCancelled(jobId);
     }
 
     // 1. Fetch financial data from Finnhub (via enrichment service)
@@ -185,53 +273,28 @@ export async function processEnrichment(
       },
     });
 
-    // Checkpoint: check cancellation before expensive LLM call
-    if (jobId) {
-      await assertJobNotCancelled(jobId);
-    }
-
     // 4. Generate AI analysis with Ollama (combining Finnhub data + user texts)
     console.log(`[Enrich-Finnhub:${enrichmentId}] Generating Ollama analysis for ${ticker} (${userAnalyses.length} user analyses)...`);
     const prompt = generateAnalysisPrompt(ticker, finnhubData, userAnalyses);
     const aiAnalysis = await generateOllamaAnalysis(prompt);
 
-    // DEBUG: Log what we're about to save
-    console.log(`[Enrich-Finnhub:${enrichmentId}] DEBUG - finnhubData keys:`, Object.keys(finnhubData));
-    console.log(`[Enrich-Finnhub:${enrichmentId}] DEBUG - has financials:`, !!finnhubData.financials);
-    console.log(`[Enrich-Finnhub:${enrichmentId}] DEBUG - has price:`, !!finnhubData.price);
-    if (finnhubData.financials) {
-      console.log(`[Enrich-Finnhub:${enrichmentId}] DEBUG - financials keys:`, Object.keys(finnhubData.financials));
-    }
-
-    // Checkpoint: check cancellation before writing final data
-    if (jobId) {
-      await assertJobNotCancelled(jobId);
-    }
-
-    // 5. Store final result and mark as completed (translation deferred to on-demand)
+    // 5. Store final result and mark as completed
+    // Note: Translation is done on-demand, not persisted
     await prisma.companyEnrichment.update({
       where: { id: enrichmentId },
       data: {
         status: "COMPLETED",
-        financialData: finnhubData.financials as any,  // Store for valuation
-        priceData: finnhubData.price as any,            // Store for valuation
         recommendations: (finnhubData.recommendations ?? undefined) as any,
         aiAnalysis,
-        ollamaModel: env.OLLAMA_MODEL,
+        ollamaModel: "llama3.1:8b",
         errorMessage: null,
       },
     });
 
-    // 5b. Recalculate valuation (global score + target price)
-    await recomputeCompanyValuation(companyId);
-
-    // 6. Update job status if exists (use updateMany to avoid overwriting CANCELLED)
+    // 6. Update job status if exists
     if (jobId) {
-      await prisma.job.updateMany({
-        where: { 
-          id: jobId,
-          status: "PROCESSING", // Only update if still PROCESSING (not CANCELLED)
-        },
+      await prisma.job.update({
+        where: { id: jobId },
         data: {
           status: "COMPLETED",
           result: {
@@ -244,12 +307,6 @@ export async function processEnrichment(
 
     console.log(`[Enrich-Finnhub:${enrichmentId}] Successfully enriched ${ticker}`);
   } catch (error: unknown) {
-    // If job was cancelled, don't mark as FAILED (already CANCELLED)
-    if (error instanceof JobCancelledError) {
-      console.log(`[Enrich-Finnhub:${enrichmentId}] Enrichment cancelled by user`);
-      return;
-    }
-
     console.error(`[Enrich-Finnhub:${enrichmentId}] Failed to enrich ${ticker}:`, error);
     const errorMessage = error instanceof Error ? error.message : "Failed to enrich company with Finnhub";
     

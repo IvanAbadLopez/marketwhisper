@@ -77,6 +77,15 @@ export interface FinancialSnapshot {
   fetchedAt: string; // ISO timestamp
 }
 
+export interface NewsItem {
+  title: string;
+  summary: string | null;
+  publisher: string | null;
+  link: string | null;
+  publishedAt: string | null; // ISO timestamp
+  image: string | null;
+}
+
 /**
  * Resolve a company name to its ticker using Finnhub symbol lookup
  * Prefers Common Stock listings and avoids exotic symbols
@@ -281,38 +290,59 @@ export function createFinancialSnapshot(data: FinnhubData): FinancialSnapshot {
   };
 }
 
+// Note: getCachedFinnhub has been moved to finnhub-server.ts (server-only, uses prisma)
+
 /**
- * Get cached financial data from recent Analysis records
- * Returns cached data if found within TTL, otherwise null
+ * Fetch recent news for a company from Finnhub
+ * 
+ * @param ticker - Stock ticker symbol (e.g., AAPL, MSFT)
+ * @param days - Number of days to look back (default: 7)
+ * @returns Array of news items with title, summary, source, url, publishedAt
  */
-export async function getCachedFinnhub(
-  companyId: string,
-  ttlHours: number = 24
-): Promise<FinancialSnapshot | null> {
-  const { prisma } = await import('@/shared/api/prisma');
-  
-  const cutoff = new Date(Date.now() - ttlHours * 60 * 60 * 1000);
-  
+export async function fetchCompanyNews(
+  ticker: string,
+  days: number = 7
+): Promise<NewsItem[]> {
+  if (!ticker || !ticker.trim()) {
+    console.error('[fetchCompanyNews] Invalid ticker provided');
+    return [];
+  }
+
+  const normalizedTicker = ticker.trim().toUpperCase();
+  const enrichmentUrl = env.ENRICHMENT_SERVICE_URL;
+
   try {
-    // Find the most recent analysis with financialSnapshot for this company
-    const recentAnalysis = await prisma.analysis.findFirst({
-      where: {
-        companyId,
-        createdAt: { gte: cutoff },
-      },
-      orderBy: { createdAt: 'desc' },
-      select: { financialSnapshot: true, createdAt: true },
-    });
-    
-    if (!recentAnalysis || !recentAnalysis.financialSnapshot) {
-      return null;
+    const response = await fetch(
+      `${enrichmentUrl}/api/news-finnhub/${normalizedTicker}?days=${days}`
+    );
+
+    if (!response.ok) {
+      if (response.status === 429) {
+        throw new Error('Finnhub rate limit exceeded. Please try again later.');
+      }
+      if (response.status === 503) {
+        throw new Error('Finnhub service unavailable. Please check configuration.');
+      }
+      if (response.status === 404) {
+        console.warn(`[fetchCompanyNews] No news found for ticker: ${normalizedTicker}`);
+        return [];
+      }
+      throw new Error(`Failed to fetch news: ${response.statusText}`);
     }
-    
-    console.log(`[getCachedFinnhub] Cache hit for company ${companyId} (age: ${Math.round((Date.now() - new Date(recentAnalysis.createdAt).getTime()) / 1000 / 60)} min)`);
-    
-    return recentAnalysis.financialSnapshot as unknown as FinancialSnapshot;
+
+    const data = await response.json();
+
+    if (!data.success || !Array.isArray(data.news)) {
+      console.error('[fetchCompanyNews] Invalid response format:', data);
+      return [];
+    }
+
+    console.log(`[fetchCompanyNews] Fetched ${data.news.length} articles for ${normalizedTicker} (${days} days)`);
+
+    return data.news;
   } catch (error) {
-    console.error('[getCachedFinnhub] Error reading cache:', error);
-    return null;
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error(`[fetchCompanyNews] Error fetching news for ${normalizedTicker}:`, message);
+    throw error;
   }
 }

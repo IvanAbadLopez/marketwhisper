@@ -3,6 +3,19 @@
  * @module entities/company
  */
 
+export interface ContentSummary {
+  id: string;
+  title: string | null;
+  contentType: string;
+  date: string;
+  status: string;
+}
+
+export interface ContentCompany {
+  id: string;
+  content: ContentSummary;
+}
+
 export interface AnalysisSummary {
   id: string;
   sentiment: string;
@@ -26,11 +39,15 @@ export interface Company {
   globalScore: number | null;
   globalScoreLabel: string | null;
   _count?: {
+    content: number;
+    mentions: number;
     analyses: number;
   };
+  content?: ContentCompany[];
   analyses?: AnalysisSummary[];
 }
 
 export interface CompanyWithDetails extends Company {
+  content: ContentCompany[];
   analyses: AnalysisSummary[];
 }

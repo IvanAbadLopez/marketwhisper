@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-import { prisma } from "@/shared";
+import { prisma } from "@/shared/api/prisma";
 
 export async function GET(
   request: Request,

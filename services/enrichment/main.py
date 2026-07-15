@@ -9,7 +9,7 @@ from pydantic import BaseModel
 from typing import Optional, List, Dict, Any
 import finnhub
 import os
-from datetime import datetime
+from datetime import datetime, timedelta
 import logging
 import urllib3
 import time
@@ -83,9 +83,11 @@ class PriceData(BaseModel):
 class NewsItem(BaseModel):
     """News headline"""
     title: str
+    summary: Optional[str] = None
     publisher: Optional[str] = None
     link: Optional[str] = None
     publishedAt: Optional[datetime] = None
+    image: Optional[str] = None
 
 class Recommendation(BaseModel):
     """Analyst recommendation"""
@@ -347,6 +349,102 @@ async def enrich_company_finnhub(ticker: str):
         raise HTTPException(
             status_code=500,
             detail=f"Failed to fetch data from Finnhub for {ticker}. Error: {error_msg}"
+        )
+
+
+@app.get("/api/news-finnhub/{ticker}")
+async def get_company_news_finnhub(ticker: str, days: int = 7):
+    """
+    Fetch recent news for a company from Finnhub
+    
+    Args:
+        ticker: Stock ticker symbol (e.g., AAPL, MSFT, GOOGL)
+        days: Number of days to look back (default: 7, max: 365)
+    
+    Returns:
+        List of news articles with title, summary, source, url, publishedAt
+    """
+    if not finnhub_client:
+        raise HTTPException(
+            status_code=503,
+            detail="Finnhub service unavailable. FINNHUB_API_KEY not configured."
+        )
+    
+    # Validate days parameter
+    if days < 1 or days > 365:
+        raise HTTPException(
+            status_code=400,
+            detail="Days parameter must be between 1 and 365."
+        )
+    
+    start_time = time.time()
+    logger.info(f"[FINNHUB NEWS START] Ticker: {ticker} | Days: {days} | Time: {datetime.now().isoformat()}")
+    
+    try:
+        ticker_upper = ticker.upper()
+        
+        # Calculate date range (Finnhub expects YYYY-MM-DD format)
+        to_date = datetime.now()
+        from_date = to_date - timedelta(days=days)
+        
+        to_str = to_date.strftime('%Y-%m-%d')
+        from_str = from_date.strftime('%Y-%m-%d')
+        
+        logger.info(f"[FINNHUB NEWS] Fetching news for {ticker_upper} from {from_str} to {to_str}")
+        
+        # Call Finnhub company_news
+        try:
+            news_data = finnhub_client.company_news(ticker_upper, _from=from_str, to=to_str)
+        except Exception as e:
+            error_msg = str(e)
+            logger.error(f"[FINNHUB NEWS] API call failed for {ticker}: {error_msg}")
+            if "429" in error_msg or "rate limit" in error_msg.lower():
+                raise HTTPException(
+                    status_code=429,
+                    detail="Finnhub rate limit exceeded. Please try again later."
+                )
+            raise HTTPException(
+                status_code=500,
+                detail=f"Failed to fetch news from Finnhub for {ticker}. Error: {error_msg}"
+            )
+        
+        # Map Finnhub response to NewsItem schema
+        news_items = []
+        for item in (news_data or []):
+            news_items.append(NewsItem(
+                title=item.get('headline', ''),
+                summary=item.get('summary', ''),
+                publisher=item.get('source', ''),
+                link=item.get('url', ''),
+                publishedAt=datetime.fromtimestamp(item.get('datetime', 0)) if item.get('datetime') else None,
+                image=item.get('image', '')
+            ))
+        
+        total_elapsed = time.time() - start_time
+        logger.info(
+            f"[FINNHUB NEWS COMPLETE] {ticker_upper} | "
+            f"Articles: {len(news_items)} | "
+            f"Total time: {total_elapsed:.2f}s"
+        )
+        
+        return {
+            "success": True,
+            "ticker": ticker_upper,
+            "news": news_items,
+            "count": len(news_items),
+            "fromDate": from_str,
+            "toDate": to_str,
+            "timestamp": datetime.now()
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        error_msg = str(e)
+        logger.error(f"[FINNHUB NEWS] Unexpected error for {ticker}: {error_msg}", exc_info=True)
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to fetch news for {ticker}. Error: {error_msg}"
         )
 
 
