@@ -58,49 +58,49 @@ export function NewsCard({ news, ticker }: NewsCardProps) {
   };
 
   return (
-    <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg p-5 hover:border-zinc-300 dark:hover:border-zinc-700 transition-colors">
+    <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg p-4 hover:border-zinc-300 dark:hover:border-zinc-700 transition-colors flex flex-col h-full">
       {/* Header: Publisher and Date */}
-      <div className="flex items-center justify-between mb-3 text-sm text-zinc-500 dark:text-zinc-500">
+      <div className="flex items-center justify-between mb-2 text-xs text-zinc-500 dark:text-zinc-500">
         <span className="font-medium">{news.publisher || "Unknown Source"}</span>
         <span>{formatRelativeDate(news.publishedAt)}</span>
       </div>
 
       {/* Title */}
-      <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100 mb-2 leading-snug">
+      <h3 className="text-base font-semibold text-zinc-900 dark:text-zinc-100 mb-2 leading-snug line-clamp-2">
         {news.title}
       </h3>
 
       {/* Summary */}
       {news.summary && (
-        <p className="text-sm text-zinc-600 dark:text-zinc-400 mb-4 line-clamp-3">
+        <p className="text-sm text-zinc-600 dark:text-zinc-400 mb-3 line-clamp-2">
           {news.summary}
         </p>
       )}
 
       {/* Image */}
       {news.image && (
-        <div className="mb-4 rounded-md overflow-hidden">
+        <div className="mb-3 rounded-md overflow-hidden">
           <img 
             src={news.image} 
             alt={news.title}
-            className="w-full h-40 object-cover"
+            className="w-full h-32 object-cover"
             loading="lazy"
           />
         </div>
       )}
 
       {/* Actions */}
-      <div className="flex items-center gap-3 mt-4">
+      <div className="flex items-center gap-2 mt-auto pt-3">
         {/* Read Full Article */}
         {news.link && (
           <a
             href={news.link}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-2 text-sm text-blue-600 dark:text-blue-400 hover:underline"
+            className="flex items-center gap-1.5 text-xs text-blue-600 dark:text-blue-400 hover:underline"
           >
-            <ExternalLink className="w-4 h-4" />
-            Read article
+            <ExternalLink className="w-3.5 h-3.5" />
+            Read
           </a>
         )}
 
@@ -109,7 +109,7 @@ export function NewsCard({ news, ticker }: NewsCardProps) {
           onClick={handleAnalyze}
           disabled={isAnalyzing || success}
           className={`
-            ml-auto flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium
+            ml-auto flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium
             transition-colors
             ${
               success
@@ -121,8 +121,8 @@ export function NewsCard({ news, ticker }: NewsCardProps) {
             disabled:opacity-50
           `}
         >
-          <Sparkles className={`w-4 h-4 ${isAnalyzing ? "animate-spin" : ""}`} />
-          {success ? "Queued!" : isAnalyzing ? "Analyzing..." : "Analyze as text"}
+          <Sparkles className={`w-3.5 h-3.5 ${isAnalyzing ? "animate-spin" : ""}`} />
+          {success ? "Queued!" : isAnalyzing ? "Analyzing..." : "Analyze"}
         </button>
       </div>
 

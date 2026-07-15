@@ -208,7 +208,7 @@ export default function NewsPage() {
                       {newsData.count} article{newsData.count === 1 ? "" : "s"} · Last {newsData.days} days
                     </span>
                   </div>
-                  <div className="grid gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {newsData.news.map((article, index) => (
                       <NewsCard 
                         key={`${article.link}-${index}`} 
