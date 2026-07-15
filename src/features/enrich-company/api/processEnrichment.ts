@@ -133,7 +133,7 @@ export function normalizeTicker(ticker: string): string {
 /**
  * Call Ollama API to generate AI analysis
  */
-async function generateOllamaAnalysis(prompt: string, model: string = "llama3.1:8b"): Promise<string> {
+async function generateOllamaAnalysis(prompt: string, model: string = env.OLLAMA_MODEL): Promise<string> {
   const ollamaUrl = env.OLLAMA_URL;
   
   try {
@@ -286,7 +286,7 @@ export async function processEnrichment(
         status: "COMPLETED",
         recommendations: (finnhubData.recommendations ?? undefined) as any,
         aiAnalysis,
-        ollamaModel: "llama3.1:8b",
+        ollamaModel: env.OLLAMA_MODEL,
         errorMessage: null,
       },
     });
