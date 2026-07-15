@@ -55,3 +55,28 @@ export function getSentimentLabel(score: number | null): string {
   if (score < -0.3) return "BEARISH";
   return "NEUTRAL";
 }
+
+/**
+ * Get global score color based on score (0-100)
+ * Thresholds match company detail page: 75 (green), 60 (blue), 40 (amber), <40 (red)
+ */
+export function getGlobalScoreColor(score: number | null): string {
+  if (score === null) return "bg-zinc-300 dark:bg-zinc-700";
+  if (score >= 75) return "bg-green-500 dark:bg-green-600";
+  if (score >= 60) return "bg-blue-500 dark:bg-blue-600";
+  if (score >= 40) return "bg-amber-500 dark:bg-amber-600";
+  return "bg-red-500 dark:bg-red-600";
+}
+
+/**
+ * Get global score label color for text
+ * Matches company detail page colors
+ */
+export function getGlobalScoreLabelColor(label: string | null): string {
+  if (!label) return "text-zinc-600 dark:text-zinc-400";
+  if (label === "Strong") return "text-green-600 dark:text-green-400";
+  if (label === "Moderate") return "text-amber-600 dark:text-amber-400";
+  if (label === "Neutral") return "text-blue-600 dark:text-blue-400";
+  if (label === "Weak") return "text-red-600 dark:text-red-400";
+  return "text-zinc-600 dark:text-zinc-400";
+}

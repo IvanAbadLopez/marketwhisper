@@ -23,6 +23,8 @@ export interface Company {
   avgSentimentScore: number | null;
   avgReliabilityScore: number | null;
   analysisCount: number;
+  globalScore: number | null;
+  globalScoreLabel: string | null;
   _count?: {
     analyses: number;
   };

@@ -6,9 +6,9 @@
 
 "use client";
 
-import { TrendingUp, TrendingDown, Minus } from "lucide-react";
+import { Target } from "lucide-react";
 import { Company } from "../model/types";
-import { getSentimentColor, getReliabilityColor, getSentimentLabel } from "../model/utils";
+import { getGlobalScoreColor, getGlobalScoreLabelColor } from "../model/utils";
 
 interface CompanyCardProps {
   company: Company;
@@ -16,14 +16,6 @@ interface CompanyCardProps {
 }
 
 export function CompanyCard({ company, onClick }: CompanyCardProps) {
-  const sentimentLabel = getSentimentLabel(company.avgSentimentScore);
-  
-  const SentimentIcon = sentimentLabel === "BULLISH" 
-    ? TrendingUp 
-    : sentimentLabel === "BEARISH" 
-      ? TrendingDown 
-      : Minus;
-
   return (
     <div
       onClick={() => onClick?.(company.ticker)}
@@ -47,58 +39,33 @@ export function CompanyCard({ company, onClick }: CompanyCardProps) {
         )}
       </div>
 
-      {/* AI Analysis Scores */}
-      {company.analysisCount > 0 && (
-        <div className="space-y-3 mb-4">
-          {/* Sentiment */}
-          <div>
-            <div className="flex items-center justify-between mb-1">
-              <div className="flex items-center gap-2">
-                <SentimentIcon className="w-4 h-4 text-zinc-600 dark:text-zinc-400" />
-                <span className="text-xs text-zinc-600 dark:text-zinc-400">
-                  Sentiment: {sentimentLabel}
-                </span>
-              </div>
-              <span className="text-xs font-medium text-zinc-700 dark:text-zinc-300">
-                {company.avgSentimentScore !== null 
-                  ? company.avgSentimentScore.toFixed(2) 
-                  : "N/A"}
+      {/* Global Score */}
+      {company.globalScore !== null && (
+        <div className="mb-4">
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2">
+              <Target className="w-4 h-4 text-zinc-600 dark:text-zinc-400" />
+              <span className="text-xs text-zinc-600 dark:text-zinc-400">
+                Global Score
               </span>
             </div>
-            <div className="h-2 bg-zinc-200 dark:bg-zinc-800 rounded-full overflow-hidden">
-              <div
-                className={`h-full ${getSentimentColor(company.avgSentimentScore)}`}
-                style={{
-                  width: company.avgSentimentScore !== null
-                    ? `${((company.avgSentimentScore + 1) / 2) * 100}%`
-                    : "50%",
-                }}
-              />
+            <div className="flex items-center gap-2">
+              <span className={`text-xs font-semibold ${getGlobalScoreLabelColor(company.globalScoreLabel)}`}>
+                {company.globalScoreLabel || 'N/A'}
+              </span>
+              <span className="text-lg font-bold text-zinc-900 dark:text-zinc-100">
+                {company.globalScore.toFixed(0)}
+              </span>
+              <span className="text-xs text-zinc-500 dark:text-zinc-400">/100</span>
             </div>
           </div>
-
-          {/* Reliability */}
-          <div>
-            <div className="flex items-center justify-between mb-1">
-              <span className="text-xs text-zinc-600 dark:text-zinc-400">
-                Reliability
-              </span>
-              <span className="text-xs font-medium text-zinc-700 dark:text-zinc-300">
-                {company.avgReliabilityScore !== null
-                  ? `${company.avgReliabilityScore.toFixed(1)}/10`
-                  : "N/A"}
-              </span>
-            </div>
-            <div className="h-2 bg-zinc-200 dark:bg-zinc-800 rounded-full overflow-hidden">
-              <div
-                className={`h-full ${getReliabilityColor(company.avgReliabilityScore)}`}
-                style={{
-                  width: company.avgReliabilityScore !== null
-                    ? `${(company.avgReliabilityScore / 10) * 100}%`
-                    : "0%",
-                }}
-              />
-            </div>
+          <div className="h-3 bg-zinc-200 dark:bg-zinc-800 rounded-full overflow-hidden">
+            <div
+              className={`h-full transition-all ${getGlobalScoreColor(company.globalScore)}`}
+              style={{
+                width: `${company.globalScore}%`,
+              }}
+            />
           </div>
         </div>
       )}
