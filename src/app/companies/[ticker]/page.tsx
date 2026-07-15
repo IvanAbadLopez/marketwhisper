@@ -283,11 +283,11 @@ export default function CompanyDetailPage({ params }: { params: Promise<{ ticker
         <div className="p-8">
           <div className="max-w-6xl mx-auto">
             <button
-              onClick={() => router.back()}
+              onClick={() => router.push('/situations')}
               className="mb-6 flex items-center gap-2 text-blue-600 dark:text-blue-400 hover:underline"
             >
               <ArrowLeft className="w-4 h-4" />
-              Back
+              Back to Companies
             </button>
             <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg p-12 text-center">
               <div className="text-6xl mb-4">❌</div>
@@ -310,7 +310,7 @@ export default function CompanyDetailPage({ params }: { params: Promise<{ ticker
         <div className="max-w-7xl mx-auto">
           {/* Back Button */}
           <button
-            onClick={() => router.back()}
+            onClick={() => router.push('/situations')}
             className="mb-6 flex items-center gap-2 text-blue-600 dark:text-blue-400 hover:underline"
           >
             <ArrowLeft className="w-4 h-4" />
