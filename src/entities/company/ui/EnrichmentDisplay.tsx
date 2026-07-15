@@ -59,14 +59,15 @@ interface EnrichmentData {
   }>;
   aiAnalysis: string | null;
   ollamaModel: string | null;
-  createdAt: Date;
+  createdAt: Date | string;
 }
 
 interface EnrichmentDisplayProps {
   enrichment: EnrichmentData | null;
+  mode?: 'full' | 'ai' | 'financial';
 }
 
-export function EnrichmentDisplay({ enrichment }: EnrichmentDisplayProps) {
+export function EnrichmentDisplay({ enrichment, mode = 'full' }: EnrichmentDisplayProps) {
   const [showFullAnalysis, setShowFullAnalysis] = useState(false);
   const [showFinancials, setShowFinancials] = useState(false);
   const [showNews, setShowNews] = useState(false);
@@ -103,6 +104,49 @@ export function EnrichmentDisplay({ enrichment }: EnrichmentDisplayProps) {
   // Calculate recommendation sentiment
   const latestRec = recommendations && recommendations.length > 0 ? recommendations[recommendations.length - 1] : null;
   const totalRecs = latestRec ? latestRec.strongBuy + latestRec.buy + latestRec.hold + latestRec.sell + latestRec.strongSell : 0;
+
+  // If mode is 'ai', only show AI Analysis section
+  if (mode === 'ai') {
+    return (
+      <div>
+        {aiAnalysis && (
+          <div className="bg-gradient-to-br from-purple-900/20 to-blue-900/20 border border-purple-500/30 rounded-lg p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <Activity className="h-5 w-5 text-purple-400" />
+                <h3 className="text-lg font-semibold text-white">AI Analysis</h3>
+                <span className="text-xs text-purple-400 bg-purple-500/20 px-2 py-1 rounded">
+                  {enrichment.ollamaModel || "llama3.1:8b"}
+                </span>
+              </div>
+              <button
+                onClick={() => setShowFullAnalysis(!showFullAnalysis)}
+                className="text-sm text-purple-400 hover:text-purple-300 flex items-center gap-1"
+              >
+                {showFullAnalysis ? (
+                  <>
+                    <span>Collapse</span>
+                    <ChevronUp className="h-4 w-4" />
+                  </>
+                ) : (
+                  <>
+                    <span>Expand</span>
+                    <ChevronDown className="h-4 w-4" />
+                  </>
+                )}
+              </button>
+            </div>
+
+            <div className={`prose prose-invert max-w-none ${showFullAnalysis ? "" : "line-clamp-4"}`}>
+              <p className="text-sm text-zinc-300 whitespace-pre-wrap">
+                {aiAnalysis}
+              </p>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
@@ -144,7 +188,7 @@ export function EnrichmentDisplay({ enrichment }: EnrichmentDisplayProps) {
       )}
 
       {/* AI Analysis */}
-      {aiAnalysis && (
+      {aiAnalysis && mode !== 'financial' && (
         <div className="bg-gradient-to-br from-purple-900/20 to-blue-900/20 border border-purple-500/30 rounded-lg p-6">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">

@@ -17,7 +17,7 @@ interface EnrichButtonProps {
   onSuccess?: () => void;
   variant?: "default" | "compact";
   className?: string;
-  lastEnrichment?: { createdAt: Date } | null;
+  lastEnrichment?: { createdAt: Date | string } | null;
 }
 
 /** Poll interval for checking background job status (ms) */
