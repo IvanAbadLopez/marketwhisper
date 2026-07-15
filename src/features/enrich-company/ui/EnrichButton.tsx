@@ -163,7 +163,9 @@ export function EnrichButton({
         className={`inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
           success
             ? "bg-green-500/20 text-green-400 cursor-default"
-            : "bg-purple-600 text-white hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            : loading
+            ? "bg-purple-600 text-white animate-pulse cursor-wait"
+            : "bg-purple-600 text-white hover:bg-purple-700"
         } ${className}`}
       >
         {loading ? (
@@ -188,13 +190,6 @@ export function EnrichButton({
         <p className="text-sm text-red-400 flex items-start gap-1.5">
           <span className="mt-0.5">⚠️</span>
           <span>{error}</span>
-        </p>
-      )}
-
-      {loading && (
-        <p className="text-sm text-zinc-400">
-          Running in the background — you can keep browsing. Fetching financial
-          data from Finnhub and generating AI analysis...
         </p>
       )}
 

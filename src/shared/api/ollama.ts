@@ -53,7 +53,7 @@ export async function detectCompanies(text: string): Promise<CompanyDetection[]>
 
   try {
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 120000); // 120s for detection
+    const timeout = setTimeout(() => controller.abort(), 300000); // 5m for detection
 
     const response = await fetch(`${OLLAMA_URL}/api/generate`, {
       method: 'POST',
@@ -118,7 +118,7 @@ export async function analyzeWithFinancials(
 
   try {
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 120000); // 120s for analysis
+    const timeout = setTimeout(() => controller.abort(), 300000); // 5m for analysis
 
     const response = await fetch(`${OLLAMA_URL}/api/generate`, {
       method: 'POST',
@@ -175,7 +175,7 @@ export async function analyzeText(text: string): Promise<AnalysisResult[]> {
 
   try {
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 120000);
+    const timeout = setTimeout(() => controller.abort(), 300000); // 5m for legacy analysis
 
     const response = await fetch(`${OLLAMA_URL}/api/generate`, {
       method: 'POST',

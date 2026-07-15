@@ -47,6 +47,29 @@ export default function SituationsPage() {
     router.push(`/companies/${ticker.toLowerCase()}`);
   };
 
+  const handleDeleteCompany = async (ticker: string) => {
+    if (!confirm(`Are you sure you want to delete ${ticker} and all its related data?`)) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/companies/${ticker}`, {
+        method: "DELETE",
+      });
+
+      if (response.ok) {
+        // Refresh company list
+        await fetchCompanies();
+      } else {
+        const error = await response.json();
+        alert(`Failed to delete company: ${error.error}`);
+      }
+    } catch (error) {
+      console.error("Error deleting company:", error);
+      alert("Failed to delete company");
+    }
+  };
+
   // Use company search feature (FSD)
   const filteredCompanies = useCompanySearch(companies, searchQuery);
 
@@ -126,6 +149,7 @@ export default function SituationsPage() {
                   key={company.id}
                   company={company}
                   onClick={handleCompanyClick}
+                  onDelete={handleDeleteCompany}
                 />
               ))}
             </div>

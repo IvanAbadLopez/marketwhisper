@@ -126,7 +126,7 @@ describe("NewsCard", () => {
     expect(analyzeButton).toBeDisabled();
   });
 
-  it("shows success state and redirects after successful analysis", async () => {
+  it("shows success state after successful analysis", async () => {
     mockAnalyzeText.mockResolvedValue(undefined);
 
     render(<NewsCard news={mockNews} ticker="AAPL" />);
@@ -136,13 +136,8 @@ describe("NewsCard", () => {
 
     await waitFor(() => {
       expect(screen.getByText(/queued!/i)).toBeInTheDocument();
-      expect(screen.getByText(/redirecting to jobs/i)).toBeInTheDocument();
+      expect(screen.getByText(/check the company page for results/i)).toBeInTheDocument();
     });
-
-    // Wait for the setTimeout redirect
-    await new Promise((resolve) => setTimeout(resolve, 1600));
-
-    expect(mockPush).toHaveBeenCalledWith("/jobs");
   });
 
   it("shows error message on analysis failure", async () => {

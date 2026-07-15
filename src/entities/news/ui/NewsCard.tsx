@@ -2,7 +2,6 @@ import { ExternalLink, Sparkles } from "lucide-react";
 import { NewsItem } from "@/shared";
 import { useState } from "react";
 import { analyzeText } from "@/features/analyze-text";
-import { useRouter } from "next/navigation";
 
 interface NewsCardProps {
   news: NewsItem;
@@ -35,7 +34,6 @@ export function NewsCard({ news, ticker }: NewsCardProps) {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
-  const router = useRouter();
 
   const handleAnalyze = async () => {
     // Prepare text: headline + summary
@@ -52,8 +50,6 @@ export function NewsCard({ news, ticker }: NewsCardProps) {
     try {
       await analyzeText({ text: textToAnalyze, source });
       setSuccess(true);
-      // Navigate to jobs page after brief delay
-      setTimeout(() => router.push("/jobs"), 1500);
     } catch (err) {
       const message = err instanceof Error ? err.message : "Analysis failed";
       setError(message);
@@ -140,7 +136,7 @@ export function NewsCard({ news, ticker }: NewsCardProps) {
       {/* Success message */}
       {success && (
         <div className="mt-3 text-sm text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-950/30 px-3 py-2 rounded">
-          Analysis queued successfully! Redirecting to jobs...
+          Analysis queued successfully! Check the company page for results.
         </div>
       )}
     </div>
