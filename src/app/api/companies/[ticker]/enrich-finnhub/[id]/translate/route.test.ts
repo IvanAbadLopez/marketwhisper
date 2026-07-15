@@ -109,7 +109,6 @@ describe("POST /api/companies/[ticker]/enrich-finnhub/[id]/translate", () => {
       ticker: "AAPL",
       source: "OTHER" as const,
       aiAnalysis: "Test analysis",
-      aiAnalysisEs: null,
     };
 
     vi.mocked(prisma.companyEnrichment.findUnique).mockResolvedValue(mockEnrichment);
@@ -208,7 +207,6 @@ describe("POST /api/companies/[ticker]/enrich-finnhub/[id]/translate", () => {
       ticker: "AAPL",
       source: "FINNHUB" as const,
       aiAnalysis: "Test analysis",
-      aiAnalysisEs: null,
     };
 
     vi.mocked(prisma.companyEnrichment.findUnique).mockResolvedValue(mockEnrichment);

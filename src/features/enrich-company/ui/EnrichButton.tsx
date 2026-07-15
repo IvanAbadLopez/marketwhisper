@@ -50,7 +50,7 @@ export function EnrichButton({
 
   // Calculate age color for timestamp (gray <7 days, yellow >7 days)
   const ageInDays = lastEnrichment
-    ? (Date.now() - lastEnrichment.createdAt.getTime()) / 86400000
+    ? (Date.now() - new Date(lastEnrichment.createdAt).getTime()) / 86400000
     : 0;
 
   const ageColor =

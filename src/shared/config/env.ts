@@ -4,6 +4,13 @@
  */
 
 function getEnvVar(key: string, defaultValue?: string): string {
+  // In browser/client, process.env may not be available or may be empty
+  // Only throw errors on server-side (where process.env is populated)
+  if (typeof window !== 'undefined') {
+    // Client-side: return empty string or default, never throw
+    return defaultValue || "";
+  }
+  
   const value = process.env[key];
   if (!value && !defaultValue) {
     throw new Error(`Missing required environment variable: ${key}`);
@@ -12,6 +19,10 @@ function getEnvVar(key: string, defaultValue?: string): string {
 }
 
 function getOptionalEnvVar(key: string): string | undefined {
+  if (typeof window !== 'undefined') {
+    // Client-side: always undefined
+    return undefined;
+  }
   return process.env[key];
 }
 

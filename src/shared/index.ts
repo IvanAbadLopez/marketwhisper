@@ -35,7 +35,9 @@ export type { FinnhubData, FinancialSnapshot, NewsItem, AnalystRecommendation } 
 
 // ===== CONFIG =====
 export * from "./config/constants";
-export { env } from "./config/env";
+// Note: env is server-only (validates DATABASE_URL and other server vars at import time)
+// Import directly from "@/shared/config/env" in server-side code only
+// export { env } from "./config/env";
 
 // ===== TYPES =====
 // Re-export common types when created

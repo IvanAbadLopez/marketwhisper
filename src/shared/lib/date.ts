@@ -1,16 +1,19 @@
 /**
  * Formats a date as a relative time string (e.g., "2 hours ago", "just now")
- * @param date - The date to format
+ * @param date - The date to format (Date object or ISO string)
  * @returns A human-readable relative time string
  */
-export function formatRelativeTime(date: Date): string {
+export function formatRelativeTime(date: Date | string): string {
+  // Convert string to Date if needed
+  const dateObj = typeof date === 'string' ? new Date(date) : date;
+  
   // Validate input: check for invalid dates
-  if (isNaN(date.getTime())) {
+  if (isNaN(dateObj.getTime())) {
     return '';
   }
 
   const now = new Date();
-  const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+  const diffInSeconds = Math.floor((now.getTime() - dateObj.getTime()) / 1000);
 
   // Handle future dates
   if (diffInSeconds < 0) {
