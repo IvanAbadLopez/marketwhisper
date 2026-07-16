@@ -49,6 +49,9 @@ scripts/__pycache__/
 scripts/*.pyc
 scripts/venv/
 
+# Sensitive environment variables documentation
+VERCEL_ENV_VARS.md
+
 # Downloaded media (copyrighted content - NEVER commit)
 downloads/
 scripts/cookies/

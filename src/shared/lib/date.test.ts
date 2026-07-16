@@ -165,21 +165,21 @@ describe('formatRelativeTime', () => {
   });
 
   // Error case tests
-  it('returns empty string for future dates', () => {
+  it('returns "just now" for future dates (clock skew protection)', () => {
     const now = new Date('2026-07-09T10:00:00Z');
     vi.setSystemTime(now);
     
     const futureDate = new Date('2026-07-09T11:00:00Z');
     const result = formatRelativeTime(futureDate);
-    expect(result).toBe('');
+    expect(result).toBe('just now');
   });
 
-  it('returns empty string for invalid dates', () => {
+  it('returns "unknown" for invalid dates', () => {
     const now = new Date('2026-07-09T10:00:00Z');
     vi.setSystemTime(now);
     
     const invalidDate = new Date('invalid');
     const result = formatRelativeTime(invalidDate);
-    expect(result).toBe('');
+    expect(result).toBe('unknown');
   });
 });
