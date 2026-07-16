@@ -5,6 +5,7 @@
 
 import { env } from "@/shared/config/env";
 import { calcAnalystScore, analystScoreLabel, type AnalystRecommendation } from "../lib/analystScore";
+import { fetchFinnhubData, normalizeTicker, type FinnhubData } from "@/shared/api/finnhub";
 
 interface UserAnalysis {
   text: string;
@@ -13,41 +14,6 @@ interface UserAnalysis {
   reliabilityScore: number;
   reasoning: string;
   createdAt: Date;
-}
-
-interface FinnhubData {
-  success: boolean;
-  ticker: string;
-  companyInfo?: {
-    ticker: string;
-    name: string | null;
-    sector: string | null;
-    industry: string | null;
-    description: string | null;
-    website: string | null;
-    employees: number | null;
-    marketCap: number | null;
-  };
-  financials?: {
-    revenue: number | null;
-    netIncome: number | null;
-    eps: number | null;
-    peRatio: number | null;
-    debtToEquity: number | null;
-    dividendYield: number | null;
-    profitMargins: number | null;
-  };
-  price?: {
-    currentPrice: number | null;
-    previousClose: number | null;
-    dayChange: number | null;
-    dayChangePercent: number | null;
-    fiftyTwoWeekHigh: number | null;
-    fiftyTwoWeekLow: number | null;
-    volume: number | null;
-    avgVolume: number | null;
-  };
-  recommendations?: AnalystRecommendation[];
 }
 
 interface OllamaResponse {
@@ -148,13 +114,6 @@ Keep each bullet point concise (1-2 sentences max). Integrate both quantitative 
 }
 
 /**
- * Normalize ticker by removing special characters like $
- */
-export function normalizeTicker(ticker: string): string {
-  return ticker.replace(/^\$/, '').trim().toUpperCase();
-}
-
-/**
  * Call LLM API to generate AI analysis (supports Groq or Ollama)
  */
 async function generateLLMAnalysis(prompt: string): Promise<string> {
@@ -223,47 +182,6 @@ async function generateLLMAnalysis(prompt: string): Promise<string> {
       console.error("Ollama API call failed:", error);
       throw new Error("Failed to generate AI analysis with Ollama. Ensure Ollama service is running.");
     }
-  }
-}
-
-/**
- * Fetch financial data from enrichment service (Python FastAPI + Finnhub)
- */
-export async function fetchFinnhubData(ticker: string): Promise<FinnhubData> {
-  const enrichmentUrl = env.ENRICHMENT_SERVICE_URL;
-  const normalizedTicker = normalizeTicker(ticker);
-  
-  try {
-    const response = await fetch(`${enrichmentUrl}/api/enrich-finnhub/${normalizedTicker}`);
-    
-    if (!response.ok) {
-      let errorDetail = response.statusText;
-      try {
-        const errorData = await response.json();
-        if (errorData.detail) {
-          errorDetail = errorData.detail;
-        }
-      } catch {
-        // If can't parse JSON, use statusText
-      }
-
-      if (response.status === 404) {
-        throw new Error(`Ticker ${ticker} not found in Finnhub. Please verify the ticker symbol.`);
-      }
-      if (response.status === 429) {
-        throw new Error(`Finnhub rate limit exceeded. Please wait a few minutes before trying again.`);
-      }
-      if (response.status === 503) {
-        throw new Error(`Finnhub service unavailable. FINNHUB_API_KEY may not be configured.`);
-      }
-      throw new Error(`Enrichment service error: ${errorDetail}`);
-    }
-
-    const data: FinnhubData = await response.json();
-    return data;
-  } catch (error: unknown) {
-    console.error("Failed to fetch Finnhub data:", error);
-    throw error;
   }
 }
 

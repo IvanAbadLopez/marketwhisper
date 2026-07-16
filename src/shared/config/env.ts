@@ -47,11 +47,8 @@ export const env = {
   GROQ_API_KEY: getOptionalEnvVar("GROQ_API_KEY"),
   GROQ_MODEL: getEnvVar("GROQ_MODEL", "llama-3.1-8b-instant"),
   LLM_PROVIDER: getEnvVar("LLM_PROVIDER", "groq"), // "groq" or "ollama"
-
-  // Enrichment Services
   OLLAMA_URL: getEnvVar("OLLAMA_URL", "http://localhost:11434"),
   OLLAMA_MODEL: getEnvVar("OLLAMA_MODEL", "qwen2.5:7b"),
-  ENRICHMENT_SERVICE_URL: getEnvVar("ENRICHMENT_SERVICE_URL", "http://localhost:8001"),
 
   // Node Environment
   NODE_ENV: getEnvVar("NODE_ENV", "development"),

@@ -22,12 +22,13 @@ vi.mock("@/shared/api/prisma", () => ({
   },
 }));
 
+vi.mock("@/shared/api/finnhub", () => ({
+  searchFinnhubSymbols: vi.fn(),
+}));
+
 const mockAuth = vi.mocked(await import("@/lib/auth")).auth;
 const mockPrisma = vi.mocked(await import("@/shared/api/prisma")).prisma;
-
-// Mock global fetch
-const mockFetch = vi.fn();
-global.fetch = mockFetch as typeof fetch;
+const mockSearchFinnhubSymbols = vi.mocked(await import("@/shared/api/finnhub")).searchFinnhubSymbols;
 
 describe("GET /api/companies/search", () => {
   beforeEach(() => {
@@ -69,30 +70,21 @@ describe("GET /api/companies/search", () => {
       user: { email: "test@example.com" },
     } as Session);
 
-    // Mock enrichment service response
-    mockFetch.mockResolvedValue({
-      ok: true,
-      json: async () => ({
-        success: true,
-        query: "apple",
-        count: 2,
-        results: [
-          {
-            symbol: "AAPL",
-            description: "Apple Inc.",
-            displaySymbol: "AAPL",
-            type: "Common Stock",
-          },
-          {
-            symbol: "APLD",
-            description: "Applied Digital Corp",
-            displaySymbol: "APLD",
-            type: "Common Stock",
-          },
-        ],
-        timestamp: "2026-07-08T10:00:00Z",
-      }),
-    });
+    // Mock searchFinnhubSymbols response
+    mockSearchFinnhubSymbols.mockResolvedValue([
+      {
+        symbol: "AAPL",
+        description: "Apple Inc.",
+        displaySymbol: "AAPL",
+        type: "Common Stock",
+      },
+      {
+        symbol: "APLD",
+        description: "Applied Digital Corp",
+        displaySymbol: "APLD",
+        type: "Common Stock",
+      },
+    ]);
 
     // Mock database check - AAPL exists, APLD doesn't
     mockPrisma.company.findMany.mockResolvedValue([
@@ -120,15 +112,10 @@ describe("GET /api/companies/search", () => {
       user: { email: "test@example.com" },
     } as Session);
 
-    // Mock enrichment service 503 error
-    mockFetch.mockResolvedValue({
-      ok: false,
-      status: 503,
-      statusText: "Service Unavailable",
-      json: async () => ({
-        detail: "Finnhub service unavailable. FINNHUB_API_KEY not configured.",
-      }),
-    } as Response);
+    // Mock searchFinnhubSymbols throwing FINNHUB_API_KEY error
+    mockSearchFinnhubSymbols.mockRejectedValue(
+      new Error("FINNHUB_API_KEY not configured. Please set it in your .env file.")
+    );
 
     const request = new NextRequest(
       new URL("http://localhost:3000/api/companies/search?q=apple")
@@ -138,7 +125,7 @@ describe("GET /api/companies/search", () => {
     const data = await response.json();
 
     expect(response.status).toBe(503);
-    expect(data.error).toContain("Finnhub service unavailable");
+    expect(data.error).toContain("FINNHUB_API_KEY");
   });
 
   it("should return 429 if rate limit is exceeded", async () => {
@@ -146,15 +133,10 @@ describe("GET /api/companies/search", () => {
       user: { email: "test@example.com" },
     } as Session);
 
-    // Mock enrichment service 429 error
-    mockFetch.mockResolvedValue({
-      ok: false,
-      status: 429,
-      statusText: "Too Many Requests",
-      json: async () => ({
-        detail: "Finnhub rate limit exceeded.",
-      }),
-    } as Response);
+    // Mock searchFinnhubSymbols throwing rate limit error
+    mockSearchFinnhubSymbols.mockRejectedValue(
+      new Error("Finnhub rate limit exceeded. Please try again later.")
+    );
 
     const request = new NextRequest(
       new URL("http://localhost:3000/api/companies/search?q=apple")

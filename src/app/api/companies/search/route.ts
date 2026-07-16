@@ -5,21 +5,13 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-import { env } from "@/shared/config/env";
+import { searchFinnhubSymbols } from "@/shared/api/finnhub";
 
 interface FinnhubSearchResult {
   symbol: string;
   description: string;
   displaySymbol: string;
   type: string;
-}
-
-interface FinnhubSearchResponse {
-  success: boolean;
-  query: string;
-  count: number;
-  results: FinnhubSearchResult[];
-  timestamp: string;
 }
 
 interface SearchResultWithExists extends FinnhubSearchResult {
@@ -47,45 +39,11 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // 3. Call enrichment service search endpoint
-    const enrichmentUrl = env.ENRICHMENT_SERVICE_URL;
-    const response = await fetch(
-      `${enrichmentUrl}/api/search-finnhub?q=${encodeURIComponent(query)}`
-    );
-
-    if (!response.ok) {
-      let errorDetail = response.statusText;
-      try {
-        const errorData = await response.json();
-        if (errorData.detail) {
-          errorDetail = errorData.detail;
-        }
-      } catch {
-        // If can't parse JSON, use statusText
-      }
-
-      if (response.status === 503) {
-        return NextResponse.json(
-          { error: "Finnhub service unavailable. FINNHUB_API_KEY may not be configured." },
-          { status: 503 }
-        );
-      }
-      if (response.status === 429) {
-        return NextResponse.json(
-          { error: "Finnhub rate limit exceeded. Please try again later." },
-          { status: 429 }
-        );
-      }
-      return NextResponse.json(
-        { error: `Search failed: ${errorDetail}` },
-        { status: response.status }
-      );
-    }
-
-    const data: FinnhubSearchResponse = await response.json();
+    // 3. Search Finnhub directly
+    const results = await searchFinnhubSymbols(query);
 
     // 4. Check which tickers already exist in database
-    const tickers = data.results.map((r) => r.symbol.toUpperCase());
+    const tickers = results.map((r) => r.symbol.toUpperCase());
     const existingCompanies = await prisma.company.findMany({
       where: { ticker: { in: tickers } },
       select: { ticker: true },
@@ -94,21 +52,30 @@ export async function GET(request: NextRequest) {
     const existingTickers = new Set(existingCompanies.map((c) => c.ticker));
 
     // 5. Mark results with existsInDatabase flag
-    const resultsWithExists: SearchResultWithExists[] = data.results.map((result) => ({
+    const resultsWithExists: SearchResultWithExists[] = results.map((result) => ({
       ...result,
       existsInDatabase: existingTickers.has(result.symbol.toUpperCase()),
     }));
 
     return NextResponse.json({
       success: true,
-      query: data.query,
-      count: data.count,
+      query,
+      count: results.length,
       results: resultsWithExists,
-      timestamp: data.timestamp,
+      timestamp: new Date().toISOString(),
     });
   } catch (error: unknown) {
     console.error("[Company Search] Error:", error);
     const message = error instanceof Error ? error.message : "Failed to search companies";
+    
+    // Handle specific Finnhub errors
+    if (message.includes('rate limit')) {
+      return NextResponse.json({ error: message }, { status: 429 });
+    }
+    if (message.includes('FINNHUB_API_KEY')) {
+      return NextResponse.json({ error: message }, { status: 503 });
+    }
+    
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }

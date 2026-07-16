@@ -1,9 +1,61 @@
 /**
  * Finnhub API Client Helper
- * Provides ticker resolution, financial data fetching, and caching utilities
+ * Calls Finnhub REST API directly (no Python microservice required)
  */
 
 import { env } from '@/shared/config/env';
+
+const FINNHUB_BASE_URL = 'https://finnhub.io/api/v1';
+
+/**
+ * Generic fetch helper for Finnhub API with auth header
+ */
+async function fetchFinnhub<T>(endpoint: string): Promise<T> {
+  if (!env.FINNHUB_API_KEY) {
+    throw new Error('FINNHUB_API_KEY not configured. Please set it in your .env file.');
+  }
+
+  const url = `${FINNHUB_BASE_URL}${endpoint}`;
+  const response = await fetch(url, {
+    headers: {
+      'X-Finnhub-Token': env.FINNHUB_API_KEY,
+    },
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    if (response.status === 429) {
+      throw new Error('Finnhub rate limit exceeded. Please try again later.');
+    }
+    if (response.status === 401) {
+      throw new Error('Finnhub API authentication failed. Check your FINNHUB_API_KEY.');
+    }
+    throw new Error(`Finnhub API error (${response.status}): ${errorText}`);
+  }
+
+  return response.json();
+}
+
+/**
+ * Search for companies using Finnhub symbol lookup
+ * Returns raw Finnhub search results
+ * 
+ * @param query - Search query (company name or ticker)
+ * @returns Array of search results with symbol, description, type
+ */
+export async function searchFinnhubSymbols(query: string): Promise<FinnhubSearchResult[]> {
+  if (!query || !query.trim()) {
+    return [];
+  }
+
+  try {
+    const data = await fetchFinnhub<FinnhubSearchResponse>(`/search?q=${encodeURIComponent(query.trim())}`);
+    return data.result || [];
+  } catch (error) {
+    console.error(`[searchFinnhubSymbols] Error searching for "${query}":`, error);
+    throw error;
+  }
+}
 
 interface FinnhubSearchResult {
   symbol: string;
@@ -13,11 +65,8 @@ interface FinnhubSearchResult {
 }
 
 interface FinnhubSearchResponse {
-  success: boolean;
-  query: string;
   count: number;
-  results: FinnhubSearchResult[];
-  timestamp: string;
+  result: FinnhubSearchResult[];
 }
 
 export interface AnalystRecommendation {
@@ -98,46 +147,29 @@ export async function resolveTicker(companyName: string): Promise<string> {
     return '';
   }
 
-  const enrichmentUrl = env.ENRICHMENT_SERVICE_URL;
-  
   try {
-    const response = await fetch(
-      `${enrichmentUrl}/api/search-finnhub?q=${encodeURIComponent(companyName)}`,
-      {
-        method: 'GET',
-        headers: { 'Content-Type': 'application/json' },
-      }
-    );
-
-    if (!response.ok) {
-      console.warn(`[resolveTicker] Finnhub search failed for "${companyName}": ${response.statusText}`);
-      return '';
-    }
-
-    const data: FinnhubSearchResponse = await response.json();
-
-    if (!data.success || data.count === 0) {
-      console.log(`[resolveTicker] No results found for "${companyName}"`);
-      return '';
-    }
-
-    // Prioritize results:
-    // 1. Symbol without exotic suffixes (prefer US exchanges or ADRs ending in Y)
-    // 2. Common Stock type over other types
-    // 3. Shortest symbol (usually the primary listing)
+    const query = companyName.trim();
+    console.log(`[resolveTicker] Searching Finnhub for: "${query}"`);
     
+    const data = await fetchFinnhub<FinnhubSearchResponse>(`/search?q=${encodeURIComponent(query)}`);
+
+    if (!data || !data.result || data.result.length === 0) {
+      console.log(`[resolveTicker] No results found for "${query}"`);
+      return '';
+    }
+
     // Filter for US-tradeable symbols first (most important for investors)
-    const usSymbols = data.results.filter(r => {
+    const usSymbols = data.result.filter(r => {
       const symbol = r.symbol || r.displaySymbol;
       // Prefer symbols without dots (US exchanges) or ADRs ending in Y
       return !symbol.includes('.') || symbol.endsWith('Y');
     });
 
     // Pick candidates: prefer US symbols, fallback to all if none
-    const candidates = usSymbols.length > 0 ? usSymbols : data.results;
+    const candidates = usSymbols.length > 0 ? usSymbols : data.result;
 
     if (candidates.length === 0) {
-      console.log(`[resolveTicker] No suitable candidates for "${companyName}"`);
+      console.log(`[resolveTicker] No suitable candidates for "${query}"`);
       return '';
     }
 
@@ -156,7 +188,7 @@ export async function resolveTicker(companyName: string): Promise<string> {
     })[0];
 
     const ticker = (bestMatch.symbol || bestMatch.displaySymbol).toUpperCase();
-    console.log(`[resolveTicker] Resolved "${companyName}" → ${ticker}`);
+    console.log(`[resolveTicker] Resolved "${query}" → ${ticker}`);
     
     return ticker;
   } catch (error) {
@@ -173,42 +205,110 @@ export function normalizeTicker(ticker: string): string {
 }
 
 /**
- * Fetch financial data from enrichment service (Python FastAPI + Finnhub)
+ * Fetch financial data from Finnhub API directly
+ * Combines company profile, financial metrics, and analyst recommendations
  */
 export async function fetchFinnhubData(ticker: string): Promise<FinnhubData> {
-  const enrichmentUrl = env.ENRICHMENT_SERVICE_URL;
   const normalizedTicker = normalizeTicker(ticker);
   
   try {
-    const response = await fetch(`${enrichmentUrl}/api/enrich-finnhub/${normalizedTicker}`);
-    
-    if (!response.ok) {
-      let errorDetail = response.statusText;
-      try {
-        const errorData = await response.json();
-        if (errorData.detail) {
-          errorDetail = errorData.detail;
-        }
-      } catch {
-        // If can't parse JSON, use statusText
-      }
+    console.log(`[fetchFinnhubData] Fetching data for ${normalizedTicker}`);
 
-      if (response.status === 404) {
-        throw new Error(`Ticker ${ticker} not found in Finnhub. Please verify the ticker symbol.`);
-      }
-      if (response.status === 429) {
-        throw new Error(`Finnhub rate limit exceeded. Please wait a few minutes before trying again.`);
-      }
-      if (response.status === 503) {
-        throw new Error(`Finnhub service unavailable. FINNHUB_API_KEY may not be configured.`);
-      }
-      throw new Error(`Enrichment service error: ${errorDetail}`);
+    // 1. Fetch company profile
+    interface ProfileResponse {
+      ticker?: string;
+      name?: string;
+      finnhubIndustry?: string;
+      weburl?: string;
+      marketCapitalization?: number;
+    }
+    
+    const profile = await fetchFinnhub<ProfileResponse>(`/stock/profile2?symbol=${normalizedTicker}`);
+    
+    if (!profile || !profile.name) {
+      throw new Error(`Ticker ${normalizedTicker} not found in Finnhub. Please verify the ticker symbol.`);
     }
 
-    const data: FinnhubData = await response.json();
-    return data;
+    // 2. Fetch financial metrics
+    interface MetricsResponse {
+      metric?: Record<string, number>;
+    }
+    
+    let metricData: Record<string, number> = {};
+    try {
+      const metrics = await fetchFinnhub<MetricsResponse>(`/stock/metric?symbol=${normalizedTicker}&metric=all`);
+      metricData = metrics.metric || {};
+    } catch (error) {
+      console.warn(`[fetchFinnhubData] Metrics fetch failed for ${normalizedTicker}:`, error);
+    }
+
+    // 3. Fetch analyst recommendations
+    interface RecommendationResponse {
+      period: string;
+      strongBuy: number;
+      buy: number;
+      hold: number;
+      sell: number;
+      strongSell: number;
+    }
+    
+    let recommendations: AnalystRecommendation[] = [];
+    try {
+      const recTrends = await fetchFinnhub<RecommendationResponse[]>(`/stock/recommendation?symbol=${normalizedTicker}`);
+      recommendations = (recTrends || []).map(r => ({
+        period: r.period || '',
+        strongBuy: r.strongBuy || 0,
+        buy: r.buy || 0,
+        hold: r.hold || 0,
+        sell: r.sell || 0,
+        strongSell: r.strongSell || 0,
+      }));
+    } catch (error) {
+      console.warn(`[fetchFinnhubData] Recommendations fetch failed for ${normalizedTicker}:`, error);
+    }
+
+    // Build response matching FinnhubData interface
+    return {
+      success: true,
+      ticker: normalizedTicker,
+      companyInfo: {
+        ticker: normalizedTicker,
+        name: profile.name || null,
+        sector: profile.finnhubIndustry || null,
+        industry: profile.finnhubIndustry || null,
+        description: null, // Not available in profile2
+        website: profile.weburl || null,
+        employees: null, // Not available in profile2
+        marketCap: profile.marketCapitalization 
+          ? Math.round(profile.marketCapitalization * 1e6) 
+          : null,
+      },
+      financials: {
+        revenue: null, // Not directly available in basic metrics
+        netIncome: null, // Not directly available in basic metrics
+        eps: metricData['epsBasic'] || null,
+        peRatio: metricData['peBasicExclExtraTTM'] || null,
+        debtToEquity: metricData['totalDebt/totalEquityQuarterly'] || null,
+        dividendYield: metricData['dividendYieldIndicatedAnnual'] || null,
+        profitMargins: metricData['netProfitMarginTTM'] || null,
+        bookValuePerShare: metricData['bookValuePerShareAnnual'] || null,
+        roe: metricData['roeTTM'] || null,
+        epsGrowth: metricData['epsGrowthTTMYoy'] || null,
+      },
+      price: {
+        currentPrice: null, // Would need quote endpoint (not fetched)
+        previousClose: null,
+        dayChange: null,
+        dayChangePercent: null,
+        fiftyTwoWeekHigh: metricData['52WeekHigh'] || null,
+        fiftyTwoWeekLow: metricData['52WeekLow'] || null,
+        volume: null,
+        avgVolume: null,
+      },
+      recommendations,
+    };
   } catch (error: unknown) {
-    console.error("Failed to fetch Finnhub data:", error);
+    console.error(`[fetchFinnhubData] Failed to fetch data for ${normalizedTicker}:`, error);
     throw error;
   }
 }
@@ -293,7 +393,7 @@ export function createFinancialSnapshot(data: FinnhubData): FinancialSnapshot {
 // Note: getCachedFinnhub has been moved to finnhub-server.ts (server-only, uses prisma)
 
 /**
- * Fetch recent news for a company from Finnhub
+ * Fetch recent news for a company from Finnhub API directly
  * 
  * @param ticker - Stock ticker symbol (e.g., AAPL, MSFT)
  * @param days - Number of days to look back (default: 7)
@@ -308,38 +408,53 @@ export async function fetchCompanyNews(
     return [];
   }
 
+  if (days < 1 || days > 365) {
+    throw new Error('Days parameter must be between 1 and 365.');
+  }
+
   const normalizedTicker = ticker.trim().toUpperCase();
-  const enrichmentUrl = env.ENRICHMENT_SERVICE_URL;
 
   try {
-    const response = await fetch(
-      `${enrichmentUrl}/api/news-finnhub/${normalizedTicker}?days=${days}`
-    );
+    console.log(`[fetchCompanyNews] Fetching news for ${normalizedTicker} (${days} days)`);
 
-    if (!response.ok) {
-      if (response.status === 429) {
-        throw new Error('Finnhub rate limit exceeded. Please try again later.');
-      }
-      if (response.status === 503) {
-        throw new Error('Finnhub service unavailable. Please check configuration.');
-      }
-      if (response.status === 404) {
-        console.warn(`[fetchCompanyNews] No news found for ticker: ${normalizedTicker}`);
-        return [];
-      }
-      throw new Error(`Failed to fetch news: ${response.statusText}`);
+    // Calculate date range (Finnhub expects YYYY-MM-DD format)
+    const toDate = new Date();
+    const fromDate = new Date();
+    fromDate.setDate(toDate.getDate() - days);
+
+    const toStr = toDate.toISOString().split('T')[0];
+    const fromStr = fromDate.toISOString().split('T')[0];
+
+    interface FinnhubNewsItem {
+      headline: string;
+      summary: string;
+      source: string;
+      url: string;
+      datetime: number; // Unix timestamp
+      image: string;
     }
 
-    const data = await response.json();
+    const newsData = await fetchFinnhub<FinnhubNewsItem[]>(
+      `/company-news?symbol=${normalizedTicker}&from=${fromStr}&to=${toStr}`
+    );
 
-    if (!data.success || !Array.isArray(data.news)) {
-      console.error('[fetchCompanyNews] Invalid response format:', data);
+    if (!Array.isArray(newsData)) {
+      console.error('[fetchCompanyNews] Invalid response format:', newsData);
       return [];
     }
 
-    console.log(`[fetchCompanyNews] Fetched ${data.news.length} articles for ${normalizedTicker} (${days} days)`);
+    const news: NewsItem[] = newsData.map(item => ({
+      title: item.headline || '',
+      summary: item.summary || null,
+      publisher: item.source || null,
+      link: item.url || null,
+      publishedAt: item.datetime ? new Date(item.datetime * 1000).toISOString() : null,
+      image: item.image || null,
+    }));
 
-    return data.news;
+    console.log(`[fetchCompanyNews] Fetched ${news.length} articles for ${normalizedTicker}`);
+
+    return news;
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';
     console.error(`[fetchCompanyNews] Error fetching news for ${normalizedTicker}:`, message);
