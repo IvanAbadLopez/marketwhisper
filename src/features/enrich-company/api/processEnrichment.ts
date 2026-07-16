@@ -155,36 +155,74 @@ export function normalizeTicker(ticker: string): string {
 }
 
 /**
- * Call Ollama API to generate AI analysis
+ * Call LLM API to generate AI analysis (supports Groq or Ollama)
  */
-async function generateOllamaAnalysis(prompt: string, model: string = env.OLLAMA_MODEL): Promise<string> {
-  const ollamaUrl = env.OLLAMA_URL;
+async function generateLLMAnalysis(prompt: string): Promise<string> {
+  const provider = env.LLM_PROVIDER || 'groq';
   
-  try {
-    const response = await fetch(`${ollamaUrl}/api/generate`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        model,
-        prompt,
-        stream: false,
-        options: {
-          temperature: 0.7,
-          top_p: 0.9,
-          num_predict: 1000,
-        }
-      }),
-    });
-
-    if (!response.ok) {
-      throw new Error(`Ollama API error: ${response.statusText}`);
+  if (provider === 'groq') {
+    const apiKey = env.GROQ_API_KEY;
+    if (!apiKey) {
+      throw new Error('GROQ_API_KEY not configured. Add it to your environment variables.');
     }
 
-    const data: OllamaResponse = await response.json();
-    return data.response;
-  } catch (error) {
-    console.error("Ollama API call failed:", error);
-    throw new Error("Failed to generate AI analysis. Ensure Ollama service is running.");
+    try {
+      const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({
+          model: env.GROQ_MODEL || 'llama-3.1-8b-instant',
+          messages: [{ role: 'user', content: prompt }],
+          temperature: 0.7,
+          max_tokens: 2000,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Groq API error (${response.status}): ${errorText}`);
+      }
+
+      const data = await response.json();
+      return data.choices[0]?.message?.content || '';
+    } catch (error) {
+      console.error("Groq API call failed:", error);
+      throw new Error("Failed to generate AI analysis with Groq.");
+    }
+  } else {
+    // Ollama
+    const ollamaUrl = env.OLLAMA_URL;
+    const model = env.OLLAMA_MODEL;
+    
+    try {
+      const response = await fetch(`${ollamaUrl}/api/generate`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model,
+          prompt,
+          stream: false,
+          options: {
+            temperature: 0.7,
+            top_p: 0.9,
+            num_predict: 1000,
+          }
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Ollama API error: ${response.statusText}`);
+      }
+
+      const data: OllamaResponse = await response.json();
+      return data.response;
+    } catch (error) {
+      console.error("Ollama API call failed:", error);
+      throw new Error("Failed to generate AI analysis with Ollama. Ensure Ollama service is running.");
+    }
   }
 }
 
@@ -297,10 +335,10 @@ export async function processEnrichment(
       },
     });
 
-    // 4. Generate AI analysis with Ollama (combining Finnhub data + user texts)
-    console.log(`[Enrich-Finnhub:${enrichmentId}] Generating Ollama analysis for ${ticker} (${userAnalyses.length} user analyses)...`);
+    // 4. Generate AI analysis with LLM (combining Finnhub data + user texts)
+    console.log(`[Enrich-Finnhub:${enrichmentId}] Generating AI analysis for ${ticker} (${userAnalyses.length} user analyses)...`);
     const prompt = generateAnalysisPrompt(ticker, finnhubData, userAnalyses);
-    const aiAnalysis = await generateOllamaAnalysis(prompt);
+    const aiAnalysis = await generateLLMAnalysis(prompt);
 
     // 5. Store final result and mark as completed
     // Note: Translation is done on-demand, not persisted

@@ -1,7 +1,8 @@
 /**
- * Ollama AI Client (Local LLM)
+ * LLM Client (Groq/Ollama)
  * Handles text analysis for company detection, sentiment, and reliability scoring
  * Supports multiple company detection in a single text
+ * Abstracted to work with either Groq (serverless) or Ollama (local)
  */
 
 import { env } from '@/shared/config/env';
@@ -41,20 +42,82 @@ interface OllamaResponse {
   done: boolean;
 }
 
+interface GroqChatResponse {
+  id: string;
+  object: string;
+  created: number;
+  model: string;
+  choices: Array<{
+    index: number;
+    message: {
+      role: string;
+      content: string;
+    };
+    finish_reason: string;
+  }>;
+}
+
+const LLM_PROVIDER = env.LLM_PROVIDER;
+const GROQ_API_KEY = env.GROQ_API_KEY;
+const GROQ_MODEL = env.GROQ_MODEL;
 const OLLAMA_URL = env.OLLAMA_URL;
 const OLLAMA_MODEL = env.OLLAMA_MODEL;
 
 /**
- * Detect companies in text (lightweight, no sentiment analysis)
- * Phase 1 of the 2-call analysis pipeline
+ * Call Groq API (OpenAI-compatible chat completions with JSON mode)
  */
-export async function detectCompanies(text: string): Promise<CompanyDetection[]> {
-  const prompt = buildDetectionPrompt(text);
+async function callGroq(prompt: string, timeoutMs: number = 60000): Promise<string> {
+  if (!GROQ_API_KEY) {
+    throw new Error('GROQ_API_KEY not configured. Add it to your environment variables.');
+  }
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
 
   try {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 300000); // 5m for detection
+    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${GROQ_API_KEY}`,
+      },
+      body: JSON.stringify({
+        model: GROQ_MODEL,
+        messages: [{ role: 'user', content: prompt }],
+        temperature: 0, // Deterministic for consistency
+        response_format: { type: 'json_object' },
+        max_tokens: 2000,
+      }),
+      signal: controller.signal,
+    });
 
+    clearTimeout(timeout);
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Groq API error (${response.status}): ${errorText}`);
+    }
+
+    const data: GroqChatResponse = await response.json();
+    return data.choices[0]?.message?.content || '{}';
+  } catch (error) {
+    clearTimeout(timeout);
+    console.error('Groq API error:', error);
+    if (error instanceof Error && error.name === 'AbortError') {
+      throw new Error(`AI request timed out (>${timeoutMs / 1000}s). Try again or check Groq service status.`);
+    }
+    throw error;
+  }
+}
+
+/**
+ * Call Ollama API (local LLM with JSON format)
+ */
+async function callOllama(prompt: string, timeoutMs: number = 60000): Promise<string> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
     const response = await fetch(`${OLLAMA_URL}/api/generate`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -63,7 +126,9 @@ export async function detectCompanies(text: string): Promise<CompanyDetection[]>
         prompt,
         stream: false,
         format: 'json',
-        keep_alive: '30m',
+        options: {
+          temperature: 0, // Deterministic
+        },
       }),
       signal: controller.signal,
     });
@@ -75,9 +140,46 @@ export async function detectCompanies(text: string): Promise<CompanyDetection[]>
     }
 
     const data: OllamaResponse = await response.json();
-    console.log('[detectCompanies] Raw Ollama response:', data.response);
+    return data.response;
+  } catch (error) {
+    clearTimeout(timeout);
+    console.error('Ollama API error:', error);
+    if (error instanceof Error && error.name === 'AbortError') {
+      throw new Error(`AI request timed out (>${timeoutMs / 1000}s). Ensure Ollama service is running.`);
+    }
+    throw new Error(
+      error instanceof Error 
+        ? `AI request failed: ${error.message}. Ensure Ollama service is running.` 
+        : 'AI request failed'
+    );
+  }
+}
+
+/**
+ * Call the configured LLM provider (Groq or Ollama)
+ */
+async function callLLM(prompt: string, timeoutMs: number = 60000): Promise<string> {
+  if (LLM_PROVIDER === 'groq') {
+    return callGroq(prompt, timeoutMs);
+  } else if (LLM_PROVIDER === 'ollama') {
+    return callOllama(prompt, timeoutMs);
+  } else {
+    throw new Error(`Unknown LLM_PROVIDER: ${LLM_PROVIDER}. Use "groq" or "ollama".`);
+  }
+}
+
+/**
+ * Detect companies in text (lightweight, no sentiment analysis)
+ * Phase 1 of the 2-call analysis pipeline
+ */
+export async function detectCompanies(text: string): Promise<CompanyDetection[]> {
+  const prompt = buildDetectionPrompt(text);
+
+  try {
+    const responseText = await callLLM(prompt, 60000); // 1 min timeout
+    console.log('[detectCompanies] Raw LLM response:', responseText);
     
-    const parsed = JSON.parse(data.response);
+    const parsed = JSON.parse(responseText);
     console.log('[detectCompanies] Parsed JSON:', JSON.stringify(parsed, null, 2));
     
     const companies: RawCompanyDetection[] = Array.isArray(parsed.companies) ? parsed.companies : [parsed];
@@ -94,14 +196,11 @@ export async function detectCompanies(text: string): Promise<CompanyDetection[]>
     
     return filtered;
   } catch (error) {
-    console.error('Ollama detection error:', error);
-    if (error instanceof Error && error.name === 'AbortError') {
-      throw new Error('AI detection timed out (> 120s).');
-    }
+    console.error('Company detection error:', error);
     throw new Error(
       error instanceof Error 
-        ? `AI detection failed: ${error.message}. Ensure Ollama service is running.` 
-        : 'AI detection failed'
+        ? `Company detection failed: ${error.message}` 
+        : 'Company detection failed'
     );
   }
 }
@@ -117,30 +216,8 @@ export async function analyzeWithFinancials(
   const prompt = buildEnrichedAnalysisPrompt(text, companies);
 
   try {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 300000); // 5m for analysis
-
-    const response = await fetch(`${OLLAMA_URL}/api/generate`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: OLLAMA_MODEL,
-        prompt,
-        stream: false,
-        format: 'json',
-        keep_alive: '30m',
-      }),
-      signal: controller.signal,
-    });
-
-    clearTimeout(timeout);
-
-    if (!response.ok) {
-      throw new Error(`Ollama API error: ${response.statusText}`);
-    }
-
-    const data: OllamaResponse = await response.json();
-    const parsed = JSON.parse(data.response);
+    const responseText = await callLLM(prompt, 60000); // 1 min timeout
+    const parsed = JSON.parse(responseText);
     
     const analyses: RawCompanyAnalysis[] = Array.isArray(parsed.companies) ? parsed.companies : [parsed];
     
@@ -154,14 +231,11 @@ export async function analyzeWithFinancials(
       }))
       .filter((result: AnalysisResult) => (result.ticker || result.companyName) && result.reliabilityScore > 0);
   } catch (error) {
-    console.error('Ollama analysis error:', error);
-    if (error instanceof Error && error.name === 'AbortError') {
-      throw new Error('AI analysis timed out (> 120s).');
-    }
+    console.error('Analysis with financials error:', error);
     throw new Error(
       error instanceof Error 
-        ? `AI analysis failed: ${error.message}. Ensure Ollama service is running.` 
-        : 'AI analysis failed'
+        ? `Analysis failed: ${error.message}` 
+        : 'Analysis failed'
     );
   }
 }
@@ -174,31 +248,7 @@ export async function analyzeText(text: string): Promise<AnalysisResult[]> {
   const prompt = buildAnalysisPrompt(text);
 
   try {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 300000); // 5m for legacy analysis
-
-    const response = await fetch(`${OLLAMA_URL}/api/generate`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: OLLAMA_MODEL,
-        prompt,
-        stream: false,
-        format: 'json',
-        keep_alive: '30m',
-      }),
-      signal: controller.signal,
-    });
-
-    clearTimeout(timeout);
-
-    if (!response.ok) {
-      throw new Error(`Ollama API error: ${response.statusText}`);
-    }
-
-    const data: OllamaResponse = await response.json();
-    const responseText = data.response;
-    
+    const responseText = await callLLM(prompt, 60000); // 1 min timeout
     const parsed = JSON.parse(responseText);
     
     const companies: RawCompanyAnalysis[] = Array.isArray(parsed.companies) ? parsed.companies : [parsed];
@@ -213,14 +263,11 @@ export async function analyzeText(text: string): Promise<AnalysisResult[]> {
       }))
       .filter((result: AnalysisResult) => (result.ticker || result.companyName) && result.reliabilityScore > 0);
   } catch (error) {
-    console.error('Ollama analysis error:', error);
-    if (error instanceof Error && error.name === 'AbortError') {
-      throw new Error('AI analysis timed out (> 120s). Try with shorter text or wait for the model to warm up.');
-    }
+    console.error('Text analysis error:', error);
     throw new Error(
       error instanceof Error 
-        ? `AI analysis failed: ${error.message}. Ensure Ollama service is running.` 
-        : 'AI analysis failed'
+        ? `Text analysis failed: ${error.message}` 
+        : 'Text analysis failed'
     );
   }
 }
