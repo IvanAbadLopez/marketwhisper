@@ -1,0 +1,23 @@
+version: 2
+updates:
+  # Enable Dependabot for npm dependencies
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-request-limit: 10
+    labels:
+      - "dependencies"
+      - "security"
+    versioning-strategy: increase
+
+  # Enable Dependabot for GitHub Actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    labels:
+      - "dependencies"
+      - "github-actions"

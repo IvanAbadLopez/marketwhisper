@@ -222,7 +222,37 @@ See [docs/testing.md](docs/testing.md) for detailed testing documentation.
 
 ---
 
-## 📁 Project Structure
+## � Security
+
+### Continuous Security Monitoring
+
+This project uses automated security checks:
+
+- **npm audit**: Runs on every push/PR, fails CI on high/critical vulnerabilities
+- **Dependabot**: Automatically creates PRs for vulnerable dependencies (weekly)
+- **Rate limiting**: All public endpoints are rate-limited (see [Security Audit](docs/security-audit.md))
+- **Input validation**: Robust validation on all user inputs (email, passwords, text)
+
+### Running Security Checks Locally
+
+```bash
+# Check for vulnerable dependencies
+npm audit --audit-level=high
+
+# Fix automatically (if possible)
+npm audit fix
+
+# Fix with breaking changes (use caution)
+npm audit fix --force
+```
+
+### Reporting Security Issues
+
+If you discover a security vulnerability, please email ivan_abad_lopez@hotmail.com or open a confidential GitHub Security Advisory. **Do not open a public issue.**
+
+---
+
+## �📁 Project Structure
 
 ```
 marketwhisper/
