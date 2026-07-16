@@ -102,6 +102,7 @@ describe("POST /api/companies/[ticker]/enrich-finnhub", () => {
 
     const mockCompany = {
       id: "company1",
+      userId: "user1",
       ticker: "AAPL",
       name: "Apple Inc.",
       description: "Technology company",
@@ -113,12 +114,16 @@ describe("POST /api/companies/[ticker]/enrich-finnhub", () => {
       avgSentimentScore: null,
       avgReliabilityScore: null,
       analysisCount: 0,
+      globalScore: null,
+      targetPrice: null,
+      valuationUpdatedAt: null,
       createdAt: new Date(),
       updatedAt: new Date(),
     };
 
     const mockEnrichment = {
       id: "enrichment1",
+      userId: "user1",
       companyId: "company1",
       ticker: "AAPL",
       source: "FINNHUB" as const,
@@ -130,6 +135,7 @@ describe("POST /api/companies/[ticker]/enrich-finnhub", () => {
       recommendations: null,
       aiAnalysis: null,
       ollamaModel: null,
+      jobId: "job123",
       createdAt: new Date(),
       updatedAt: new Date(),
     };

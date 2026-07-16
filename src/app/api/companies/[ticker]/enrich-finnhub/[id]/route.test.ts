@@ -79,6 +79,7 @@ describe("GET /api/companies/[ticker]/enrich-finnhub/[id]", () => {
       recommendations: null,
       aiAnalysis: "Test analysis",
       ollamaModel: "llama3.1:8b",
+      jobId: "job123",
       createdAt: new Date(),
       updatedAt: new Date(),
     };
@@ -119,6 +120,7 @@ describe("GET /api/companies/[ticker]/enrich-finnhub/[id]", () => {
       recommendations: null,
       aiAnalysis: "Apple shows strong financial metrics with solid EPS and reasonable P/E ratio.",
       ollamaModel: "llama3.1:8b",
+      jobId: "job123",
       createdAt: now,
       updatedAt: now,
     };

@@ -7,7 +7,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { POST } from "./route";
 import { NextRequest } from "next/server";
 import type { Session } from "next-auth";
-import type { Company, CompanyEnrichment } from "@prisma/client";
+import type { Company, CompanyEnrichment } from "@/generated/prisma/client";
 
 // Mock dependencies
 vi.mock("@/lib/auth", () => ({

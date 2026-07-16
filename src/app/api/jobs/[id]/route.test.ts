@@ -7,7 +7,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { GET, PATCH } from "./route";
 import { NextRequest } from "next/server";
 import type { Session } from "next-auth";
-import type { Job, JobType, JobStatus } from "@prisma/client";
+import type { Job, JobType, JobStatus } from "@/generated/prisma/client";
 
 // Mock dependencies
 vi.mock("@/lib/auth", () => ({
