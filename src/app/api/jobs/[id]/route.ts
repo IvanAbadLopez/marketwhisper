@@ -8,6 +8,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/shared/api/prisma";
 import { recalculateCompanyAggregatesFromScratch } from "@/features/analyze-text/api/processAnalysis";
 import { recomputeCompanyValuation } from "@/entities/company/api/recomputeValuation";
+import { createErrorResponse } from "@/shared";
 
 /**
  * GET /api/jobs/[id]
@@ -62,9 +63,12 @@ export async function GET(
       updatedAt: job.updatedAt,
     });
   } catch (error: unknown) {
-    console.error("[Job Status] Error:", error);
-    const message = error instanceof Error ? error.message : "Failed to fetch job status";
-    return NextResponse.json({ error: message }, { status: 500 });
+    return createErrorResponse(
+      error,
+      'Failed to fetch job status',
+      500,
+      'Job Status'
+    );
   }
 }
 
@@ -199,8 +203,11 @@ export async function PATCH(
       message: "Job cancelled successfully",
     });
   } catch (error: unknown) {
-    console.error("[Job Cancel] Error:", error);
-    const message = error instanceof Error ? error.message : "Failed to cancel job";
-    return NextResponse.json({ error: message }, { status: 500 });
+    return createErrorResponse(
+      error,
+      'Failed to cancel job',
+      500,
+      'Job Cancel'
+    );
   }
 }

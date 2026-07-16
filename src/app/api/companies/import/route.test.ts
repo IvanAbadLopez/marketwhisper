@@ -42,6 +42,14 @@ vi.mock("@/shared", () => ({
     remaining: 19,
     reset: Date.now() + 3600000,
   })),
+  createErrorResponse: vi.fn((error: unknown, genericMessage: string, status: number) => {
+    const message = error instanceof Error ? error.message : genericMessage;
+    return Response.json({ error: message }, { status });
+  }),
+  getSafeErrorMessage: vi.fn((error: unknown, fallback: string) => {
+    if (error instanceof Error) return error.message;
+    return fallback;
+  }),
 }));
 
 vi.mock("@/features/enrich-company/api/processEnrichment", () => ({

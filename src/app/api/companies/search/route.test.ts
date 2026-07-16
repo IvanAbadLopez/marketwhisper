@@ -33,6 +33,14 @@ vi.mock("@/shared", () => ({
     remaining: 29,
     reset: Date.now() + 60000,
   })),
+  createErrorResponse: vi.fn((error: unknown, genericMessage: string, status: number) => {
+    const message = error instanceof Error ? error.message : genericMessage;
+    return Response.json({ error: message }, { status });
+  }),
+  getSafeErrorMessage: vi.fn((error: unknown, fallback: string) => {
+    if (error instanceof Error) return error.message;
+    return fallback;
+  }),
 }));
 
 const mockAuth = vi.mocked(await import("@/lib/auth")).auth;

@@ -8,7 +8,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { after } from "next/server";
 import { auth } from "@/lib/auth";
 import { processEnrichment } from "@/features/enrich-company/api/processEnrichment";
-import { fetchFinnhubData, normalizeTicker, checkRateLimit } from "@/shared";
+import { fetchFinnhubData, normalizeTicker, checkRateLimit, createErrorResponse, getSafeErrorMessage } from "@/shared";
 
 // Vercel serverless function timeout (60s for Hobby tier)
 export const maxDuration = 60;
@@ -85,9 +85,9 @@ export async function POST(request: NextRequest) {
     try {
       finnhubData = await fetchFinnhubData(ticker);
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : "Failed to fetch company data";
+      const safeMessage = getSafeErrorMessage(error, 'Failed to fetch company data');
       return NextResponse.json(
-        { error: `Cannot import ${ticker}: ${message}` },
+        { error: `Cannot import ${ticker}: ${safeMessage}` },
         { status: 404 }
       );
     }
@@ -161,8 +161,11 @@ export async function POST(request: NextRequest) {
       { status: 201 }
     );
   } catch (error: unknown) {
-    console.error("[Import] Error:", error);
-    const message = error instanceof Error ? error.message : "Failed to import company";
-    return NextResponse.json({ error: message }, { status: 500 });
+    return createErrorResponse(
+      error,
+      'Failed to import company',
+      500,
+      'Import'
+    );
   }
 }

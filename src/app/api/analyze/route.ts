@@ -3,7 +3,7 @@ import { after } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/shared/api/prisma";
 import { processAnalysis } from "@/features/analyze-text/api/processAnalysis";
-import { checkRateLimit } from "@/shared";
+import { checkRateLimit, createErrorResponse } from "@/shared";
 
 // Vercel serverless function timeout (60s for Hobby tier)
 export const maxDuration = 60;
@@ -96,9 +96,12 @@ export async function POST(request: NextRequest) {
       },
       { status: 202 } // 202 Accepted
     );
-  } catch (error) {
-    console.error("[Analyze] Error:", error);
-    const message = error instanceof Error ? error.message : "Failed to start analysis";
-    return NextResponse.json({ error: message }, { status: 500 });
+  } catch (error: unknown) {
+    return createErrorResponse(
+      error,
+      'Failed to start analysis',
+      500,
+      'Analyze'
+    );
   }
 }

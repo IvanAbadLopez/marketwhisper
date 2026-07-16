@@ -9,6 +9,7 @@ export { cn } from "./lib/utils";
 export { parseAnalysisBullets, parseVerdict, type VerdictSummary } from "./lib/parseAnalysis";
 export type { ParsedContent, ParsedBullet, ParsedParagraph, IconKey } from "./lib/parseAnalysis";
 export { checkRateLimit, getClientIp, type RateLimitOptions, type RateLimitResult } from "./lib/rateLimit";
+export { logError, getSafeErrorMessage, createErrorResponse } from "./lib/apiError";
 // Note: JobCancelledError and assertJobNotCancelled are server-only (import prisma)
 // Import directly from "@/shared/lib/jobCancellation" in server-side code only
 

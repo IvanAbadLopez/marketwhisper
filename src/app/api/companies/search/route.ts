@@ -6,7 +6,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { searchFinnhubSymbols } from "@/shared/api/finnhub";
-import { checkRateLimit } from "@/shared";
+import { checkRateLimit, createErrorResponse, getSafeErrorMessage } from "@/shared";
 
 // Vercel serverless function timeout (30s for external API calls)
 export const maxDuration = 30;
@@ -94,10 +94,9 @@ export async function GET(request: NextRequest) {
       timestamp: new Date().toISOString(),
     });
   } catch (error: unknown) {
-    console.error("[Company Search] Error:", error);
-    const message = error instanceof Error ? error.message : "Failed to search companies";
+    const message = getSafeErrorMessage(error, 'Failed to search companies');
     
-    // Handle specific Finnhub errors
+    // Handle specific errors (rate limit, API key)
     if (message.includes('rate limit')) {
       return NextResponse.json({ error: message }, { status: 429 });
     }
@@ -105,6 +104,6 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: message }, { status: 503 });
     }
     
-    return NextResponse.json({ error: message }, { status: 500 });
+    return createErrorResponse(error, message, 500, 'Search');
   }
 }

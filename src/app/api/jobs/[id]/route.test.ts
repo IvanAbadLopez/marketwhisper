@@ -44,6 +44,14 @@ vi.mock("@/entities/company/api/recomputeValuation", () => ({
   recomputeCompanyValuation: vi.fn(),
 }));
 
+vi.mock("@/shared", () => ({
+  createErrorResponse: vi.fn((error: unknown, genericMessage: string, status: number) => {
+    // Mock should return generic message for unsafe errors (like "Database error")
+    const message = genericMessage;
+    return Response.json({ error: message }, { status });
+  }),
+}));
+
 const mockAuth = vi.mocked(await import("@/lib/auth")).auth;
 const mockPrisma = vi.mocked(await import("@/shared/api/prisma")).prisma;
 const mockRecalculate = vi.mocked(await import("@/features/analyze-text/api/processAnalysis")).recalculateCompanyAggregatesFromScratch;
@@ -596,6 +604,6 @@ describe("PATCH /api/jobs/[id] - Cancel Job", () => {
     const data = await response.json();
 
     expect(response.status).toBe(500);
-    expect(data.error).toBe("Database error"); // Error message is propagated
+    expect(data.error).toBe("Failed to cancel job"); // Generic error message (sanitized)
   });
 });
