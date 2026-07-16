@@ -43,12 +43,9 @@ export const env = {
   // Financial Data APIs
   FINNHUB_API_KEY: getOptionalEnvVar("FINNHUB_API_KEY"),
 
-  // LLM Provider (Groq for serverless deployment, local LLM for development)
+  // LLM Provider (Groq only for serverless deployment)
   GROQ_API_KEY: getOptionalEnvVar("GROQ_API_KEY"),
-  GROQ_MODEL: getEnvVar("GROQ_MODEL", "llama-3.1-8b-instant"),
-  LLM_PROVIDER: getEnvVar("LLM_PROVIDER", "groq"), // "groq" or "ollama"
-  LLM_URL: getEnvVar("LLM_URL", "http://localhost:11434"),
-  LLM_MODEL: getEnvVar("LLM_MODEL", "qwen2.5:7b"),
+  GROQ_MODEL: getEnvVar("GROQ_MODEL", "llama-3.3-70b-versatile"),
 
   // Node Environment
   NODE_ENV: getEnvVar("NODE_ENV", "development"),
@@ -58,8 +55,8 @@ export const env = {
   IS_DEVELOPMENT: process.env.NODE_ENV === "development",
   IS_TEST: process.env.NODE_ENV === "test",
 
-  // Helper: Get current AI model name based on provider
+  // Helper: Get current AI model name
   getCurrentModel(): string {
-    return this.LLM_PROVIDER === "groq" ? this.GROQ_MODEL : this.LLM_MODEL;
+    return this.GROQ_MODEL;
   },
 } as const;

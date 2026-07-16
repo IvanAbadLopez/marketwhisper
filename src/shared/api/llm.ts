@@ -1,8 +1,7 @@
 /**
- * LLM Client (Groq/Ollama)
+ * LLM Client (Groq)
  * Handles text analysis for company detection, sentiment, and reliability scoring
  * Supports multiple company detection in a single text
- * Abstracted to work with either Groq (serverless) or Ollama (local)
  */
 
 import { env } from '@/shared/config/env';
@@ -35,13 +34,6 @@ interface RawCompanyAnalysis {
   reasoning?: string;
 }
 
-interface OllamaResponse {
-  model: string;
-  created_at: string;
-  response: string;
-  done: boolean;
-}
-
 interface GroqChatResponse {
   id: string;
   object: string;
@@ -57,11 +49,8 @@ interface GroqChatResponse {
   }>;
 }
 
-const LLM_PROVIDER = env.LLM_PROVIDER;
 const GROQ_API_KEY = env.GROQ_API_KEY;
 const GROQ_MODEL = env.GROQ_MODEL;
-const LLM_URL = env.LLM_URL;
-const LLM_MODEL = env.LLM_MODEL;
 
 /**
  * Call Groq API (OpenAI-compatible chat completions with JSON mode)
@@ -111,65 +100,6 @@ async function callGroq(prompt: string, timeoutMs: number = 60000): Promise<stri
 }
 
 /**
- * Call local LLM API (JSON format)
- */
-async function callLocalLLM(prompt: string, timeoutMs: number = 60000): Promise<string> {
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
-
-  try {
-    const response = await fetch(`${LLM_URL}/api/generate`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: LLM_MODEL,
-        prompt,
-        stream: false,
-        format: 'json',
-        options: {
-          temperature: 0, // Deterministic
-        },
-      }),
-      signal: controller.signal,
-    });
-
-    clearTimeout(timeoutId);
-
-    if (!response.ok) {
-      throw new Error(`Local LLM API error: ${response.statusText}`);
-    }
-
-    const data: OllamaResponse = await response.json();
-    return data.response.trim();
-  } catch (error) {
-    console.error('Local LLM API error:', error);
-    clearTimeout(timeoutId);
-    console.error('Ollama API error:', error);
-    if (error instanceof Error && error.name === 'AbortError') {
-      throw new Error(`AI request timed out (>${timeoutMs / 1000}s). Ensure Ollama service is running.`);
-    }
-    throw new Error(
-      error instanceof Error 
-        ? `AI request failed: ${error.message}. Ensure Ollama service is running.` 
-        : 'AI request failed'
-    );
-  }
-}
-
-/**
- * Call the configured LLM provider (Groq or local LLM)
- */
-async function callLLM(prompt: string, timeoutMs: number = 60000): Promise<string> {
-  if (LLM_PROVIDER === 'groq') {
-    return callGroq(prompt, timeoutMs);
-  } else if (LLM_PROVIDER === 'ollama') {
-    return callLocalLLM(prompt, timeoutMs);
-  } else {
-    throw new Error(`Unknown LLM_PROVIDER: ${LLM_PROVIDER}. Use "groq" or "ollama".`);
-  }
-}
-
-/**
  * Detect companies in text (lightweight, no sentiment analysis)
  * Phase 1 of the 2-call analysis pipeline
  */
@@ -177,7 +107,7 @@ export async function detectCompanies(text: string): Promise<CompanyDetection[]>
   const prompt = buildDetectionPrompt(text);
 
   try {
-    const responseText = await callLLM(prompt, 60000); // 1 min timeout
+    const responseText = await callGroq(prompt, 60000); // 1 min timeout
     console.log('[detectCompanies] Raw LLM response:', responseText);
     
     const parsed = JSON.parse(responseText);
@@ -217,7 +147,7 @@ export async function analyzeWithFinancials(
   const prompt = buildEnrichedAnalysisPrompt(text, companies);
 
   try {
-    const responseText = await callLLM(prompt, 60000); // 1 min timeout
+    const responseText = await callGroq(prompt, 60000); // 1 min timeout
     const parsed = JSON.parse(responseText);
     
     const analyses: RawCompanyAnalysis[] = Array.isArray(parsed.companies) ? parsed.companies : [parsed];
@@ -249,7 +179,7 @@ export async function analyzeText(text: string): Promise<AnalysisResult[]> {
   const prompt = buildAnalysisPrompt(text);
 
   try {
-    const responseText = await callLLM(prompt, 60000); // 1 min timeout
+    const responseText = await callGroq(prompt, 60000); // 1 min timeout
     const parsed = JSON.parse(responseText);
     
     const companies: RawCompanyAnalysis[] = Array.isArray(parsed.companies) ? parsed.companies : [parsed];
@@ -376,7 +306,7 @@ Respond ONLY with valid JSON (no additional text, no markdown):
 }
 
 /**
- * Build the analysis prompt for Ollama to detect multiple companies
+ * Build the analysis prompt for detecting multiple companies
  */
 function buildAnalysisPrompt(text: string): string {
   return `You are a financial analyst AI. Analyze the following text and extract information about ALL companies mentioned.
@@ -485,18 +415,4 @@ function normalizeScore(score: number | string): number {
   if (isNaN(num) || num < 1) return 1;
   if (num > 10) return 10;
   return Math.round(num);
-}
-
-/**
- * Check if local LLM service is available (health check)
- */
-export async function checkOllamaHealth(): Promise<boolean> {
-  try {
-    const response = await fetch(`${LLM_URL}/api/tags`, {
-      method: 'GET',
-    });
-    return response.ok;
-  } catch {
-    return false;
-  }
 }

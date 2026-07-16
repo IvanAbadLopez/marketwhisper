@@ -17,13 +17,6 @@ interface UserAnalysis {
   createdAt: Date;
 }
 
-interface OllamaResponse {
-  model: string;
-  created_at: string;
-  response: string;
-  done: boolean;
-}
-
 /**
  * Generate AI analysis prompt from Finnhub data + user text analyses
  */
@@ -124,74 +117,39 @@ Keep each bullet point concise (1-2 sentences max). Integrate both quantitative 
 }
 
 /**
- * Call LLM API to generate AI analysis (supports Groq or Ollama)
+ * Call LLM API to generate AI analysis (Groq only)
  */
 async function generateLLMAnalysis(prompt: string): Promise<string> {
-  const provider = env.LLM_PROVIDER || 'groq';
-  
-  if (provider === 'groq') {
-    const apiKey = env.GROQ_API_KEY;
-    if (!apiKey) {
-      throw new Error('GROQ_API_KEY not configured. Add it to your environment variables.');
+  const apiKey = env.GROQ_API_KEY;
+  if (!apiKey) {
+    throw new Error('GROQ_API_KEY not configured. Add it to your environment variables.');
+  }
+
+  try {
+    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model: env.GROQ_MODEL,
+        messages: [{ role: 'user', content: prompt }],
+        temperature: 0.3,
+        max_tokens: 2000,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Groq API error (${response.status}): ${errorText}`);
     }
 
-    try {
-      const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${apiKey}`,
-        },
-        body: JSON.stringify({
-          model: env.GROQ_MODEL || 'llama-3.1-8b-instant',
-          messages: [{ role: 'user', content: prompt }],
-          temperature: 0.7,
-          max_tokens: 2000,
-        }),
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Groq API error (${response.status}): ${errorText}`);
-      }
-
-      const data = await response.json();
-      return data.choices[0]?.message?.content || '';
-    } catch (error) {
-      console.error("Groq API call failed:", error);
-      throw new Error("Failed to generate AI analysis with Groq.");
-    }
-  } else {
-    // Local LLM
-    const llmUrl = env.LLM_URL;
-    const model = env.LLM_MODEL;
-    
-    try {
-      const response = await fetch(`${llmUrl}/api/generate`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          model,
-          prompt,
-          stream: false,
-          options: {
-            temperature: 0.7,
-            top_p: 0.9,
-            num_predict: 1000,
-          }
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error(`Local LLM API error: ${response.statusText}`);
-      }
-
-      const data: OllamaResponse = await response.json();
-      return data.response;
-    } catch (error) {
-      console.error("Local LLM API call failed:", error);
-      throw new Error("Failed to generate AI analysis with local LLM. Ensure service is running.");
-    }
+    const data = await response.json();
+    return data.choices[0]?.message?.content || '';
+  } catch (error) {
+    console.error("Groq API call failed:", error);
+    throw new Error("Failed to generate AI analysis with Groq.");
   }
 }
 

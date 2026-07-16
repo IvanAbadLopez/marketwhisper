@@ -16,7 +16,7 @@
 
 ### Key Features
 
-- 🤖 **Local AI Analysis**: Paste any financial text and get instant analysis using Ollama (qwen2.5:7b) - 100% local, zero API costs
+- 🤖 **AI-Powered Analysis**: Paste any financial text and get instant analysis using Groq (llama-3.3-70b-versatile) - Fast, accurate, serverless
 - 🏢 **Multi-Company Detection**: Automatically detects and analyzes multiple companies in a single text
 - 📊 **Sentiment Tracking**: BULLISH, BEARISH, or NEUTRAL sentiment for each company mentioned
 - 🎯 **Reliability Scoring**: AI confidence scores (1-10) for each analysis with detailed reasoning
@@ -26,7 +26,7 @@
 - 💰 **Target Price Calculation**: AI-computed fair value using Graham Number, P/E ratio, and sentiment adjustment
 - 🔍 **Company Dashboard**: View all analyses, sentiment trends, enrichment data, and insights per ticker
 - ⚙️ **Job Queue System**: Background processing with real-time status, progress tracking, and cancellation support
-- 🐳 **Full Docker Stack**: PostgreSQL + Next.js + Ollama ready to deploy
+- 🐳 **Docker Stack**: PostgreSQL + Next.js ready to deploy
 - 🔐 **Secure Authentication**: Email/password + GitHub/Google OAuth with NextAuth.js
 
 #### Multi-Company Analysis Example
@@ -53,7 +53,7 @@ Output:
 | **Styling** | Tailwind CSS 4 + shadcn/ui |
 | **Auth** | NextAuth.js v5 (JWT + DB sessions) |
 | **Database** | PostgreSQL 16 + Prisma 7 ORM + pgvector |
-| **AI/ML** | Ollama (qwen2.5:7b) - Local LLM |
+| **AI/ML** | Groq API (llama-3.3-70b-versatile) - Fast LLM |
 | **Financial Data** | Finnhub API (real-time quotes, news, analyst data) |
 | **Charts** | Recharts + lightweight-charts |
 | **Deployment** | Docker Compose (local), Vercel-ready (production) |
@@ -98,12 +98,15 @@ docker compose up
 - Add to `.env`: `FINNHUB_API_KEY="your_key_here"`
 - Restart: `docker compose restart web`
 
-🤖 **AI Text Analysis** (requires Ollama model ~5GB)
-Download the model when you want to use the "Analyze Text" feature:
+🤖 **AI Text Analysis** (requires Groq API key)
+Get a free key at https://console.groq.com (1K RPM / 300K TPM free tier):
 ```bash
-docker exec marketwhisper-ollama ollama pull llama3.1:8b
+# Add to .env:
+GROQ_API_KEY="gsk_your_key_here"
+GROQ_MODEL="llama-3.3-70b-versatile"
+# Restart: docker compose restart web
 ```
-This downloads the AI model (~5GB). Then you can paste financial text and get AI-powered sentiment analysis.
+Then you can paste financial text and get AI-powered sentiment analysis (~2-5s responses).
 
 For detailed Docker instructions, see [docs/docker.md](docs/docker.md)
 
@@ -165,8 +168,9 @@ DATABASE_URL="postgresql://marketwhisper:marketwhisper_dev_2026@localhost:5432/m
 NEXTAUTH_URL="http://localhost:3000"
 NEXTAUTH_SECRET="docker-dev-secret-change-in-production-please"
 
-# Optional: AI API (or use local models)
-# No AI API keys needed - Ollama runs locally!
+# Optional: AI API (Groq for fast LLM responses)
+GROQ_API_KEY=""
+GROQ_MODEL="llama-3.3-70b-versatile"
 
 # Optional: Financial data API
 FINNHUB_API_KEY=""
@@ -306,7 +310,7 @@ See [prisma/schema.prisma](prisma/schema.prisma) for full schema.
 ## 🤖 How It Works
 
 1. **User Input**: Paste financial text in the "Analyze Text" form
-2. **AI Analysis**: Ollama (local LLM) analyzes the text to detect:
+2. **AI Analysis**: Groq (fast LLM) analyzes the text to detect:
    - Companies mentioned (ticker detection)
    - Sentiment for each company (BULLISH/BEARISH/NEUTRAL)
    - Reliability score (1-10)
@@ -323,7 +327,7 @@ See [prisma/schema.prisma](prisma/schema.prisma) for full schema.
 - [x] Next.js 16 project setup with App Router
 - [x] Authentication (NextAuth.js v5 - Email, Google, GitHub)
 - [x] PostgreSQL database with Prisma 7
-- [x] AI text analysis with Ollama (local)
+- [x] AI text analysis with Groq (serverless)
 - [x] Multi-company detection
 - [x] Sentiment and reliability scoring
 - [x] Company-centric UI with aggregated metrics

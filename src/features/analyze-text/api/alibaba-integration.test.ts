@@ -9,7 +9,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { analyzeText } from '@/shared/api/ollama';
+import { analyzeText } from '@/shared/api/llm';
 import { resolveTicker } from '@/shared/api/finnhub';
 
 describe('Alibaba detection (Integration)', () => {
@@ -48,7 +48,7 @@ A precios actuales, el mercado paga el escenario más pesimista de la compañía
     Complete flow for Alibaba detection:
     
     1. User submits Spanish text mentioning "Alibaba" (no ticker)
-    2. Ollama LLM analyzes text with improved prompt:
+    2. Groq LLM analyzes text with improved prompt:
        - Detects multilingual input (Spanish)
        - Extracts company name "Alibaba"
        - May or may not extract ticker "BABA" (depending on model knowledge)

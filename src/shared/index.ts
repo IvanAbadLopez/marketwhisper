@@ -19,8 +19,8 @@ export { AnalysisContent } from "./ui/AnalysisContent";
 // ===== API =====
 // Note: prisma is NOT exported here to avoid bundling server-only dependencies in client components
 // Import directly from "@/shared/api/prisma" in server-side code (API routes, Server Components, etc.)
-export { analyzeText, detectCompanies, analyzeWithFinancials } from "./api/ollama";
-export type { AnalysisResult, CompanyDetection } from "./api/ollama";
+export { analyzeText, detectCompanies, analyzeWithFinancials } from "./api/llm";
+export type { AnalysisResult, CompanyDetection } from "./api/llm";
 export { 
   resolveTicker, 
   fetchFinnhubData, 
