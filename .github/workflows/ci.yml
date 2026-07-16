@@ -86,7 +86,7 @@ jobs:
     runs-on: ubuntu-latest
     # E2E tests run only when DATABASE_URL_CI secret is configured
     # To enable: Add DATABASE_URL_CI secret in GitHub repo settings
-    if: ${{ secrets.DATABASE_URL_CI != '' }}
+    if: secrets.DATABASE_URL_CI != ''
     needs: lint-test-build
     
     steps:
