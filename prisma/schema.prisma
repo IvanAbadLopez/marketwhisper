@@ -155,7 +155,7 @@ model Analysis {
   reliabilityScore   Int       // AI confidence score (1-10)
   reasoning          String    // AI explanation for the analysis (English)
   financialSnapshot  Json?     // Snapshot of financial data at analysis time (price, P/E, EPS, 52w range, analyst consensus)
-  jobId              String?   @unique // Optional job relation for tracking
+  jobId              String?   // Optional job relation for tracking
   createdAt          DateTime  @default(now())
 
   @@index([companyId])
@@ -185,7 +185,7 @@ model CompanyEnrichment {
   // AI Analysis (Ollama-generated insights)
   aiAnalysis      String?           // Comprehensive AI-generated summary and insights (English)
   ollamaModel     String?           // Model used for analysis (e.g., "llama3.1:8b")
-  jobId           String?           @unique // Optional job relation for tracking
+  jobId           String?           // Optional job relation for tracking
   // Metadata
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt

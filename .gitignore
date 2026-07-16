@@ -62,3 +62,5 @@ playwright-report/
 coverage/
 .vitest/
 
+
+.vercel
