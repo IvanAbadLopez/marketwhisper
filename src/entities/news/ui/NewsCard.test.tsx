@@ -26,7 +26,7 @@ const mockPush = vi.fn();
 
 vi.mocked(useRouter).mockReturnValue({
   push: mockPush,
-} as any);
+} as ReturnType<typeof useRouter>);
 
 describe("NewsCard", () => {
   const mockNews: NewsItem = {

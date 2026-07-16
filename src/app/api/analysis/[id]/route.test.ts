@@ -2,6 +2,7 @@
  * Tests for DELETE /api/analysis/[id]
  * @vitest-environment node
  */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { DELETE } from "./route";

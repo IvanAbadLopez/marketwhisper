@@ -1,6 +1,7 @@
 /**
  * Tests for Finnhub API client (direct API calls, no Python service)
  */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { resolveTicker, fetchCompanyNews } from './finnhub';

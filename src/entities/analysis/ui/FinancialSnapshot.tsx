@@ -15,7 +15,7 @@ interface FinancialSnapshotProps {
   companyName?: string;
 }
 
-export function FinancialSnapshot({ snapshot, companyName }: FinancialSnapshotProps) {
+export function FinancialSnapshot({ snapshot }: FinancialSnapshotProps) {
   const [isExpanded, setIsExpanded] = useState(false);
 
   const formatPrice = (price: number | null) => {

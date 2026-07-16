@@ -239,7 +239,7 @@ export async function processAnalysis(
             sentiment: aiResult.sentiment,
             reliabilityScore: aiResult.reliabilityScore,
             reasoning: aiResult.reasoning,
-            financialSnapshot: financialSnapshot as any,
+            financialSnapshot: financialSnapshot as Record<string, unknown>,
             jobId,
           },
         });
@@ -294,7 +294,7 @@ export async function processAnalysis(
       data: {
         status: "COMPLETED",
         ticker: tickerDisplay,
-        result: jobResult as any,
+        result: jobResult as Record<string, unknown>,
       },
     });
 

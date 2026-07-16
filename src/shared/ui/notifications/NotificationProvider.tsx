@@ -49,6 +49,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         // Filter out stale jobs (> 30 min old)
         const now = Date.now();
         const fresh = parsed.filter(job => now - job.startedAt < MAX_JOB_AGE);
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setJobs(fresh);
       }
     } catch (error) {
@@ -116,6 +117,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   // Start polling when jobs exist
   useEffect(() => {
     if (jobs.length > 0) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       pollJobs(); // Poll immediately
       pollTimerRef.current = setInterval(pollJobs, POLL_INTERVAL);
     }

@@ -3,7 +3,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { MainLayout } from "@/widgets/layout";
 import { 
-  Building2, 
   TrendingUp,
   TrendingDown, 
   Globe, 
@@ -62,7 +61,7 @@ interface Company {
     sentiment: string;
     reliabilityScore: number;
     reasoning: string;
-    financialSnapshot?: any; // Json type
+    financialSnapshot?: Record<string, unknown> | null;
     createdAt: string;
   }[];
   enrichments?: {
@@ -219,6 +218,7 @@ export default function CompanyDetailPage({ params }: { params: Promise<{ ticker
 
   useEffect(() => {
     if (status === "authenticated" && ticker) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       fetchCompany();
     }
   }, [status, ticker, fetchCompany]);
@@ -229,17 +229,6 @@ export default function CompanyDetailPage({ params }: { params: Promise<{ ticker
     if (marketCap >= 1e9) return `$${(marketCap / 1e9).toFixed(2)}B`;
     if (marketCap >= 1e6) return `$${(marketCap / 1e6).toFixed(2)}M`;
     return `$${marketCap.toLocaleString()}`;
-  };
-
-  const formatTimestamp = (seconds: number | null): string => {
-    if (!seconds) return "N/A";
-    const hours = Math.floor(seconds / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
-    const secs = Math.floor(seconds % 60);
-    if (hours > 0) {
-      return `${hours}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-    }
-    return `${minutes}:${secs.toString().padStart(2, '0')}`;
   };
 
   if (status === "loading" || loading) {

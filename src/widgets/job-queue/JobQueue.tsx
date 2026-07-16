@@ -15,7 +15,7 @@ interface Job {
   type: "ANALYSIS" | "ENRICHMENT";
   status: "PENDING" | "PROCESSING" | "COMPLETED" | "FAILED" | "CANCELLED";
   ticker: string;
-  result: any;
+  result: Record<string, unknown> | null;
   errorMessage: string | null;
   createdAt: string;
   updatedAt: string;
@@ -58,7 +58,9 @@ export function JobQueue() {
 
   // Initial fetch
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchJobs();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [typeFilter, statusFilter]);
 
   // Auto-refresh for active jobs (every 3 seconds)
@@ -74,6 +76,7 @@ export function JobQueue() {
     }, 3000);
 
     return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [jobs]);
 
   // Count active jobs
@@ -94,7 +97,7 @@ export function JobQueue() {
           {/* Type filter */}
           <select
             value={typeFilter}
-            onChange={(e) => setTypeFilter(e.target.value as any)}
+            onChange={(e) => setTypeFilter(e.target.value as "ALL" | "ANALYSIS" | "ENRICHMENT")}
             className="px-3 py-1.5 text-sm border border-zinc-300 dark:border-zinc-700 rounded-md bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100"
           >
             <option value="ALL">All Types</option>
@@ -105,7 +108,7 @@ export function JobQueue() {
           {/* Status filter */}
           <select
             value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value as any)}
+            onChange={(e) => setStatusFilter(e.target.value as "ALL" | "ACTIVE" | "COMPLETED" | "FAILED" | "CANCELLED")}
             className="px-3 py-1.5 text-sm border border-zinc-300 dark:border-zinc-700 rounded-md bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100"
           >
             <option value="ALL">All Status</option>

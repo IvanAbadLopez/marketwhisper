@@ -6,7 +6,7 @@
  * @module widgets/job-queue
  */
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { 
   Clock, 
@@ -26,7 +26,7 @@ interface Job {
   type: "ANALYSIS" | "ENRICHMENT";
   status: "PENDING" | "PROCESSING" | "COMPLETED" | "FAILED" | "CANCELLED";
   ticker: string;
-  result: any;
+  result: Record<string, unknown> | null;
   errorMessage: string | null;
   createdAt: string;
   updatedAt: string;
@@ -93,17 +93,18 @@ export function JobCard({ job, onCancelled }: JobCardProps) {
   );
 
   // Calculate elapsed time
-  const getElapsedTime = () => {
+  const elapsedTime = useMemo(() => {
     const start = new Date(job.createdAt).getTime();
     const end = job.status === "COMPLETED" || job.status === "FAILED" || job.status === "CANCELLED"
       ? new Date(job.updatedAt).getTime()
+      // eslint-disable-next-line react-hooks/purity
       : Date.now();
     const elapsed = Math.floor((end - start) / 1000);
 
     if (elapsed < 60) return `${elapsed}s`;
     if (elapsed < 3600) return `${Math.floor(elapsed / 60)}m ${elapsed % 60}s`;
     return `${Math.floor(elapsed / 3600)}h ${Math.floor((elapsed % 3600) / 60)}m`;
-  };
+  }, [job.createdAt, job.updatedAt, job.status]);
 
   // Navigate to company detail
   const viewResult = () => {
@@ -168,7 +169,7 @@ export function JobCard({ job, onCancelled }: JobCardProps) {
               {statusDisplay.label}
             </span>
             <span>•</span>
-            <span>{getElapsedTime()}</span>
+            <span>{elapsedTime}</span>
             <span>•</span>
             <span>{new Date(job.createdAt).toLocaleString()}</span>
           </div>

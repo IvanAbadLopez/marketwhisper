@@ -84,9 +84,7 @@ test.describe("Job Queue System", () => {
 
     // If there are active jobs, badge should be visible
     // Note: This might be 0 in a clean test environment
-    // We just verify the badge element exists
-    const badge = processesLink.locator("span").filter({ hasText: /^\d+$/ });
-    // Badge might not be visible if no active jobs, so we just check the link exists
+    // We just verify the link exists
     await expect(processesLink).toBeVisible();
   });
 

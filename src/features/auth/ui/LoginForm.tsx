@@ -99,7 +99,7 @@ export function LoginForm({ callbackUrl = "/" }: LoginFormProps) {
 
         {/* Register link */}
         <p className="text-center text-gray-400 text-sm mt-6">
-          Don't have an account?{" "}
+          Don&apos;t have an account?{" "}
           <Link href="/register" className="text-blue-400 hover:text-blue-300">
             Sign up
           </Link>

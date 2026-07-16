@@ -4,8 +4,8 @@
  */
 
 import { env } from "@/shared/config/env";
-import { calcAnalystScore, analystScoreLabel, type AnalystRecommendation } from "../lib/analystScore";
-import { fetchFinnhubData, normalizeTicker, type FinnhubData } from "@/shared/api/finnhub";
+import { calcAnalystScore, analystScoreLabel } from "../lib/analystScore";
+import { fetchFinnhubData, type FinnhubData } from "@/shared/api/finnhub";
 
 interface UserAnalysis {
   text: string;
@@ -194,7 +194,8 @@ export async function processEnrichment(
   companyId: string,
   ticker: string,
   jobId: string | undefined, // Optional job ID for queue tracking
-  userId: string // User ID for ownership
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  _userId: string // User ID for ownership (reserved for future use)
 ): Promise<void> {
   const { prisma } = await import("@/shared/api/prisma");
 
@@ -265,7 +266,7 @@ export async function processEnrichment(
       where: { id: enrichmentId },
       data: {
         status: "COMPLETED",
-        recommendations: (finnhubData.recommendations ?? undefined) as any,
+        recommendations: (finnhubData.recommendations ?? undefined) as unknown[],
         aiAnalysis,
         ollamaModel: env.OLLAMA_MODEL,
         errorMessage: null,
@@ -281,7 +282,7 @@ export async function processEnrichment(
           result: {
             enrichmentId,
             aiAnalysisPreview: aiAnalysis.substring(0, 200) + "...",
-          } as any,
+          } as Record<string, unknown>,
         },
       });
     }

@@ -8,6 +8,7 @@
  *   npm run db:seed
  */
 
+/* eslint-disable @typescript-eslint/no-require-imports */
 const bcrypt = require('bcrypt');
 
 // Dynamic import to load ES module
@@ -49,6 +50,6 @@ async function main() {
 }
 
 main()
-  .catch((e) => {
+  .catch(() => {
     process.exit(1);
   });

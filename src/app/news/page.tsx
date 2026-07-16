@@ -3,7 +3,7 @@
 import { useSession } from "next-auth/react";
 import { MainLayout } from "@/widgets/layout";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { NewsCard } from "@/entities/news";
 import { NewsItem } from "@/shared";
 import { Newspaper, Loader2, AlertCircle } from "lucide-react";
@@ -39,21 +39,7 @@ export default function NewsPage() {
     }
   }, [status, router]);
 
-  // Fetch companies list on mount
-  useEffect(() => {
-    if (status === "authenticated") {
-      fetchCompanies();
-    }
-  }, [status]);
-
-  // Fetch news when a company is selected
-  useEffect(() => {
-    if (selectedTicker) {
-      fetchNews(selectedTicker);
-    }
-  }, [selectedTicker]);
-
-  const fetchCompanies = async () => {
+  const fetchCompanies = useCallback(async () => {
     setIsLoadingCompanies(true);
     setError(null);
 
@@ -76,9 +62,9 @@ export default function NewsPage() {
     } finally {
       setIsLoadingCompanies(false);
     }
-  };
+  }, []);
 
-  const fetchNews = async (ticker: string) => {
+  const fetchNews = useCallback(async (ticker: string) => {
     setIsLoadingNews(true);
     setError(null);
 
@@ -100,7 +86,23 @@ export default function NewsPage() {
     } finally {
       setIsLoadingNews(false);
     }
-  };
+  }, []);
+
+  // Fetch companies list on mount
+  useEffect(() => {
+    if (status === "authenticated") {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      fetchCompanies();
+    }
+  }, [status, fetchCompanies]);
+
+  // Fetch news when a company is selected
+  useEffect(() => {
+    if (selectedTicker) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      fetchNews(selectedTicker);
+    }
+  }, [selectedTicker, fetchNews]);
 
   if (status === "loading" || !session?.user) {
     return null;

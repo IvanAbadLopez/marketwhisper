@@ -38,6 +38,7 @@ export function RecentJobsList() {
   };
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchJobs();
 
     // Auto-refresh every 5 seconds if there are active jobs

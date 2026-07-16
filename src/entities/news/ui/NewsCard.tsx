@@ -30,7 +30,7 @@ function formatRelativeDate(dateString: string | null): string {
   });
 }
 
-export function NewsCard({ news, ticker }: NewsCardProps) {
+export function NewsCard({ news }: NewsCardProps) {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -80,6 +80,7 @@ export function NewsCard({ news, ticker }: NewsCardProps) {
       {/* Image */}
       {news.image && (
         <div className="mb-3 rounded-md overflow-hidden">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
           <img 
             src={news.image} 
             alt={news.title}

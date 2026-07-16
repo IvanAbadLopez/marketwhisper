@@ -133,7 +133,7 @@ export default function SituationsPage() {
                 No Companies Found
               </h2>
               <p className="text-zinc-600 dark:text-zinc-400 mb-4">
-                No companies match your search "{searchQuery}"
+                No companies match your search &quot;{searchQuery}&quot;
               </p>
               <button
                 onClick={() => setSearchQuery("")}

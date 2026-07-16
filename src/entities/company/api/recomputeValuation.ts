@@ -50,9 +50,9 @@ export async function recomputeCompanyValuation(companyId: string): Promise<void
     console.log(`[recomputeValuation] Enrichment found: ${!!latestEnrichment}`);
 
     // 3. Build inputs for valuation formulas
-    const financialData = latestEnrichment?.financialData as any;
-    const priceData = latestEnrichment?.priceData as any;
-    const recommendations = latestEnrichment?.recommendations as any[];
+    const financialData = latestEnrichment?.financialData as Record<string, unknown> | null;
+    const priceData = latestEnrichment?.priceData as Record<string, unknown> | null;
+    const recommendations = latestEnrichment?.recommendations as unknown[] | null;
 
     const inputs: ValuationInputs = {
       // From enrichment financialData
@@ -93,7 +93,7 @@ export async function recomputeCompanyValuation(companyId: string): Promise<void
         globalScore: result.globalScore,
         globalScoreLabel: result.globalScoreLabel,
         targetPrice: result.targetPrice,
-        valuationBreakdown: result.breakdown as any,
+        valuationBreakdown: result.breakdown as Record<string, unknown>,
         valuationUpdatedAt: new Date(),
       },
     });

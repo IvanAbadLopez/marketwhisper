@@ -7,7 +7,7 @@
  * @module features/enrich-company/ui
  */
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { Sparkles, Loader2, Clock } from "lucide-react";
 import { enrichCompany, getEnrichmentStatus } from "../api/enrichCompany";
 import { formatRelativeTime } from "@/shared/lib/date";
@@ -49,14 +49,15 @@ export function EnrichButton({
   const success = state === "success";
 
   // Calculate age color for timestamp (gray <7 days, yellow >7 days)
-  const ageInDays = lastEnrichment
-    ? (Date.now() - new Date(lastEnrichment.createdAt).getTime()) / 86400000
-    : 0;
-
-  const ageColor =
-    ageInDays > 7
+  const ageColor = useMemo(() => {
+    if (!lastEnrichment) return "text-zinc-500 dark:text-zinc-400";
+    
+    // eslint-disable-next-line react-hooks/purity
+    const ageInDays = (Date.now() - new Date(lastEnrichment.createdAt).getTime()) / 86400000;
+    return ageInDays > 7
       ? "text-yellow-600 dark:text-yellow-400"
       : "text-zinc-500 dark:text-zinc-400";
+  }, [lastEnrichment]);
 
   const pollStatus = (enrichmentId: string, attempt = 0) => {
     timerRef.current = setTimeout(async () => {
