@@ -20,7 +20,7 @@ vi.mock("@/shared/api/prisma", () => ({
       findUnique: vi.fn(),
     },
     company: {
-      findUnique: vi.fn(),
+      findFirst: vi.fn(),
       create: vi.fn(),
     },
     companyEnrichment: {
@@ -96,10 +96,15 @@ describe("POST /api/companies/import", () => {
 
   it("should return existing company if already imported", async () => {
     mockAuth.mockResolvedValue({
-      user: { email: "test@example.com" },
+      user: { id: "user1", email: "test@example.com" },
     } as Session);
 
-    mockPrisma.company.findUnique.mockResolvedValue({
+    mockPrisma.user.findUnique.mockResolvedValue({
+      id: "user1",
+      email: "test@example.com",
+    } as any);
+
+    mockPrisma.company.findFirst.mockResolvedValue({
       id: "company-123",
       ticker: "AAPL",
       name: "Apple Inc.",
@@ -132,7 +137,7 @@ describe("POST /api/companies/import", () => {
     } as any);
 
     // Company doesn't exist
-    mockPrisma.company.findUnique.mockResolvedValue(null);
+    mockPrisma.company.findFirst.mockResolvedValue(null);
 
     // Mock Finnhub data fetch
     mockFetchFinnhubData.mockResolvedValue({
@@ -204,10 +209,15 @@ describe("POST /api/companies/import", () => {
 
   it("should return 404 if ticker not found in Finnhub", async () => {
     mockAuth.mockResolvedValue({
-      user: { email: "test@example.com" },
+      user: { id: "user1", email: "test@example.com" },
     } as Session);
 
-    mockPrisma.company.findUnique.mockResolvedValue(null);
+    mockPrisma.user.findUnique.mockResolvedValue({
+      id: "user1",
+      email: "test@example.com",
+    } as any);
+
+    mockPrisma.company.findFirst.mockResolvedValue(null);
 
     // Mock Finnhub fetch error
     mockFetchFinnhubData.mockRejectedValue(

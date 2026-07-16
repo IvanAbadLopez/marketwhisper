@@ -14,7 +14,7 @@ vi.mock("@/shared/api/prisma", () => ({
       findUnique: vi.fn(),
     },
     company: {
-      findUnique: vi.fn(),
+      findFirst: vi.fn(),
     },
     job: {
       create: vi.fn(),
@@ -72,7 +72,7 @@ describe("POST /api/companies/[ticker]/enrich-finnhub", () => {
       email: "test@example.com",
     } as any);
 
-    vi.mocked(prisma.company.findUnique).mockResolvedValue(null);
+    vi.mocked(prisma.company.findFirst).mockResolvedValue(null);
 
     const request = new NextRequest("http://localhost:3000/api/companies/INVALID/enrich-finnhub", {
       method: "POST",
@@ -134,7 +134,7 @@ describe("POST /api/companies/[ticker]/enrich-finnhub", () => {
       updatedAt: new Date(),
     };
 
-    vi.mocked(prisma.company.findUnique).mockResolvedValue(mockCompany);
+    vi.mocked(prisma.company.findFirst).mockResolvedValue(mockCompany);
     
     vi.mocked(prisma.job.create).mockResolvedValue({
       id: "job123",
@@ -179,6 +179,7 @@ describe("POST /api/companies/[ticker]/enrich-finnhub", () => {
     
     expect(prisma.companyEnrichment.create).toHaveBeenCalledWith({
       data: {
+        userId: "user1",
         companyId: "company1",
         ticker: "AAPL",
         source: "FINNHUB",

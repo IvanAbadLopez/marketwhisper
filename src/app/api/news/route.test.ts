@@ -52,7 +52,7 @@ describe("GET /api/news", () => {
       expires: "2026-12-31",
     } as Session);
 
-    mockPrisma.company.findUnique.mockResolvedValue({
+    mockPrisma.company.findFirst.mockResolvedValue({
       ticker: "AAPL",
       name: "Apple Inc.",
     } as any);
@@ -97,11 +97,6 @@ describe("GET /api/news", () => {
       name: "Microsoft Corp.",
     } as any);
 
-    mockPrisma.company.findUnique.mockResolvedValue({
-      ticker: "MSFT",
-      name: "Microsoft Corp.",
-    } as any);
-
     mockFetchCompanyNews.mockResolvedValue([]);
 
     const request = new NextRequest("http://localhost:3000/api/news");
@@ -135,7 +130,7 @@ describe("GET /api/news", () => {
       expires: "2026-12-31",
     } as Session);
 
-    mockPrisma.company.findUnique.mockResolvedValue(null);
+    mockPrisma.company.findFirst.mockResolvedValue(null);
 
     const request = new NextRequest("http://localhost:3000/api/news?ticker=INVALID");
     const response = await GET(request);
@@ -165,7 +160,7 @@ describe("GET /api/news", () => {
       expires: "2026-12-31",
     } as Session);
 
-    mockPrisma.company.findUnique.mockResolvedValue({
+    mockPrisma.company.findFirst.mockResolvedValue({
       ticker: "AAPL",
       name: "Apple Inc.",
     } as any);
@@ -186,7 +181,7 @@ describe("GET /api/news", () => {
       expires: "2026-12-31",
     } as Session);
 
-    mockPrisma.company.findUnique.mockResolvedValue({
+    mockPrisma.company.findFirst.mockResolvedValue({
       ticker: "AAPL",
       name: "Apple Inc.",
     } as any);
@@ -207,7 +202,7 @@ describe("GET /api/news", () => {
       expires: "2026-12-31",
     } as Session);
 
-    mockPrisma.company.findUnique.mockResolvedValue({
+    mockPrisma.company.findFirst.mockResolvedValue({
       ticker: "AAPL",
       name: "Apple Inc.",
     } as any);

@@ -68,6 +68,7 @@ describe("GET /api/companies/[ticker]/enrich-finnhub/[id]", () => {
     const mockEnrichment = {
       id: "123",
       companyId: "company1",
+      userId: "user1",
       ticker: "MSFT", // Different ticker
       source: "FINNHUB" as const,
       status: "COMPLETED" as const,
@@ -107,6 +108,7 @@ describe("GET /api/companies/[ticker]/enrich-finnhub/[id]", () => {
     const mockEnrichment = {
       id: "enrichment1",
       companyId: "company1",
+      userId: "user1",
       ticker: "AAPL",
       source: "FINNHUB" as const,
       status: "COMPLETED" as const,
