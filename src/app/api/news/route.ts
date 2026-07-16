@@ -9,7 +9,7 @@ export const maxDuration = 30;
 export async function GET(request: Request) {
   const session = await auth();
 
-  if (!session) {
+  if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -33,6 +33,7 @@ export async function GET(request: Request) {
     // If no ticker provided, use the first tracked company
     if (!targetTicker) {
       const firstCompany = await prisma.company.findFirst({
+        where: { userId: session.user.id },
         orderBy: { ticker: "asc" },
         select: { ticker: true },
       });
@@ -48,8 +49,11 @@ export async function GET(request: Request) {
     }
 
     // Validate ticker exists in tracked companies
-    const company = await prisma.company.findUnique({
-      where: { ticker: targetTicker.toUpperCase() },
+    const company = await prisma.company.findFirst({
+      where: {
+        userId: session.user.id,
+        ticker: targetTicker.toUpperCase(),
+      },
       select: { ticker: true, name: true },
     });
 

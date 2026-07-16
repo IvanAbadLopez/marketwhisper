@@ -36,9 +36,12 @@ export async function POST(request: NextRequest) {
 
     const ticker = normalizeTicker(rawTicker);
 
-    // 3. Check if company already exists
-    const existingCompany = await prisma.company.findUnique({
-      where: { ticker },
+    // 3. Check if company already exists for this user
+    const existingCompany = await prisma.company.findFirst({
+      where: {
+        userId: session.user.id as string,
+        ticker,
+      },
     });
 
     if (existingCompany) {
@@ -79,6 +82,7 @@ export async function POST(request: NextRequest) {
     // 5. Create company in database
     const company = await prisma.company.create({
       data: {
+        userId: session.user.id as string,
         ticker,
         name: name || ticker,
         sector: sector || null,
@@ -92,29 +96,20 @@ export async function POST(request: NextRequest) {
 
     console.log(`[Import] Created company ${ticker} (ID: ${company.id})`);
 
-    // 6. Get user ID for job tracking
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email },
-      select: { id: true },
-    });
-
-    if (!user) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 });
-    }
-
-    // 7. Create a Job record for tracking in the queue
+    // 6. Create a Job record for tracking in the queue
     const job = await prisma.job.create({
       data: {
-        userId: user.id,
+        userId: session.user.id as string,
         type: "ENRICHMENT",
         status: "PENDING",
         ticker,
       },
     });
 
-    // 8. Create a PENDING enrichment record
+    // 7. Create a PENDING enrichment record
     const enrichment = await prisma.companyEnrichment.create({
       data: {
+        userId: session.user.id as string,
         companyId: company.id,
         ticker,
         source: "FINNHUB",
@@ -123,8 +118,8 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    // 9. Kick off background enrichment (full analysis with Ollama)
-    after(() => processEnrichment(enrichment.id, company.id, ticker, job.id));
+    // 8. Kick off background enrichment (full analysis with Ollama)
+    after(() => processEnrichment(enrichment.id, company.id, ticker, job.id, session.user.id as string));
 
     console.log(
       `[Import] Started enrichment for ${ticker} (Enrichment ID: ${enrichment.id}, Job ID: ${job.id})`

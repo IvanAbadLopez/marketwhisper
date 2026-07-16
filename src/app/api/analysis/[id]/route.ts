@@ -25,10 +25,11 @@ export async function DELETE(
   }
 
   try {
-    // Check if analysis exists and get company info
+    // Check if analysis exists and verify ownership
     const analysis = await prisma.analysis.findUnique({
       where: { id },
       select: {
+        userId: true,
         companyId: true,
         ticker: true,
       },
@@ -36,6 +37,11 @@ export async function DELETE(
 
     if (!analysis) {
       return NextResponse.json({ error: "Analysis not found" }, { status: 404 });
+    }
+
+    // Verify ownership
+    if (analysis.userId !== session.user.id) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     // Delete the analysis

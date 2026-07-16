@@ -8,15 +8,16 @@ export async function GET(
 ) {
   const session = await auth();
 
-  if (!session) {
+  if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const { ticker } = await params;
 
   try {
-    const company = await prisma.company.findUnique({
+    const company = await prisma.company.findFirst({
       where: {
+        userId: session.user.id,
         ticker: ticker.toUpperCase(),
       },
       include: {
@@ -66,7 +67,7 @@ export async function DELETE(
 ) {
   const session = await auth();
 
-  if (!session) {
+  if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -74,9 +75,12 @@ export async function DELETE(
   const upperTicker = ticker.toUpperCase();
 
   try {
-    // Check if company exists
-    const company = await prisma.company.findUnique({
-      where: { ticker: upperTicker },
+    // Check if company exists and belongs to user
+    const company = await prisma.company.findFirst({
+      where: {
+        userId: session.user.id,
+        ticker: upperTicker,
+      },
     });
 
     if (!company) {
@@ -85,7 +89,10 @@ export async function DELETE(
 
     // Manual deletion: Jobs (no FK, relates by ticker string)
     await prisma.job.deleteMany({
-      where: { ticker: upperTicker },
+      where: {
+        userId: session.user.id,
+        ticker: upperTicker,
+      },
     });
 
     // Delete company (cascade handles related data via Prisma schema)
@@ -95,7 +102,7 @@ export async function DELETE(
     // - mentions (onDelete: Cascade)
     // - content (via CompanyContent intermediate table)
     await prisma.company.delete({
-      where: { ticker: upperTicker },
+      where: { id: company.id },
     });
 
     return NextResponse.json({

@@ -17,19 +17,22 @@ export default async function Home() {
     select: { id: true },
   });
 
-  // Fetch stats from database
+  // Fetch stats from database (scoped to user)
   const [companyCount, analysisCount, reportCount, activeJobsCount] = await Promise.all([
-    prisma.company.count(),
-    prisma.analysis.count(),
-    prisma.companyEnrichment.count({ where: { status: "COMPLETED" } }),
-    user
-      ? prisma.job.count({
-          where: {
-            userId: user.id,
-            status: { in: ["PENDING", "PROCESSING"] },
-          },
-        })
-      : 0,
+    prisma.company.count({ where: { userId: user!.id } }),
+    prisma.analysis.count({ where: { userId: user!.id } }),
+    prisma.companyEnrichment.count({
+      where: {
+        userId: user!.id,
+        status: "COMPLETED",
+      },
+    }),
+    prisma.job.count({
+      where: {
+        userId: user!.id,
+        status: { in: ["PENDING", "PROCESSING"] },
+      },
+    }),
   ]);
 
   return (

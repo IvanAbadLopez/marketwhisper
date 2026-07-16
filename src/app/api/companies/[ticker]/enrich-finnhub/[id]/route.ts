@@ -19,15 +19,26 @@ export async function GET(
   try {
     // 1. Check authentication
     const session = await auth();
-    if (!session?.user?.email) {
+    if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const { ticker, id } = await params;
 
-    // 2. Look up the enrichment record
+    // 2. Look up the enrichment record and verify ownership
     const enrichment = await prisma.companyEnrichment.findUnique({
       where: { id },
+      select: {
+        id: true,
+        userId: true,
+        ticker: true,
+        source: true,
+        status: true,
+        errorMessage: true,
+        aiAnalysis: true,
+        ollamaModel: true,
+        updatedAt: true,
+      },
     });
 
     if (!enrichment || enrichment.ticker !== ticker.toUpperCase() || enrichment.source !== "FINNHUB") {
@@ -35,6 +46,11 @@ export async function GET(
         { error: "Finnhub enrichment not found" },
         { status: 404 }
       );
+    }
+
+    // Verify ownership
+    if (enrichment.userId !== session.user.id) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     // 3. Return the current status and result (if completed)

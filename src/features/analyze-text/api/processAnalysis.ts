@@ -90,14 +90,18 @@ export async function processAnalysis(
       }
 
       // Find or create company
-      let company = await prisma.company.findUnique({
-        where: { ticker },
+      let company = await prisma.company.findFirst({
+        where: {
+          userId,
+          ticker,
+        },
       });
 
       let isNewCompany = false;
       if (!company) {
         company = await prisma.company.create({
           data: {
+            userId,
             ticker,
             name: detection.companyName || ticker,
             analysisCount: 0,
@@ -227,6 +231,7 @@ export async function processAnalysis(
         // Create analysis record
         const analysis = await prisma.analysis.create({
           data: {
+            userId,
             text,
             source: source || null,
             companyId: companyData.company.id,
@@ -304,6 +309,7 @@ export async function processAnalysis(
         // Create PENDING enrichment record
         const enrichment = await prisma.companyEnrichment.create({
           data: {
+            userId,
             companyId: companyData.company.id,
             ticker: companyData.ticker,
             source: "FINNHUB",
@@ -312,7 +318,7 @@ export async function processAnalysis(
         });
 
         // Kick off enrichment in background (no await - fire and forget)
-        processEnrichment(enrichment.id, companyData.company.id, companyData.ticker).catch(error => {
+        processEnrichment(enrichment.id, companyData.company.id, companyData.ticker, undefined, userId).catch(error => {
           console.error(`[processAnalysis] Background enrichment failed for ${companyData.ticker}:`, error);
         });
 

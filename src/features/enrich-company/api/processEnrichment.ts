@@ -193,7 +193,8 @@ export async function processEnrichment(
   enrichmentId: string,
   companyId: string,
   ticker: string,
-  jobId?: string // Optional job ID for queue tracking
+  jobId: string | undefined, // Optional job ID for queue tracking
+  userId: string // User ID for ownership
 ): Promise<void> {
   const { prisma } = await import("@/shared/api/prisma");
 

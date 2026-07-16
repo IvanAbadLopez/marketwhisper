@@ -45,10 +45,13 @@ export async function GET(request: NextRequest) {
     // 3. Search Finnhub directly
     const results = await searchFinnhubSymbols(query);
 
-    // 4. Check which tickers already exist in database
+    // 4. Check which tickers already exist in database for this user
     const tickers = results.map((r) => r.symbol.toUpperCase());
     const existingCompanies = await prisma.company.findMany({
-      where: { ticker: { in: tickers } },
+      where: {
+        userId: session.user.id as string,
+        ticker: { in: tickers },
+      },
       select: { ticker: true },
     });
 

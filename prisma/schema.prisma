@@ -23,6 +23,9 @@ model User {
   accounts      Account[]
   sessions      Session[]
   jobs          Job[]
+  companies     Company[]
+  analyses      Analysis[]
+  enrichments   CompanyEnrichment[]
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 }
@@ -114,7 +117,9 @@ enum Sentiment {
 
 model Company {
   id                   String           @id @default(cuid())
-  ticker               String           @unique // Stock ticker symbol (e.g., AAPL, MSFT)
+  userId               String
+  user                 User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  ticker               String           // Stock ticker symbol (e.g., AAPL, MSFT)
   name                 String           // Company name (e.g., Apple Inc.)
   description          String?          // Company description
   sector               String?          // Industry sector
@@ -136,6 +141,8 @@ model Company {
   createdAt            DateTime         @default(now())
   updatedAt            DateTime         @updatedAt
 
+  @@unique([userId, ticker])
+  @@index([userId])
   @@index([ticker])
   @@index([sector])
 }
@@ -146,6 +153,8 @@ model Company {
 
 model Analysis {
   id                 String    @id @default(cuid())
+  userId             String
+  user               User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   text               String    // Original text input from user
   source             String?   // Optional source name (e.g., "Twitter", "Bloomberg")
   companyId          String    // Detected company
@@ -158,6 +167,7 @@ model Analysis {
   jobId              String?   // Optional job relation for tracking
   createdAt          DateTime  @default(now())
 
+  @@index([userId])
   @@index([companyId])
   @@index([ticker])
   @@index([createdAt])
@@ -170,6 +180,8 @@ model Analysis {
 
 model CompanyEnrichment {
   id              String            @id @default(cuid())
+  userId          String
+  user            User              @relation(fields: [userId], references: [id], onDelete: Cascade)
   companyId       String
   company         Company           @relation(fields: [companyId], references: [id], onDelete: Cascade)
   ticker          String            // Ticker symbol for reference
@@ -190,6 +202,7 @@ model CompanyEnrichment {
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
+  @@index([userId])
   @@index([companyId])
   @@index([ticker])
   @@index([source])

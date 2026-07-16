@@ -5,12 +5,15 @@ import { prisma } from "@/shared/api/prisma";
 export async function GET() {
   const session = await auth();
 
-  if (!session) {
+  if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   try {
     const companies = await prisma.company.findMany({
+      where: {
+        userId: session.user.id,
+      },
       include: {
         _count: {
           select: {
