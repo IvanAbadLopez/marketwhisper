@@ -190,29 +190,6 @@ export default function CompanyDetailPage({ params }: { params: Promise<{ ticker
     }
   }, [ticker]);
 
-  const handleDeleteContent = async (contentId: string, contentTitle: string | null) => {
-    if (!confirm(`Are you sure you want to delete "${contentTitle || 'Untitled'}"? This will also delete all associated mentions and transcripts.`)) {
-      return;
-    }
-
-    try {
-      const response = await fetch(`/api/content/${contentId}`, {
-        method: 'DELETE',
-      });
-
-      if (response.ok) {
-        // Refresh company data after deletion
-        await fetchCompany();
-      } else {
-        const error = await response.json();
-        alert(`Failed to delete content: ${error.message || 'Unknown error'}`);
-      }
-    } catch (error) {
-      console.error("Error deleting content:", error);
-      alert('Failed to delete content. Please try again.');
-    }
-  };
-
   const handleDeleteAnalysis = async (analysisId: string, analysisText: string) => {
     const truncatedText = analysisText.length > 60 ? analysisText.substring(0, 60) + '...' : analysisText;
     if (!confirm(`Are you sure you want to delete this analysis?\n\n"${truncatedText}"\n\nThis will recalculate company metrics.`)) {

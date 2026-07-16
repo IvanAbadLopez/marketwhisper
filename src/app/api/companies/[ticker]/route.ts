@@ -22,43 +22,8 @@ export async function GET(
       include: {
         _count: {
           select: {
-            content: true,
-            mentions: true,
             analyses: true,
-          },
-        },
-        content: {
-          include: {
-            content: {
-              include: {
-                transcripts: true,
-                mentions: {
-                  orderBy: {
-                    timestamp: "asc",
-                  },
-                },
-              },
-            },
-          },
-          orderBy: {
-            content: {
-              date: "desc",
-            },
-          },
-        },
-        mentions: {
-          include: {
-            content: {
-              select: {
-                id: true,
-                title: true,
-                contentType: true,
-                date: true,
-              },
-            },
-          },
-          orderBy: {
-            timestamp: "asc",
+            enrichments: true,
           },
         },
         analyses: {

@@ -2,9 +2,9 @@
 
 ## Project Overview
 
-**MarketWhisper** is a Master's Thesis (TFM) project - a Market Intelligence Dashboard that processes proprietary financial blog content (daily analysis videos + special situations articles) using AI transcription, scraping, and RAG (Retrieval-Augmented Generation) to provide personalized market insights.
+**MarketWhisper** is a Master's Thesis (TFM) project - an AI-Powered Market Intelligence Platform that analyzes financial texts (news, tweets, articles, analyst reports) using local AI to detect companies, sentiment, and reliability scores. Users paste text manually, and the system provides instant AI-powered analysis with company tracking and metrics aggregation.
 
-**Key Differentiator**: Leverages user's exclusive access to daily video analysis and special situations blog content that isn't publicly available elsewhere.
+**Key Innovation**: Simplified workflow with direct text input → local AI analysis (Ollama) → company tracking. No external API costs for AI analysis, full privacy control.
 
 ## Tech Stack
 
@@ -17,28 +17,32 @@
 
 ### Authentication
 - **Library**: NextAuth.js v5.0.0-beta.31
-- **Strategy**: JWT (not database sessions)
+- **Strategy**: JWT (database-backed sessions via Prisma adapter)
 - **Providers**: 
   - Credentials (email/password with bcrypt)
-- **Current State**: Connected to PostgreSQL database
-  - Demo user: `demo@marketwhisper.com` / `MarketWhisper2026!`
+  - GitHub OAuth
+  - Google OAuth
+- **Demo user**: `demo@marketwhisper.com` / `MarketWhisper2026!`
 
-### Database (Planned)
-- **Provider**: Neon PostgreSQL (not yet configured)
-- **ORM**: Prisma
-- **Status**: Schema complete, Prisma Client not generated (`DATABASE_URL` not set)
-- **Extensions**: pgvector (for embeddings/semantic search)
+### Database
+- **Provider**: PostgreSQL 16 (Docker local, production-ready for Neon/Vercel)
+- **ORM**: Prisma 7.8.0
+- **Extensions**: pgvector (for future embeddings/semantic search)
+- **Status**: ✅ Schema complete, migrations applied, client generated
 
 ### AI & Processing
-- **Transcription**: OpenAI Whisper (local, open-source, GPU-accelerated)
-- **Scraping**: Playwright (Python scripts)
-- **AI Model**: Ollama (llama3.1:8b) - Local LLM
+- **AI Model**: Ollama (qwen2.5:7b) - Local LLM for text analysis
+  - Detects companies/tickers mentioned in text
+  - Assigns sentiment (BULLISH/BEARISH/NEUTRAL)
+  - Scores reliability (1-10)
+  - Provides reasoning for analysis
+- **Financial Data**: Finnhub API (company enrichment, news, metrics)
 - **Charts**: Recharts + lightweight-charts
 
 ### DevOps
 - **VCS**: Git + GitHub (SSH configured, user: IvanAbadLopez)
 - **CI/CD**: GitHub Actions (lint + type check + build on every push)
-- **Deployment**: Vercel (planned)
+- **Deployment**: Docker Compose (local), Vercel-ready (production)
 
 ## Architecture: Feature-Sliced Design (FSD)
 
@@ -72,12 +76,13 @@
 ```
 marketwhisper/
 ├── docs/                          # Documentation
-├── prisma/                        # Database schema
+├── prisma/                        # Database schema + migrations
 ├── public/                        # Static assets
-├── scripts/                       # Database utilities
-│   ├── seed_companies.py
-│   ├── seed_content.py
-│   └── clean_content.py
+├── scripts/                       # Utilities
+│   ├── seed_companies.py         # Seed companies table
+│   ├── check_user.ts             # Check user existence
+│   ├── clean-tickers.sql         # SQL cleanup utilities
+│   └── seed-demo.js              # Docker entrypoint seeding
 ├── src/
 │   ├── app/                       # ⚡ LAYER 1: Next.js routing (pages only)
 │   │   ├── (auth)/
@@ -85,10 +90,17 @@ marketwhisper/
 │   │   │   └── register/page.tsx
 │   │   ├── api/
 │   │   │   ├── analyze/route.ts   # Uses features/analyze-text
-│   │   │   ├── companies/route.ts
+│   │   │   ├── companies/route.ts # Company CRUD + enrichment
+│   │   │   ├── analysis/[id]/route.ts # Delete analysis
+│   │   │   ├── jobs/route.ts      # Job tracking
+│   │   │   ├── news/route.ts      # Finnhub news proxy
 │   │   │   └── auth/[...nextauth]/route.ts
+│   │   ├── analyze/page.tsx       # Text analysis page
 │   │   ├── companies/
-│   │   │   └── [ticker]/page.tsx  # Uses entities/company + widgets
+│   │   │   └── [ticker]/page.tsx  # Company detail with enrichment
+│   │   ├── situations/page.tsx    # Company list
+│   │   ├── jobs/page.tsx          # Job queue monitoring
+│   │   ├── news/page.tsx          # Company news viewer
 │   │   ├── layout.tsx             # Root layout with providers
 │   │   ├── page.tsx               # Homepage
 │   │   └── globals.css
@@ -345,70 +357,87 @@ features/analyze-text/
 
 ### Core Models
 
-**User**
+**User** (Auth)
 - id, email, name, image, password (bcrypt), emailVerified
-- Relations: accounts, sessions, videos
+- Relations: accounts, sessions, jobs
 
-**Video** (Daily analysis videos)
-- id, url, title, uploadDate, status (enum), downloadPath, thumbnailUrl
-- Relations: transcript, mentions
-- Status: PENDING | DOWNLOADING | TRANSCRIBING | PROCESSING | COMPLETED | FAILED
+**Job** (Background processing tracking)
+- id, userId, type (ANALYSIS | ENRICHMENT), status (PENDING | PROCESSING | COMPLETED | FAILED | CANCELLED)
+- ticker, result (JSON), errorMessage
+- analysisId, enrichmentId (unique relations)
+- Created for async workflows (text analysis, company enrichment)
 
-**Transcript** (Whisper output)
-- id, videoId, fullText, segments (JSON), processingDate
-- Relations: video, mentions
+**Company** (Tracked companies)
+- id, ticker (unique), name, description, sector, industry
+- marketCap, logoUrl, website
+- avgSentimentScore, avgReliabilityScore, analysisCount (aggregated metrics)
+- globalScore (0-100), globalScoreLabel, targetPrice (computed valuation)
+- valuationBreakdown (JSON), valuationUpdatedAt
+- Relations: analyses, enrichments
 
-**Mention** (Stocks/companies mentioned in transcripts)
-- id, transcriptId, symbol, companyName, sentiment, confidence, mentionedAt
-- Sentiment: BULLISH | BEARISH | NEUTRAL
+**Analysis** (User text analysis)
+- id, text (original user input), source (optional, e.g. "Twitter")
+- companyId, ticker (detected by AI)
+- sentiment (BULLISH | BEARISH | NEUTRAL), reliabilityScore (1-10)
+- reasoning (AI explanation in English)
+- financialSnapshot (JSON snapshot at analysis time)
+- jobId (optional relation for tracking)
+- Created when user pastes text for AI analysis
 
-**SpecialSituation** (Blog articles)
-- id, title, url, situationType, status, publishDate, summary, content
-- Types: MERGER | SPINOFF | BANKRUPTCY | RESTRUCTURING | SPECIAL_DIVIDEND | TENDER_OFFER | OTHER
-- Status: ACTIVE | RESOLVED | MONITORING | ARCHIVED
+**CompanyEnrichment** (Public financial data + AI insights)
+- id, companyId, ticker, source (FINNHUB)
+- status (PENDING | PROCESSING | COMPLETED | FAILED)
+- financialData, priceData, newsHeadlines, recommendations (JSON from Finnhub)
+- aiAnalysis (Ollama-generated summary), ollamaModel
+- jobId (optional relation for tracking)
+- Created when user clicks "Enrich with public data" button
+
+**Sentiment Enum** (shared)
+- BULLISH, BEARISH, NEUTRAL
 
 ## Architecture Decisions
 
-### Why JWT instead of Database Sessions?
-- Faster authentication (no DB roundtrip on every request)
-- Easier to scale horizontally (stateless)
-- Neon free tier has connection limits
+### Why Local AI (Ollama) instead of Cloud API?
+- **Zero cost**: No per-request fees (OpenAI/Claude expensive at scale)
+- **Privacy**: Financial analysis stays local, no data sent to third parties
+- **Control**: Can switch models (qwen2.5:7b currently, was llama3.1:8b)
+- **Performance**: keep_alive (30min) eliminates cold starts
 
-### Why Whisper Local instead of Cloud API?
-- User has NVIDIA GPU for acceleration
-- Videos are proprietary content (privacy concern)
-- Cost savings (no per-minute API fees)
-- Full control over model size (tiny → large-v3)
+### Why Direct Text Input instead of Scraping/Videos?
+- **Simplicity**: Clear user flow (paste → analyze → results)
+- **Flexibility**: Works with any source (Twitter, Bloomberg, proprietary newsletters)
+- **No infrastructure**: No need for video download/transcription/storage
+- **Faster MVP**: Eliminated complex pipeline, focused on core value (AI analysis)
 
-### Why Playwright instead of simple HTTP scraping?
-- Blog likely has JavaScript rendering
-- Requires authentication (cookies/sessions)
-- Need to handle dynamic content loading
+### Why Finnhub instead of yfinance?
+- **Real-time data**: yfinance was removed in favor of live Finnhub API
+- **News integration**: Finnhub provides news headlines per ticker
+- **Analyst data**: Recommendations, targets, earnings estimates
+- **Free tier**: 60 calls/min sufficient for MVP
 
-### Why Edge Runtime for Middleware?
-- Next.js 16 best practice
-- Faster response times for auth checks
-- Cookie-based auth check (no Prisma needed)
+### Why Job Queue System?
+- **UX**: Long-running AI analysis doesn't block UI
+- **Visibility**: Users see progress via /jobs page
+- **Reliability**: Jobs can be cancelled, retried, monitored
+- **Scalability**: Ready for background worker pool (future)
 
-## Current Limitations & Workarounds
+## Current State & Next Steps
 
-### Prisma Client Not Generated
-**Problem**: `@prisma/client` not generated because `DATABASE_URL` not set  
-**Impact**: Can't query database  
-**Workaround**: Demo user hardcoded in `src/lib/auth.ts`  
-**Resolution**: Configure Neon → set `DATABASE_URL` → run `npx prisma generate && npx prisma db push`
+### ✅ Implemented
+- Text analysis with multi-company detection
+- Company tracking with aggregated metrics
+- AI enrichment with Finnhub data
+- Job queue system with cancellation
+- Global score + target price calculation
+- News viewer per company
+- Delete company/analysis with cascade
+- Docker deployment stack
 
-### Corporate Proxy SSL Issues
-**Problem**: Self-signed certificates break `npx shadcn init`  
-**Workaround**: Manually configured shadcn/ui files  
-**Files created**: `components.json`, `lib/utils.ts`, tailwind config adjustments
-
-### Python Scripts Not Implemented
-**Status**: Skeleton code exists, blog-specific logic pending  
-**Required**: 
-- Blog credentials in `.env` (`BLOG_USERNAME`, `BLOG_PASSWORD`)
-- Playwright selectors for video/article elements
-- Download directory structure
+### ⚠️ Pending
+- E2E tests for job cancellation flow
+- Performance optimization for large text batches
+- RAG/embeddings for semantic search (pgvector ready)
+- Deployment to Vercel/Neon production
 
 ## Code Conventions
 

@@ -14,29 +14,9 @@ export async function GET() {
       include: {
         _count: {
           select: {
-            content: true,
-            mentions: true,
             analyses: true,
+            enrichments: true,
           },
-        },
-        content: {
-          include: {
-            content: {
-              select: {
-                id: true,
-                title: true,
-                contentType: true,
-                date: true,
-                status: true,
-              },
-            },
-          },
-          orderBy: {
-            content: {
-              date: "desc",
-            },
-          },
-          take: 3, // Only latest 3 for summary
         },
         analyses: {
           select: {

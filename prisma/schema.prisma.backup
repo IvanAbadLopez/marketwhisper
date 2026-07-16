@@ -99,8 +99,75 @@ enum JobStatus {
 }
 
 // ==========================================
-// SENTIMENT ENUM
+// CORE MODELS - Unified Content System
 // ==========================================
+
+model Content {
+  id          String           @id @default(cuid())
+  title       String
+  description String?
+  contentType ContentType
+  date        DateTime
+  sourceUrl   String           @unique // URL where content was scraped from
+  sourceName  String           // Display name of source (e.g., "MarketWatch", "TuBlog")
+  status      ContentStatus    @default(PENDING)
+  summary     String?          // AI-generated summary
+  metadata    Json?            // Type-specific data (duration, videoPath, situationType, etc.)
+  transcripts Transcript[]
+  mentions    Mention[]
+  companies   ContentCompany[] // Many-to-many relation with Company
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  @@index([contentType])
+  @@index([date])
+}
+
+enum ContentType {
+  VIDEO          // Daily analysis videos
+  WEB_ARTICLE    // Scraped web articles
+  BLOG_POST      // Blog posts
+  SPECIAL_EVENT  // Special situations (mergers, spinoffs, etc.)
+  NEWS           // News articles
+}
+
+enum ContentStatus {
+  PENDING       // Not yet processed
+  DOWNLOADING   // Downloading content
+  TRANSCRIBING  // Transcribing video
+  PROCESSING    // AI processing (extraction, summary)
+  COMPLETED     // Fully processed
+  FAILED        // Processing failed
+}
+
+model Transcript {
+  id        String   @id @default(cuid())
+  contentId String
+  content   Content  @relation(fields: [contentId], references: [id], onDelete: Cascade)
+  text      String
+  startTime Float?   // seconds from start (null for non-video content)
+  endTime   Float?   // seconds from end (null for non-video content)
+  createdAt DateTime @default(now())
+
+  @@index([contentId])
+}
+
+model Mention {
+  id        String    @id @default(cuid())
+  contentId String
+  content   Content   @relation(fields: [contentId], references: [id], onDelete: Cascade)
+  companyId String?   // Optional relation to Company
+  company   Company?  @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  ticker    String    // Kept for backward compatibility
+  sentiment Sentiment @default(NEUTRAL)
+  context   String    // surrounding text where ticker is mentioned
+  timestamp Float?    // second in the video (null for non-video content)
+  createdAt DateTime  @default(now())
+
+  @@index([contentId])
+  @@index([ticker])
+  @@index([companyId])
+}
 
 enum Sentiment {
   BULLISH

@@ -1,7 +1,7 @@
 # 📈 MarketWhisper
 
 > **AI-Powered Market Intelligence Platform**  
-> Analyze financial texts with AI to detect companies, sentiment, and reliability scores. Track market intelligence in real-time.
+> Analyze financial texts with AI to detect companies, sentiment, and reliability scores. Track market intelligence in real-time with local AI processing.
 
 [![CI](https://github.com/IvanAbadLopez/marketwhisper/actions/workflows/ci.yml/badge.svg)](https://github.com/IvanAbadLopez/marketwhisper/actions)
 [![Next.js](https://img.shields.io/badge/Next.js-16.2.9-black)](https://nextjs.org/)
@@ -12,19 +12,22 @@
 
 ## 🎯 Project Overview
 
-**MarketWhisper** is a Master's Thesis (TFM) project that provides AI-powered market intelligence analysis through direct text input and AI analysis.
+**MarketWhisper** is a Master's Thesis (TFM) project that provides AI-powered market intelligence analysis. Simply paste any financial text (news articles, tweets, analyst reports), and get instant AI-powered analysis with company detection, sentiment scoring, and reliability assessment.
 
 ### Key Features
 
-- 🤖 **AI Text Analysis**: Paste any financial text (news, tweets, articles) and get instant AI-powered analysis
+- 🤖 **Local AI Analysis**: Paste any financial text and get instant analysis using Ollama (qwen2.5:7b) - 100% local, zero API costs
 - 🏢 **Multi-Company Detection**: Automatically detects and analyzes multiple companies in a single text
 - 📊 **Sentiment Tracking**: BULLISH, BEARISH, or NEUTRAL sentiment for each company mentioned
-- 🎯 **Reliability Scoring**: AI confidence scores (1-10) for each analysis
+- 🎯 **Reliability Scoring**: AI confidence scores (1-10) for each analysis with detailed reasoning
 - 📈 **Aggregated Metrics**: Track average sentiment and reliability over time per company
-- 🔍 **Company Dashboard**: View all analyses, sentiment trends, and insights per ticker
-- 💬 **Local AI**: Uses Ollama for analysis (100% local, no external API costs)
-- 🐳 **Full Docker Stack**: PostgreSQL + Next.js ready to deploy
-- 🔐 **Authentication**: Secure email/password authentication with NextAuth.js
+- 💼 **Company Enrichment**: Fetch live financial data, news, and analyst recommendations via Finnhub API
+- 🎯 **Global Investment Score**: 0-100 score combining fundamentals, technicals, sentiment, and analyst data
+- 💰 **Target Price Calculation**: AI-computed fair value using Graham Number, P/E ratio, and sentiment adjustment
+- 🔍 **Company Dashboard**: View all analyses, sentiment trends, enrichment data, and insights per ticker
+- ⚙️ **Job Queue System**: Background processing with real-time status, progress tracking, and cancellation support
+- 🐳 **Full Docker Stack**: PostgreSQL + Next.js + Ollama ready to deploy
+- 🔐 **Secure Authentication**: Email/password + GitHub/Google OAuth with NextAuth.js
 
 #### Multi-Company Analysis Example
 
@@ -35,11 +38,9 @@ due to cloud growth concerns. Tesla announced record deliveries.
 ```
 
 Output:
-- ✅ **AAPL** - BULLISH (8/10) - "Strong iPhone sales indicate positive earnings"
-- ⚠️ **MSFT** - BEARISH (7/10) - "Cloud growth concerns suggest potential issues"
-- ✅ **TSLA** - BULLISH (8/10) - "Record deliveries show strong demand"
-
-See [docs/multi-company-analysis.md](docs/multi-company-analysis.md) for detailed documentation.
+- ✅ **AAPL** - BULLISH (8/10) - "Strong iPhone sales indicate positive earnings potential"
+- ⚠️ **MSFT** - BEARISH (7/10) - "Cloud growth concerns suggest near-term headwinds"
+- ✅ **TSLA** - BULLISH (8/10) - "Record deliveries demonstrate strong demand and execution"
 
 ---
 
@@ -48,13 +49,15 @@ See [docs/multi-company-analysis.md](docs/multi-company-analysis.md) for detaile
 | Category | Technology |
 |----------|-----------|
 | **Framework** | Next.js 16 (App Router) + React 19 |
-| **Language** | TypeScript |
+| **Language** | TypeScript (strict mode) |
 | **Styling** | Tailwind CSS 4 + shadcn/ui |
-| **Auth** | NextAuth.js v5 (JWT) |
+| **Auth** | NextAuth.js v5 (JWT + DB sessions) |
 | **Database** | PostgreSQL 16 + Prisma 7 ORM + pgvector |
-| **AI/ML** | Ollama (llama3.1:8b) - Local LLM |
-| **Deployment** | Docker Compose |
-| **Testing** | Vitest + Playwright + Testing Library |
+| **AI/ML** | Ollama (qwen2.5:7b) - Local LLM |
+| **Financial Data** | Finnhub API (real-time quotes, news, analyst data) |
+| **Charts** | Recharts + lightweight-charts |
+| **Deployment** | Docker Compose (local), Vercel-ready (production) |
+| **Testing** | Vitest + Playwright + Testing Library (229 tests) |
 | **CI/CD** | GitHub Actions |
 
 ---
@@ -227,22 +230,28 @@ marketwhisper/
 ├── docs/                 # 📚 Documentation
 │   ├── testing.md        # Testing guide
 │   ├── docker.md         # Docker deployment
-│   └── multi-company-analysis.md
-├── prisma/              # Database schema
+│   └── finnhub-integration.md
+├── prisma/              # Database schema + migrations
 ├── public/              # Static assets
-├── scripts/             # Database utilities
-│   ├── seed_companies.py
-│   ├── seed_content.py
-│   └── clean_content.py
+├── scripts/             # Utilities
+│   ├── seed_companies.py  # Seed companies table
+│   ├── check_user.ts      # User verification tool
+│   ├── clean-tickers.sql  # SQL cleanup utilities
+│   └── seed-demo.js       # Docker entrypoint seeding
 ├── src/
 │   ├── app/             # Next.js App Router
 │   │   ├── (auth)/      # Login/Register pages
 │   │   ├── api/         # API routes
+│   │   ├── analyze/     # Text analysis page
 │   │   ├── companies/   # Company pages
-│   │   ├── chat/        # AI chat interface
+│   │   ├── situations/  # Company list page
+│   │   ├── jobs/        # Job queue page
+│   │   ├── news/        # News viewer
 │   │   └── layout.tsx   # Root layout
-│   ├── components/      # React components
-│   ├── lib/             # Utilities (auth, prisma, ollama)
+│   ├── entities/        # Business entities (FSD)
+│   ├── features/        # Business features (FSD)
+│   ├── widgets/         # UI widgets (FSD)
+│   ├── shared/          # Shared utilities (FSD)
 │   └── types/           # TypeScript types
 └── copilot-instructions.md  # Detailed technical guide
 ```
@@ -254,9 +263,10 @@ marketwhisper/
 ### Core Models
 
 - **User**: Authentication and profile
-- **Company**: Stock tickers, metadata, aggregated scores
-- **Analysis**: AI-generated analysis with sentiment and reliability
-- **Content**: Legacy content model (preserved for future use)
+- **Job**: Background processing tracking (ANALYSIS | ENRICHMENT)
+- **Company**: Stock tickers, metadata, aggregated scores, valuation
+- **Analysis**: User text analysis with sentiment, reliability, reasoning
+- **CompanyEnrichment**: Finnhub data + AI-generated insights
 - **Account/Session**: NextAuth.js tables
 
 See [prisma/schema.prisma](prisma/schema.prisma) for full schema.

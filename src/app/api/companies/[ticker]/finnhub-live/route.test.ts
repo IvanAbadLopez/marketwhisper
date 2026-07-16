@@ -8,7 +8,7 @@ vi.mock("@/lib/auth", () => ({
 }));
 
 // Mock fetchFinnhubData
-vi.mock("@/features/enrich-company/api/processEnrichment", () => ({
+vi.mock("@/shared", () => ({
   fetchFinnhubData: vi.fn(),
   normalizeTicker: (ticker: string) => ticker.replace(/^\$/, '').trim().toUpperCase(),
 }));
@@ -34,7 +34,7 @@ describe("GET /api/companies/[ticker]/finnhub-live", () => {
 
   it("returns live financial and price data from Finnhub", async () => {
     const { auth } = await import("@/lib/auth");
-    const { fetchFinnhubData } = await import("@/features/enrich-company/api/processEnrichment");
+    const { fetchFinnhubData } = await import("@/shared");
 
     vi.mocked(auth).mockResolvedValue({
       user: { id: "user1", email: "test@example.com" },
@@ -93,7 +93,7 @@ describe("GET /api/companies/[ticker]/finnhub-live", () => {
 
   it("returns 500 if Finnhub fetch fails", async () => {
     const { auth } = await import("@/lib/auth");
-    const { fetchFinnhubData } = await import("@/features/enrich-company/api/processEnrichment");
+    const { fetchFinnhubData } = await import("@/shared");
 
     vi.mocked(auth).mockResolvedValue({
       user: { id: "user1", email: "test@example.com" },

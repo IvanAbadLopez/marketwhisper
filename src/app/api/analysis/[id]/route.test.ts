@@ -12,7 +12,7 @@ vi.mock("@/lib/auth", () => ({
   auth: vi.fn(),
 }));
 
-vi.mock("@/shared", () => ({
+vi.mock("@/shared/api/prisma", () => ({
   prisma: {
     analysis: {
       findUnique: vi.fn(),
@@ -67,7 +67,7 @@ describe("DELETE /api/analysis/[id]", () => {
 
   it("should return 404 if analysis does not exist", async () => {
     const { auth } = await import("@/lib/auth");
-    const { prisma } = await import("@/shared");
+    const { prisma } = await import("@/shared/api/prisma");
 
     vi.mocked(auth).mockResolvedValue({
       user: { email: "test@example.com" },
@@ -88,7 +88,7 @@ describe("DELETE /api/analysis/[id]", () => {
 
   it("should successfully delete analysis and recompute metrics", async () => {
     const { auth } = await import("@/lib/auth");
-    const { prisma } = await import("@/shared");
+    const { prisma } = await import("@/shared/api/prisma");
     const { recalculateCompanyAggregatesFromScratch } = await import("@/features/analyze-text/api/processAnalysis");
     const { recomputeCompanyValuation } = await import("@/entities/company/api/recomputeValuation");
 
@@ -135,7 +135,7 @@ describe("DELETE /api/analysis/[id]", () => {
 
   it("should return 500 if deletion fails", async () => {
     const { auth } = await import("@/lib/auth");
-    const { prisma } = await import("@/shared");
+    const { prisma } = await import("@/shared/api/prisma");
 
     vi.mocked(auth).mockResolvedValue({
       user: { email: "test@example.com" },

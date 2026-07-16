@@ -54,7 +54,7 @@ describe("NewsCard", () => {
 
     expect(screen.getByText("Bloomberg")).toBeInTheDocument();
     
-    const link = screen.getByRole("link", { name: /read article/i });
+    const link = screen.getByRole("link", { name: /read/i });
     expect(link).toHaveAttribute("href", "https://example.com/news");
     expect(link).toHaveAttribute("target", "_blank");
     expect(link).toHaveAttribute("rel", "noopener noreferrer");
@@ -75,10 +75,10 @@ describe("NewsCard", () => {
     expect(image).not.toBeInTheDocument();
   });
 
-  it("renders Analyze as text button", () => {
+  it("renders Analyze button", () => {
     render(<NewsCard news={mockNews} ticker="AAPL" />);
 
-    expect(screen.getByRole("button", { name: /analyze as text/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /analyze/i })).toBeInTheDocument();
   });
 
   it("calls analyzeText when Analyze button is clicked", async () => {
@@ -86,7 +86,7 @@ describe("NewsCard", () => {
 
     render(<NewsCard news={mockNews} ticker="AAPL" />);
 
-    const analyzeButton = screen.getByRole("button", { name: /analyze as text/i });
+    const analyzeButton = screen.getByRole("button", { name: /analyze/i });
     await userEvent.click(analyzeButton);
 
     await waitFor(() => {
@@ -103,7 +103,7 @@ describe("NewsCard", () => {
 
     render(<NewsCard news={newsWithoutSummary} ticker="AAPL" />);
 
-    const analyzeButton = screen.getByRole("button", { name: /analyze as text/i });
+    const analyzeButton = screen.getByRole("button", { name: /analyze/i });
     await userEvent.click(analyzeButton);
 
     await waitFor(() => {
@@ -119,7 +119,7 @@ describe("NewsCard", () => {
 
     render(<NewsCard news={mockNews} ticker="AAPL" />);
 
-    const analyzeButton = screen.getByRole("button", { name: /analyze as text/i });
+    const analyzeButton = screen.getByRole("button", { name: /analyze/i });
     await userEvent.click(analyzeButton);
 
     expect(screen.getByText(/analyzing/i)).toBeInTheDocument();
@@ -131,7 +131,7 @@ describe("NewsCard", () => {
 
     render(<NewsCard news={mockNews} ticker="AAPL" />);
 
-    const analyzeButton = screen.getByRole("button", { name: /analyze as text/i });
+    const analyzeButton = screen.getByRole("button", { name: /analyze/i });
     await userEvent.click(analyzeButton);
 
     await waitFor(() => {
@@ -145,7 +145,7 @@ describe("NewsCard", () => {
 
     render(<NewsCard news={mockNews} ticker="AAPL" />);
 
-    const analyzeButton = screen.getByRole("button", { name: /analyze as text/i });
+    const analyzeButton = screen.getByRole("button", { name: /analyze/i });
     await userEvent.click(analyzeButton);
 
     await waitFor(() => {

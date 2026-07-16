@@ -15,6 +15,9 @@ vi.mock("@/lib/auth", () => ({
 
 vi.mock("@/shared", () => ({
   fetchCompanyNews: vi.fn(),
+}));
+
+vi.mock("@/shared/api/prisma", () => ({
   prisma: {
     company: {
       findFirst: vi.fn(),
@@ -24,7 +27,8 @@ vi.mock("@/shared", () => ({
 }));
 
 const mockAuth = vi.mocked(await import("@/lib/auth")).auth;
-const mockShared = vi.mocked(await import("@/shared"));
+const mockFetchCompanyNews = vi.mocked(await import("@/shared")).fetchCompanyNews;
+const mockPrisma = vi.mocked(await import("@/shared/api/prisma")).prisma;
 
 describe("GET /api/news", () => {
   beforeEach(() => {
@@ -48,7 +52,7 @@ describe("GET /api/news", () => {
       expires: "2026-12-31",
     } as Session);
 
-    mockShared.prisma.company.findUnique.mockResolvedValue({
+    mockPrisma.company.findUnique.mockResolvedValue({
       ticker: "AAPL",
       name: "Apple Inc.",
     } as any);
@@ -64,7 +68,7 @@ describe("GET /api/news", () => {
       },
     ];
 
-    mockShared.fetchCompanyNews.mockResolvedValue(mockNews);
+    mockFetchCompanyNews.mockResolvedValue(mockNews);
 
     const request = new NextRequest("http://localhost:3000/api/news?ticker=AAPL&days=7");
     const response = await GET(request);
@@ -79,7 +83,7 @@ describe("GET /api/news", () => {
       count: 1,
       days: 7,
     });
-    expect(mockShared.fetchCompanyNews).toHaveBeenCalledWith("AAPL", 7);
+    expect(mockFetchCompanyNews).toHaveBeenCalledWith("AAPL", 7);
   });
 
   it("should use first company if no ticker provided", async () => {
@@ -88,17 +92,17 @@ describe("GET /api/news", () => {
       expires: "2026-12-31",
     } as Session);
 
-    mockShared.prisma.company.findFirst.mockResolvedValue({
+    mockPrisma.company.findFirst.mockResolvedValue({
       ticker: "MSFT",
       name: "Microsoft Corp.",
     } as any);
 
-    mockShared.prisma.company.findUnique.mockResolvedValue({
+    mockPrisma.company.findUnique.mockResolvedValue({
       ticker: "MSFT",
       name: "Microsoft Corp.",
     } as any);
 
-    mockShared.fetchCompanyNews.mockResolvedValue([]);
+    mockFetchCompanyNews.mockResolvedValue([]);
 
     const request = new NextRequest("http://localhost:3000/api/news");
     const response = await GET(request);
@@ -106,7 +110,7 @@ describe("GET /api/news", () => {
 
     expect(response.status).toBe(200);
     expect(data.ticker).toBe("MSFT");
-    expect(mockShared.prisma.company.findFirst).toHaveBeenCalled();
+    expect(mockPrisma.company.findFirst).toHaveBeenCalled();
   });
 
   it("should return 404 if no companies tracked", async () => {
@@ -115,7 +119,7 @@ describe("GET /api/news", () => {
       expires: "2026-12-31",
     } as Session);
 
-    mockShared.prisma.company.findFirst.mockResolvedValue(null);
+    mockPrisma.company.findFirst.mockResolvedValue(null);
 
     const request = new NextRequest("http://localhost:3000/api/news");
     const response = await GET(request);
@@ -131,7 +135,7 @@ describe("GET /api/news", () => {
       expires: "2026-12-31",
     } as Session);
 
-    mockShared.prisma.company.findUnique.mockResolvedValue(null);
+    mockPrisma.company.findUnique.mockResolvedValue(null);
 
     const request = new NextRequest("http://localhost:3000/api/news?ticker=INVALID");
     const response = await GET(request);
@@ -161,12 +165,12 @@ describe("GET /api/news", () => {
       expires: "2026-12-31",
     } as Session);
 
-    mockShared.prisma.company.findUnique.mockResolvedValue({
+    mockPrisma.company.findUnique.mockResolvedValue({
       ticker: "AAPL",
       name: "Apple Inc.",
     } as any);
 
-    mockShared.fetchCompanyNews.mockRejectedValue(new Error("Finnhub rate limit exceeded"));
+    mockFetchCompanyNews.mockRejectedValue(new Error("Finnhub rate limit exceeded"));
 
     const request = new NextRequest("http://localhost:3000/api/news?ticker=AAPL");
     const response = await GET(request);
@@ -182,12 +186,12 @@ describe("GET /api/news", () => {
       expires: "2026-12-31",
     } as Session);
 
-    mockShared.prisma.company.findUnique.mockResolvedValue({
+    mockPrisma.company.findUnique.mockResolvedValue({
       ticker: "AAPL",
       name: "Apple Inc.",
     } as any);
 
-    mockShared.fetchCompanyNews.mockRejectedValue(new Error("News service unavailable"));
+    mockFetchCompanyNews.mockRejectedValue(new Error("News service unavailable"));
 
     const request = new NextRequest("http://localhost:3000/api/news?ticker=AAPL");
     const response = await GET(request);
@@ -203,12 +207,12 @@ describe("GET /api/news", () => {
       expires: "2026-12-31",
     } as Session);
 
-    mockShared.prisma.company.findUnique.mockResolvedValue({
+    mockPrisma.company.findUnique.mockResolvedValue({
       ticker: "AAPL",
       name: "Apple Inc.",
     } as any);
 
-    mockShared.fetchCompanyNews.mockRejectedValue(new Error("Unknown error"));
+    mockFetchCompanyNews.mockRejectedValue(new Error("Unknown error"));
 
     const request = new NextRequest("http://localhost:3000/api/news?ticker=AAPL");
     const response = await GET(request);
@@ -218,3 +222,4 @@ describe("GET /api/news", () => {
     expect(data.error).toBe("Failed to fetch news");
   });
 });
+
