@@ -10,6 +10,9 @@ import { auth } from "@/lib/auth";
 import { processEnrichment } from "@/features/enrich-company/api/processEnrichment";
 import { fetchFinnhubData, normalizeTicker } from "@/shared";
 
+// Vercel serverless function timeout (60s for Hobby tier)
+export const maxDuration = 60;
+
 export async function POST(request: NextRequest) {
   const { prisma } = await import("@/shared/api/prisma");
 

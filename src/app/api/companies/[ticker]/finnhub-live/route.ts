@@ -7,6 +7,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { fetchFinnhubData, normalizeTicker } from "@/shared";
 
+// Vercel serverless function timeout (30s for external API calls)
+export const maxDuration = 30;
+
 /**
  * GET /api/companies/[ticker]/finnhub-live
  * Returns live financial and price data from Finnhub (read-only, no persistence)

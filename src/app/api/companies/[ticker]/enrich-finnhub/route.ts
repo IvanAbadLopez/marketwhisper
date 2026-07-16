@@ -8,6 +8,9 @@ import { after } from "next/server";
 import { auth } from "@/lib/auth";
 import { processEnrichment } from "@/features/enrich-company/api/processEnrichment";
 
+// Vercel serverless function timeout (60s for Hobby tier)
+export const maxDuration = 60;
+
 /**
  * POST /api/companies/[ticker]/enrich-finnhub
  * Kicks off a background Finnhub enrichment job

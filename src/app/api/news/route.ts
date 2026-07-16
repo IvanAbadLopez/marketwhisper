@@ -3,6 +3,9 @@ import { auth } from "@/lib/auth";
 import { fetchCompanyNews } from "@/shared";
 import { prisma } from "@/shared/api/prisma";
 
+// Vercel serverless function timeout (30s for external API calls)
+export const maxDuration = 30;
+
 export async function GET(request: Request) {
   const session = await auth();
 

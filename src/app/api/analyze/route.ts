@@ -4,6 +4,9 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/shared/api/prisma";
 import { processAnalysis } from "@/features/analyze-text/api/processAnalysis";
 
+// Vercel serverless function timeout (60s for Hobby tier)
+export const maxDuration = 60;
+
 /**
  * POST /api/analyze
  * Kicks off a background text analysis job with Ollama
