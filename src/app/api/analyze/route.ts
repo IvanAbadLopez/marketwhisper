@@ -9,7 +9,7 @@ export const maxDuration = 60;
 
 /**
  * POST /api/analyze
- * Kicks off a background text analysis job with Ollama
+ * Kicks off a background text analysis job with AI
  * Returns immediately with jobId for tracking
  */
 export async function POST(request: NextRequest) {

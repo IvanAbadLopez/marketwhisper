@@ -1,6 +1,6 @@
 /**
  * Enrich Company with Finnhub API Endpoint
- * Fetches public financial data from Finnhub and generates AI analysis with Ollama
+ * Fetches public financial data from Finnhub and generates AI analysis
  */
 
 import { NextRequest, NextResponse } from "next/server";

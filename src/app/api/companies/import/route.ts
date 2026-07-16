@@ -118,7 +118,7 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    // 8. Kick off background enrichment (full analysis with Ollama)
+    // 8. Kick off background enrichment (full analysis with AI)
     after(() => processEnrichment(enrichment.id, company.id, ticker, job.id, session.user.id as string));
 
     console.log(

@@ -102,7 +102,7 @@ interface Company {
       strongSell: number;
     }>;
     aiAnalysis: string | null;
-    ollamaModel: string | null;
+    aiModel: string | null;
     createdAt: string; // Comes as string from JSON
   }[];
 }

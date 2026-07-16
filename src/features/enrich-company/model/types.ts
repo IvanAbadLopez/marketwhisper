@@ -89,7 +89,7 @@ export interface EnrichmentStatusResult {
   price: PriceData | null;
   news: NewsItem[] | null;
   recommendations: Recommendation[] | null;
-  ollamaModel: string | null;
+  aiModel: string | null;
   updatedAt: string;
 }
 

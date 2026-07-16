@@ -135,7 +135,7 @@ describe("POST /api/companies/[ticker]/enrich-finnhub", () => {
       newsHeadlines: null,
       recommendations: null,
       aiAnalysis: null,
-      ollamaModel: null,
+      aiModel: null,
       jobId: "job123",
       createdAt: new Date(),
       updatedAt: new Date(),

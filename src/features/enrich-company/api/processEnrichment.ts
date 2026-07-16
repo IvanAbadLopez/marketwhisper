@@ -1,8 +1,9 @@
 /**
- * Shared server utilities for company enrichment with Finnhub + Ollama
+ * Shared server utilities for company enrichment with Finnhub + AI
  * @module features/enrich-company/api/processEnrichment
  */
 
+import type { Prisma } from "@/generated/prisma/client";
 import { env } from "@/shared/config/env";
 import { calcAnalystScore, analystScoreLabel } from "../lib/analystScore";
 import { fetchFinnhubData, type FinnhubData } from "@/shared/api/finnhub";
@@ -152,12 +153,12 @@ async function generateLLMAnalysis(prompt: string): Promise<string> {
       throw new Error("Failed to generate AI analysis with Groq.");
     }
   } else {
-    // Ollama
-    const ollamaUrl = env.OLLAMA_URL;
-    const model = env.OLLAMA_MODEL;
+    // Local LLM
+    const llmUrl = env.LLM_URL;
+    const model = env.LLM_MODEL;
     
     try {
-      const response = await fetch(`${ollamaUrl}/api/generate`, {
+      const response = await fetch(`${llmUrl}/api/generate`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -173,14 +174,14 @@ async function generateLLMAnalysis(prompt: string): Promise<string> {
       });
 
       if (!response.ok) {
-        throw new Error(`Ollama API error: ${response.statusText}`);
+        throw new Error(`Local LLM API error: ${response.statusText}`);
       }
 
       const data: OllamaResponse = await response.json();
       return data.response;
     } catch (error) {
-      console.error("Ollama API call failed:", error);
-      throw new Error("Failed to generate AI analysis with Ollama. Ensure Ollama service is running.");
+      console.error("Local LLM API call failed:", error);
+      throw new Error("Failed to generate AI analysis with local LLM. Ensure service is running.");
     }
   }
 }
@@ -266,9 +267,9 @@ export async function processEnrichment(
       where: { id: enrichmentId },
       data: {
         status: "COMPLETED",
-        recommendations: (finnhubData.recommendations ?? undefined) as unknown[],
+        recommendations: (finnhubData.recommendations ?? undefined) as Prisma.InputJsonValue | undefined,
         aiAnalysis,
-        ollamaModel: env.OLLAMA_MODEL,
+        aiModel: env.getCurrentModel(),
         errorMessage: null,
       },
     });
@@ -282,7 +283,7 @@ export async function processEnrichment(
           result: {
             enrichmentId,
             aiAnalysisPreview: aiAnalysis.substring(0, 200) + "...",
-          } as Record<string, unknown>,
+          },
         },
       });
     }

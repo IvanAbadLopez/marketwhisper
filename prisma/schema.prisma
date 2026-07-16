@@ -137,7 +137,7 @@ model Company {
   valuationBreakdown   Json?            // Detailed calculation breakdown
   valuationUpdatedAt   DateTime?        // Last recalculation timestamp
   analyses             Analysis[]       // AI text analyses
-  enrichments          CompanyEnrichment[] // Public data enrichments (Finnhub + Ollama)
+  enrichments          CompanyEnrichment[] // Public data enrichments (Finnhub + AI)
   createdAt            DateTime         @default(now())
   updatedAt            DateTime         @updatedAt
 
@@ -194,9 +194,9 @@ model CompanyEnrichment {
   priceData       Json?             // Current price, 52-week high/low, volume, day change, etc.
   newsHeadlines   Json?             // Recent news articles with title, publisher, link, date
   recommendations Json?             // Analyst recommendations (strong buy, buy, hold, sell, strong sell)
-  // AI Analysis (Ollama-generated insights)
+  // AI Analysis
   aiAnalysis      String?           // Comprehensive AI-generated summary and insights (English)
-  ollamaModel     String?           // Model used for analysis (e.g., "llama3.1:8b")
+  aiModel         String?           // AI model used for analysis (e.g., "llama-3.1-8b-instant", "qwen2.5:7b")
   jobId           String?           // Optional job relation for tracking
   // Metadata
   createdAt       DateTime @default(now())

@@ -60,8 +60,8 @@ interface GroqChatResponse {
 const LLM_PROVIDER = env.LLM_PROVIDER;
 const GROQ_API_KEY = env.GROQ_API_KEY;
 const GROQ_MODEL = env.GROQ_MODEL;
-const OLLAMA_URL = env.OLLAMA_URL;
-const OLLAMA_MODEL = env.OLLAMA_MODEL;
+const LLM_URL = env.LLM_URL;
+const LLM_MODEL = env.LLM_MODEL;
 
 /**
  * Call Groq API (OpenAI-compatible chat completions with JSON mode)
@@ -111,18 +111,18 @@ async function callGroq(prompt: string, timeoutMs: number = 60000): Promise<stri
 }
 
 /**
- * Call Ollama API (local LLM with JSON format)
+ * Call local LLM API (JSON format)
  */
-async function callOllama(prompt: string, timeoutMs: number = 60000): Promise<string> {
+async function callLocalLLM(prompt: string, timeoutMs: number = 60000): Promise<string> {
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
   try {
-    const response = await fetch(`${OLLAMA_URL}/api/generate`, {
+    const response = await fetch(`${LLM_URL}/api/generate`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: OLLAMA_MODEL,
+        model: LLM_MODEL,
         prompt,
         stream: false,
         format: 'json',
@@ -133,16 +133,17 @@ async function callOllama(prompt: string, timeoutMs: number = 60000): Promise<st
       signal: controller.signal,
     });
 
-    clearTimeout(timeout);
+    clearTimeout(timeoutId);
 
     if (!response.ok) {
-      throw new Error(`Ollama API error: ${response.statusText}`);
+      throw new Error(`Local LLM API error: ${response.statusText}`);
     }
 
     const data: OllamaResponse = await response.json();
-    return data.response;
+    return data.response.trim();
   } catch (error) {
-    clearTimeout(timeout);
+    console.error('Local LLM API error:', error);
+    clearTimeout(timeoutId);
     console.error('Ollama API error:', error);
     if (error instanceof Error && error.name === 'AbortError') {
       throw new Error(`AI request timed out (>${timeoutMs / 1000}s). Ensure Ollama service is running.`);
@@ -156,13 +157,13 @@ async function callOllama(prompt: string, timeoutMs: number = 60000): Promise<st
 }
 
 /**
- * Call the configured LLM provider (Groq or Ollama)
+ * Call the configured LLM provider (Groq or local LLM)
  */
 async function callLLM(prompt: string, timeoutMs: number = 60000): Promise<string> {
   if (LLM_PROVIDER === 'groq') {
     return callGroq(prompt, timeoutMs);
   } else if (LLM_PROVIDER === 'ollama') {
-    return callOllama(prompt, timeoutMs);
+    return callLocalLLM(prompt, timeoutMs);
   } else {
     throw new Error(`Unknown LLM_PROVIDER: ${LLM_PROVIDER}. Use "groq" or "ollama".`);
   }
@@ -469,11 +470,11 @@ function normalizeScore(score: number | string): number {
 }
 
 /**
- * Check if Ollama service is available (health check)
+ * Check if local LLM service is available (health check)
  */
 export async function checkOllamaHealth(): Promise<boolean> {
   try {
-    const response = await fetch(`${OLLAMA_URL}/api/tags`, {
+    const response = await fetch(`${LLM_URL}/api/tags`, {
       method: 'GET',
     });
     return response.ok;

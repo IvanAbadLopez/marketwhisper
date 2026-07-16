@@ -2,7 +2,7 @@
 
 /**
  * Company Enrichment Display
- * Shows financial data and AI analysis from Finnhub + Ollama
+ * Shows financial data and AI analysis from Finnhub
  * @module entities/company/ui
  */
 
@@ -59,7 +59,7 @@ interface EnrichmentData {
     strongSell: number;
   }>;
   aiAnalysis: string | null;
-  ollamaModel: string | null;
+  aiModel: string | null;
   createdAt: Date | string;
 }
 
@@ -117,7 +117,7 @@ export function EnrichmentDisplay({ enrichment, mode = 'full' }: EnrichmentDispl
                 <Activity className="h-5 w-5 text-purple-400" />
                 <h3 className="text-lg font-semibold text-white">AI Analysis</h3>
                 <span className="text-xs text-purple-400 bg-purple-500/20 px-2 py-1 rounded">
-                  {enrichment.ollamaModel || "llama3.1:8b"}
+                  {enrichment.aiModel || "llama-3.1-8b-instant"}
                 </span>
               </div>
               <button
@@ -194,7 +194,7 @@ export function EnrichmentDisplay({ enrichment, mode = 'full' }: EnrichmentDispl
               <Activity className="h-5 w-5 text-purple-400" />
               <h3 className="text-lg font-semibold text-white">AI Analysis</h3>
               <span className="text-xs text-purple-400 bg-purple-500/20 px-2 py-1 rounded">
-                {enrichment.ollamaModel || "llama3.1:8b"}
+                {enrichment.aiModel || "llama-3.1-8b-instant"}
               </span>
             </div>
             <button

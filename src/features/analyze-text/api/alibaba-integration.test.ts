@@ -3,9 +3,9 @@
  * This validates the complete flow: LLM analysis -> ticker resolution -> company creation
  * 
  * Prerequisites:
- * - Docker services running (ollama, enrichment, db)
+ * - Docker services running (local LLM, enrichment, db)
  * - Finnhub API key configured
- * - qwen2.5:7b model loaded in Ollama
+ * - qwen2.5:7b model loaded in local LLM
  */
 
 import { describe, it, expect } from 'vitest';
@@ -20,7 +20,7 @@ El gasto en CAPEX de IA ha disparado las inversiones, generando un flujo de caja
 A precios actuales, el mercado paga el escenario más pesimista de la compañía, valorándola como si la inversión en IA fuera dinero tirado y el descuento chino fuera permanente.`;
 
   it.skip('should detect Alibaba from Spanish text via LLM', async () => {
-    // This test requires Ollama running with qwen2.5:7b
+    // This test requires local LLM running with qwen2.5:7b
     const results = await analyzeText(alibabaTextSpanish);
     
     expect(results).toBeDefined();

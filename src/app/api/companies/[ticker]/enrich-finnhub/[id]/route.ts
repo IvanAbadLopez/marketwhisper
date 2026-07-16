@@ -36,7 +36,7 @@ export async function GET(
         status: true,
         errorMessage: true,
         aiAnalysis: true,
-        ollamaModel: true,
+        aiModel: true,
         updatedAt: true,
       },
     });
@@ -61,7 +61,7 @@ export async function GET(
       status: enrichment.status,
       errorMessage: enrichment.errorMessage,
       aiAnalysis: enrichment.aiAnalysis,
-      ollamaModel: enrichment.ollamaModel,
+      aiModel: enrichment.aiModel,
       updatedAt: enrichment.updatedAt,
     });
   } catch (error: unknown) {

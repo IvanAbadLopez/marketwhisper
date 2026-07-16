@@ -13,6 +13,7 @@ import {
 } from "@/shared";
 import { getCachedFinnhub } from "@/shared/api/finnhub-server";
 import { prisma } from "@/shared/api/prisma";
+import type { Prisma } from "@/generated/prisma/client";
 import { assertJobNotCancelled, JobCancelledError } from "@/shared/lib/jobCancellation";
 import { recomputeCompanyValuation } from "@/entities/company/api/recomputeValuation";
 import { processEnrichment } from "@/features/enrich-company/api/processEnrichment";
@@ -239,7 +240,7 @@ export async function processAnalysis(
             sentiment: aiResult.sentiment,
             reliabilityScore: aiResult.reliabilityScore,
             reasoning: aiResult.reasoning,
-            financialSnapshot: financialSnapshot as Record<string, unknown>,
+            financialSnapshot: (financialSnapshot ?? undefined) as Prisma.InputJsonValue | undefined,
             jobId,
           },
         });
@@ -294,7 +295,7 @@ export async function processAnalysis(
       data: {
         status: "COMPLETED",
         ticker: tickerDisplay,
-        result: jobResult as Record<string, unknown>,
+        result: jobResult as unknown as Prisma.InputJsonValue,
       },
     });
 

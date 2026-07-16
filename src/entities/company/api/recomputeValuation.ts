@@ -6,7 +6,7 @@
 
 import { prisma } from '@/shared/api/prisma';
 import { computeValuation, type ValuationInputs } from '@/shared/lib/valuation';
-import { calcAnalystScore } from '@/features/enrich-company/lib/analystScore';
+import { calcAnalystScore, type AnalystRecommendation } from '@/features/enrich-company/lib/analystScore';
 
 /**
  * Recompute and persist valuation for a company
@@ -50,25 +50,31 @@ export async function recomputeCompanyValuation(companyId: string): Promise<void
     console.log(`[recomputeValuation] Enrichment found: ${!!latestEnrichment}`);
 
     // 3. Build inputs for valuation formulas
-    const financialData = latestEnrichment?.financialData as Record<string, unknown> | null;
-    const priceData = latestEnrichment?.priceData as Record<string, unknown> | null;
-    const recommendations = latestEnrichment?.recommendations as unknown[] | null;
+    const financialData = (latestEnrichment?.financialData ?? null) as Record<string, number | null> | null;
+    const priceData = (latestEnrichment?.priceData ?? null) as Record<string, number | null> | null;
+    const recommendations = (latestEnrichment?.recommendations ?? null) as AnalystRecommendation[] | null;
+
+    // Helper to safely extract numeric values
+    const getNumber = (obj: Record<string, unknown> | null, key: string): number | null => {
+      const value = obj?.[key];
+      return typeof value === 'number' ? value : null;
+    };
 
     const inputs: ValuationInputs = {
       // From enrichment financialData
-      eps: financialData?.eps ?? null,
-      peRatio: financialData?.peRatio ?? null,
-      bookValuePerShare: financialData?.bookValuePerShare ?? null,
-      roe: financialData?.roe ?? null,
-      profitMargins: financialData?.profitMargins ?? null,
-      debtToEquity: financialData?.debtToEquity ?? null,
-      dividendYield: financialData?.dividendYield ?? null,
-      epsGrowth: financialData?.epsGrowth ?? null,
+      eps: getNumber(financialData, 'eps'),
+      peRatio: getNumber(financialData, 'peRatio'),
+      bookValuePerShare: getNumber(financialData, 'bookValuePerShare'),
+      roe: getNumber(financialData, 'roe'),
+      profitMargins: getNumber(financialData, 'profitMargins'),
+      debtToEquity: getNumber(financialData, 'debtToEquity'),
+      dividendYield: getNumber(financialData, 'dividendYield'),
+      epsGrowth: getNumber(financialData, 'epsGrowth'),
       
       // From enrichment priceData
-      currentPrice: priceData?.currentPrice ?? null,
-      fiftyTwoWeekHigh: priceData?.fiftyTwoWeekHigh ?? null,
-      fiftyTwoWeekLow: priceData?.fiftyTwoWeekLow ?? null,
+      currentPrice: getNumber(priceData, 'currentPrice'),
+      fiftyTwoWeekHigh: getNumber(priceData, 'fiftyTwoWeekHigh'),
+      fiftyTwoWeekLow: getNumber(priceData, 'fiftyTwoWeekLow'),
       
       // From enrichment recommendations (compute analyst score)
       analystScore: recommendations?.length
@@ -93,7 +99,7 @@ export async function recomputeCompanyValuation(companyId: string): Promise<void
         globalScore: result.globalScore,
         globalScoreLabel: result.globalScoreLabel,
         targetPrice: result.targetPrice,
-        valuationBreakdown: result.breakdown as Record<string, unknown>,
+        valuationBreakdown: result.breakdown,
         valuationUpdatedAt: new Date(),
       },
     });
