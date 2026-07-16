@@ -84,9 +84,9 @@ jobs:
 
   e2e-tests:
     runs-on: ubuntu-latest
-    # E2E tests are optional - only run manually via workflow_dispatch
-    # or when DATABASE_URL secret is configured
-    if: false # Disabled by default - enable when Neon is configured for CI
+    # E2E tests run only when DATABASE_URL_CI secret is configured
+    # To enable: Add DATABASE_URL_CI secret in GitHub repo settings
+    if: ${{ secrets.DATABASE_URL_CI != '' }}
     needs: lint-test-build
     
     steps:
