@@ -8,7 +8,8 @@ export default auth((req) => {
   const { pathname } = req.nextUrl;
 
   // Public routes that don't require authentication
-  const publicRoutes = ["/login", "/register", "/debug"];
+  // Removed /debug from public routes - any debug pages require authentication
+  const publicRoutes = ["/login", "/register"];
   const isPublicRoute = publicRoutes.some((route) => pathname.startsWith(route));
   const isAuthApi = pathname.startsWith("/api/auth");
 

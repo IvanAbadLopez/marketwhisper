@@ -26,6 +26,7 @@ RUN npx prisma generate
 # Build Next.js app - Need env vars for validation during build
 ARG DATABASE_URL
 ARG NEXTAUTH_URL
+# ARG NEXTAUTH_SECRET must be provided at build time (use openssl rand -base64 32 to generate)
 ARG NEXTAUTH_SECRET
 ENV DATABASE_URL=${DATABASE_URL}
 ENV NEXTAUTH_URL=${NEXTAUTH_URL}
