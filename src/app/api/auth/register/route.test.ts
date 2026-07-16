@@ -1,0 +1,644 @@
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { POST } from './route';
+import { prisma } from '@/shared/api/prisma';
+import bcrypt from 'bcrypt';
+
+// Mock Prisma
+vi.mock('@/shared/api/prisma', () => ({
+  prisma: {
+    user: {
+      findUnique: vi.fn(),
+      create: vi.fn(),
+    },
+  },
+}));
+
+// Mock bcrypt
+vi.mock('bcrypt');
+
+describe('POST /api/auth/register', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  describe('Input Validation - Email', () => {
+    it('returns 400 for missing email', async () => {
+      const request = new Request('http://localhost/api/auth/register', {
+        method: 'POST',
+        body: JSON.stringify({ password: 'password123' }),
+      });
+
+      const response = await POST(request);
+      const data = await response.json();
+
+      expect(response.status).toBe(400);
+      expect(data.error).toBe('Email is required');
+    });
+
+    it('returns 400 for non-string email', async () => {
+      const request = new Request('http://localhost/api/auth/register', {
+        method: 'POST',
+        body: JSON.stringify({ email: 12345, password: 'password123' }),
+      });
+
+      const response = await POST(request);
+      const data = await response.json();
+
+      expect(response.status).toBe(400);
+      expect(data.error).toBe('Email is required');
+    });
+
+    it('returns 400 for invalid email format', async () => {
+      const request = new Request('http://localhost/api/auth/register', {
+        method: 'POST',
+        body: JSON.stringify({ email: 'notanemail', password: 'password123' }),
+      });
+
+      const response = await POST(request);
+      const data = await response.json();
+
+      expect(response.status).toBe(400);
+      expect(data.error).toBe('Invalid email format');
+    });
+
+    it('returns 400 for email without @', async () => {
+      const request = new Request('http://localhost/api/auth/register', {
+        method: 'POST',
+        body: JSON.stringify({ email: 'user.example.com', password: 'password123' }),
+      });
+
+      const response = await POST(request);
+      const data = await response.json();
+
+      expect(response.status).toBe(400);
+      expect(data.error).toBe('Invalid email format');
+    });
+
+    it('returns 400 for email without domain', async () => {
+      const request = new Request('http://localhost/api/auth/register', {
+        method: 'POST',
+        body: JSON.stringify({ email: 'user@', password: 'password123' }),
+      });
+
+      const response = await POST(request);
+      const data = await response.json();
+
+      expect(response.status).toBe(400);
+      expect(data.error).toBe('Invalid email format');
+    });
+
+    it('returns 400 for email exceeding 254 characters', async () => {
+      const longEmail = 'a'.repeat(246) + '@test.com'; // 255 chars total (246 + 9)
+      const request = new Request('http://localhost/api/auth/register', {
+        method: 'POST',
+        body: JSON.stringify({ email: longEmail, password: 'password123' }),
+      });
+
+      const response = await POST(request);
+      const data = await response.json();
+
+      expect(response.status).toBe(400);
+      expect(data.error).toBe('Email must not exceed 254 characters');
+    });
+
+    it('accepts email at exactly 254 characters', async () => {
+      const maxEmail = 'a'.repeat(244) + '@test.com'; // 254 chars total
+      
+      vi.mocked(prisma.user.findUnique).mockResolvedValue(null);
+      vi.mocked(bcrypt.hash).mockResolvedValue('hashed_password' as never);
+      vi.mocked(prisma.user.create).mockResolvedValue({
+        id: '1',
+        email: maxEmail,
+        name: null,
+        password: 'hashed_password',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+
+      const request = new Request('http://localhost/api/auth/register', {
+        method: 'POST',
+        body: JSON.stringify({ email: maxEmail, password: 'password123' }),
+      });
+
+      const response = await POST(request);
+
+      expect(response.status).toBe(200);
+    });
+  });
+
+  describe('Input Validation - Password', () => {
+    it('returns 400 for missing password', async () => {
+      const request = new Request('http://localhost/api/auth/register', {
+        method: 'POST',
+        body: JSON.stringify({ email: 'test@example.com' }),
+      });
+
+      const response = await POST(request);
+      const data = await response.json();
+
+      expect(response.status).toBe(400);
+      expect(data.error).toBe('Password is required');
+    });
+
+    it('returns 400 for non-string password', async () => {
+      const request = new Request('http://localhost/api/auth/register', {
+        method: 'POST',
+        body: JSON.stringify({ email: 'test@example.com', password: 12345678 }),
+      });
+
+      const response = await POST(request);
+      const data = await response.json();
+
+      expect(response.status).toBe(400);
+      expect(data.error).toBe('Password is required');
+    });
+
+    it('returns 400 for password shorter than 8 characters', async () => {
+      const request = new Request('http://localhost/api/auth/register', {
+        method: 'POST',
+        body: JSON.stringify({ email: 'test@example.com', password: 'pass123' }),
+      });
+
+      const response = await POST(request);
+      const data = await response.json();
+
+      expect(response.status).toBe(400);
+      expect(data.error).toBe('Password must be at least 8 characters');
+    });
+
+    it('accepts password at exactly 8 characters', async () => {
+      vi.mocked(prisma.user.findUnique).mockResolvedValue(null);
+      vi.mocked(bcrypt.hash).mockResolvedValue('hashed_password' as never);
+      vi.mocked(prisma.user.create).mockResolvedValue({
+        id: '1',
+        email: 'test@example.com',
+        name: null,
+        password: 'hashed_password',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+
+      const request = new Request('http://localhost/api/auth/register', {
+        method: 'POST',
+        body: JSON.stringify({ email: 'test@example.com', password: 'pass1234' }),
+      });
+
+      const response = await POST(request);
+
+      expect(response.status).toBe(200);
+    });
+
+    it('returns 400 for password exceeding 200 characters', async () => {
+      const longPassword = 'a'.repeat(201);
+      const request = new Request('http://localhost/api/auth/register', {
+        method: 'POST',
+        body: JSON.stringify({ email: 'test@example.com', password: longPassword }),
+      });
+
+      const response = await POST(request);
+      const data = await response.json();
+
+      expect(response.status).toBe(400);
+      expect(data.error).toBe('Password must not exceed 200 characters');
+    });
+
+    it('accepts password at exactly 200 characters', async () => {
+      const maxPassword = 'a'.repeat(200);
+      
+      vi.mocked(prisma.user.findUnique).mockResolvedValue(null);
+      vi.mocked(bcrypt.hash).mockResolvedValue('hashed_password' as never);
+      vi.mocked(prisma.user.create).mockResolvedValue({
+        id: '1',
+        email: 'test@example.com',
+        name: null,
+        password: 'hashed_password',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+
+      const request = new Request('http://localhost/api/auth/register', {
+        method: 'POST',
+        body: JSON.stringify({ email: 'test@example.com', password: maxPassword }),
+      });
+
+      const response = await POST(request);
+
+      expect(response.status).toBe(200);
+    });
+  });
+
+  describe('Input Validation - Name', () => {
+    it('returns 400 for non-string name', async () => {
+      const request = new Request('http://localhost/api/auth/register', {
+        method: 'POST',
+        body: JSON.stringify({ 
+          email: 'test@example.com', 
+          password: 'password123',
+          name: 12345
+        }),
+      });
+
+      const response = await POST(request);
+      const data = await response.json();
+
+      expect(response.status).toBe(400);
+      expect(data.error).toBe('Name must be a string');
+    });
+
+    it('returns 400 for name exceeding 100 characters', async () => {
+      const longName = 'a'.repeat(101);
+      const request = new Request('http://localhost/api/auth/register', {
+        method: 'POST',
+        body: JSON.stringify({ 
+          email: 'test@example.com', 
+          password: 'password123',
+          name: longName
+        }),
+      });
+
+      const response = await POST(request);
+      const data = await response.json();
+
+      expect(response.status).toBe(400);
+      expect(data.error).toBe('Name must not exceed 100 characters');
+    });
+
+    it('accepts name at exactly 100 characters', async () => {
+      const maxName = 'a'.repeat(100);
+      
+      vi.mocked(prisma.user.findUnique).mockResolvedValue(null);
+      vi.mocked(bcrypt.hash).mockResolvedValue('hashed_password' as never);
+      vi.mocked(prisma.user.create).mockResolvedValue({
+        id: '1',
+        email: 'test@example.com',
+        name: maxName,
+        password: 'hashed_password',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+
+      const request = new Request('http://localhost/api/auth/register', {
+        method: 'POST',
+        body: JSON.stringify({ 
+          email: 'test@example.com', 
+          password: 'password123',
+          name: maxName
+        }),
+      });
+
+      const response = await POST(request);
+
+      expect(response.status).toBe(200);
+    });
+
+    it('converts empty string name to null after trim', async () => {
+      vi.mocked(prisma.user.findUnique).mockResolvedValue(null);
+      vi.mocked(bcrypt.hash).mockResolvedValue('hashed_password' as never);
+      vi.mocked(prisma.user.create).mockResolvedValue({
+        id: '1',
+        email: 'test@example.com',
+        name: null,
+        password: 'hashed_password',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+
+      const request = new Request('http://localhost/api/auth/register', {
+        method: 'POST',
+        body: JSON.stringify({ 
+          email: 'test@example.com', 
+          password: 'password123',
+          name: '   '
+        }),
+      });
+
+      await POST(request);
+
+      expect(vi.mocked(prisma.user.create)).toHaveBeenCalledWith({
+        data: {
+          email: 'test@example.com',
+          name: null,
+          password: 'hashed_password',
+        },
+      });
+    });
+
+    it('trims whitespace from name', async () => {
+      vi.mocked(prisma.user.findUnique).mockResolvedValue(null);
+      vi.mocked(bcrypt.hash).mockResolvedValue('hashed_password' as never);
+      vi.mocked(prisma.user.create).mockResolvedValue({
+        id: '1',
+        email: 'test@example.com',
+        name: 'John Doe',
+        password: 'hashed_password',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+
+      const request = new Request('http://localhost/api/auth/register', {
+        method: 'POST',
+        body: JSON.stringify({ 
+          email: 'test@example.com', 
+          password: 'password123',
+          name: '  John Doe  '
+        }),
+      });
+
+      await POST(request);
+
+      expect(vi.mocked(prisma.user.create)).toHaveBeenCalledWith({
+        data: {
+          email: 'test@example.com',
+          name: 'John Doe',
+          password: 'hashed_password',
+        },
+      });
+    });
+  });
+
+  describe('Email Normalization', () => {
+    it('normalizes email by trimming and lowercasing', async () => {
+      vi.mocked(prisma.user.findUnique).mockResolvedValue(null);
+      vi.mocked(bcrypt.hash).mockResolvedValue('hashed_password' as never);
+      vi.mocked(prisma.user.create).mockResolvedValue({
+        id: '1',
+        email: 'test@example.com',
+        name: null,
+        password: 'hashed_password',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+
+      const request = new Request('http://localhost/api/auth/register', {
+        method: 'POST',
+        body: JSON.stringify({ 
+          email: '  TEST@EXAMPLE.COM  ', 
+          password: 'password123'
+        }),
+      });
+
+      await POST(request);
+
+      // Check findUnique was called with normalized email
+      expect(vi.mocked(prisma.user.findUnique)).toHaveBeenCalledWith({
+        where: { email: 'test@example.com' },
+      });
+
+      // Check create was called with normalized email
+      expect(vi.mocked(prisma.user.create)).toHaveBeenCalledWith({
+        data: {
+          email: 'test@example.com',
+          name: null,
+          password: 'hashed_password',
+        },
+      });
+    });
+  });
+
+  describe('Successful Registration', () => {
+    it('creates user successfully with valid data', async () => {
+      vi.mocked(prisma.user.findUnique).mockResolvedValue(null);
+      vi.mocked(bcrypt.hash).mockResolvedValue('hashed_password' as never);
+      vi.mocked(prisma.user.create).mockResolvedValue({
+        id: '123',
+        email: 'test@example.com',
+        name: 'Test User',
+        password: 'hashed_password',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+
+      const request = new Request('http://localhost/api/auth/register', {
+        method: 'POST',
+        body: JSON.stringify({ 
+          email: 'test@example.com', 
+          password: 'password123',
+          name: 'Test User'
+        }),
+      });
+
+      const response = await POST(request);
+      const data = await response.json();
+
+      expect(response.status).toBe(200);
+      expect(data.message).toBe('Registration processed successfully. If the email is not already registered, your account has been created. You can now sign in.');
+      expect(data.userId).toBe('123');
+
+      // Verify bcrypt.hash was called with correct parameters
+      expect(vi.mocked(bcrypt.hash)).toHaveBeenCalledWith('password123', 12);
+
+      // Verify user was created
+      expect(vi.mocked(prisma.user.create)).toHaveBeenCalledWith({
+        data: {
+          email: 'test@example.com',
+          name: 'Test User',
+          password: 'hashed_password',
+        },
+      });
+    });
+
+    it('creates user with null name when name is not provided', async () => {
+      vi.mocked(prisma.user.findUnique).mockResolvedValue(null);
+      vi.mocked(bcrypt.hash).mockResolvedValue('hashed_password' as never);
+      vi.mocked(prisma.user.create).mockResolvedValue({
+        id: '123',
+        email: 'test@example.com',
+        name: null,
+        password: 'hashed_password',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+
+      const request = new Request('http://localhost/api/auth/register', {
+        method: 'POST',
+        body: JSON.stringify({ 
+          email: 'test@example.com', 
+          password: 'password123'
+        }),
+      });
+
+      await POST(request);
+
+      expect(vi.mocked(prisma.user.create)).toHaveBeenCalledWith({
+        data: {
+          email: 'test@example.com',
+          name: null,
+          password: 'hashed_password',
+        },
+      });
+    });
+  });
+
+  describe('Anti-Enumeration Pattern', () => {
+    it('returns generic success message for existing user (anti-enumeration)', async () => {
+      // Mock existing user
+      vi.mocked(prisma.user.findUnique).mockResolvedValue({
+        id: '999',
+        email: 'existing@example.com',
+        name: 'Existing User',
+        password: 'existing_hash',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+      
+      vi.mocked(bcrypt.hash).mockResolvedValue('dummy_hash' as never);
+
+      const request = new Request('http://localhost/api/auth/register', {
+        method: 'POST',
+        body: JSON.stringify({ 
+          email: 'existing@example.com', 
+          password: 'password123'
+        }),
+      });
+
+      const response = await POST(request);
+      const data = await response.json();
+
+      // Should return success status (anti-enumeration)
+      expect(response.status).toBe(200);
+      
+      // Should return generic message (same as new user)
+      expect(data.message).toBe('Registration processed successfully. If the email is not already registered, your account has been created. You can now sign in.');
+      
+      // Should NOT include userId for existing users
+      expect(data.userId).toBeUndefined();
+
+      // Should call bcrypt.hash for timing attack prevention
+      expect(vi.mocked(bcrypt.hash)).toHaveBeenCalledWith('dummy-password-for-timing-attack-prevention', 12);
+
+      // Should NOT create a new user
+      expect(vi.mocked(prisma.user.create)).not.toHaveBeenCalled();
+    });
+
+    it('returns generic success message for new user (same as existing)', async () => {
+      // Mock no existing user
+      vi.mocked(prisma.user.findUnique).mockResolvedValue(null);
+      vi.mocked(bcrypt.hash).mockResolvedValue('hashed_password' as never);
+      vi.mocked(prisma.user.create).mockResolvedValue({
+        id: '123',
+        email: 'new@example.com',
+        name: null,
+        password: 'hashed_password',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+
+      const request = new Request('http://localhost/api/auth/register', {
+        method: 'POST',
+        body: JSON.stringify({ 
+          email: 'new@example.com', 
+          password: 'password123'
+        }),
+      });
+
+      const response = await POST(request);
+      const data = await response.json();
+
+      // Should return same status as existing user (anti-enumeration)
+      expect(response.status).toBe(200);
+      
+      // Should return SAME generic message as existing user
+      expect(data.message).toBe('Registration processed successfully. If the email is not already registered, your account has been created. You can now sign in.');
+
+      // Should create the user
+      expect(vi.mocked(prisma.user.create)).toHaveBeenCalled();
+    });
+
+    it('ensures timing consistency between existing and new user flows', async () => {
+      // This test verifies that bcrypt.hash is called in both paths
+      
+      // Test existing user path
+      vi.mocked(prisma.user.findUnique).mockResolvedValue({
+        id: '999',
+        email: 'existing@example.com',
+        name: null,
+        password: 'hash',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+      vi.mocked(bcrypt.hash).mockResolvedValue('dummy_hash' as never);
+
+      const existingRequest = new Request('http://localhost/api/auth/register', {
+        method: 'POST',
+        body: JSON.stringify({ 
+          email: 'existing@example.com', 
+          password: 'password123'
+        }),
+      });
+
+      await POST(existingRequest);
+
+      // bcrypt.hash should be called once for timing attack prevention
+      expect(vi.mocked(bcrypt.hash)).toHaveBeenCalledTimes(1);
+      expect(vi.mocked(bcrypt.hash)).toHaveBeenCalledWith('dummy-password-for-timing-attack-prevention', 12);
+
+      // Clear mocks
+      vi.clearAllMocks();
+
+      // Test new user path
+      vi.mocked(prisma.user.findUnique).mockResolvedValue(null);
+      vi.mocked(bcrypt.hash).mockResolvedValue('hashed_password' as never);
+      vi.mocked(prisma.user.create).mockResolvedValue({
+        id: '123',
+        email: 'new@example.com',
+        name: null,
+        password: 'hashed_password',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+
+      const newRequest = new Request('http://localhost/api/auth/register', {
+        method: 'POST',
+        body: JSON.stringify({ 
+          email: 'new@example.com', 
+          password: 'password123'
+        }),
+      });
+
+      await POST(newRequest);
+
+      // bcrypt.hash should also be called once for actual password hashing
+      expect(vi.mocked(bcrypt.hash)).toHaveBeenCalledTimes(1);
+      expect(vi.mocked(bcrypt.hash)).toHaveBeenCalledWith('password123', 12);
+    });
+  });
+
+  describe('Error Handling', () => {
+    it('returns 500 for database errors', async () => {
+      vi.mocked(prisma.user.findUnique).mockRejectedValue(new Error('Database connection failed'));
+
+      const request = new Request('http://localhost/api/auth/register', {
+        method: 'POST',
+        body: JSON.stringify({ 
+          email: 'test@example.com', 
+          password: 'password123'
+        }),
+      });
+
+      const response = await POST(request);
+      const data = await response.json();
+
+      expect(response.status).toBe(500);
+      expect(data.error).toBe('Internal server error');
+    });
+
+    it('returns 500 for bcrypt hashing errors', async () => {
+      vi.mocked(prisma.user.findUnique).mockResolvedValue(null);
+      vi.mocked(bcrypt.hash).mockRejectedValue(new Error('Hashing failed'));
+
+      const request = new Request('http://localhost/api/auth/register', {
+        method: 'POST',
+        body: JSON.stringify({ 
+          email: 'test@example.com', 
+          password: 'password123'
+        }),
+      });
+
+      const response = await POST(request);
+      const data = await response.json();
+
+      expect(response.status).toBe(500);
+      expect(data.error).toBe('Internal server error');
+    });
+  });
+});

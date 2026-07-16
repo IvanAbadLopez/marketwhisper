@@ -48,7 +48,9 @@ export function RegisterForm() {
       });
 
       if (loginResult?.error) {
-        setError('Registration successful but login failed. Please sign in.');
+        // Could be: new registration successful but auto-login failed, 
+        // OR email already existed (anti-enumeration pattern)
+        setError('Registration processed. Please sign in with your credentials.');
         router.push("/login");
       } else {
         router.push("/");
