@@ -3,9 +3,13 @@ import { after } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/shared/api/prisma";
 import { processAnalysis } from "@/features/analyze-text/api/processAnalysis";
+import { checkRateLimit } from "@/shared";
 
 // Vercel serverless function timeout (60s for Hobby tier)
 export const maxDuration = 60;
+
+// Max text length to prevent DoS and prompt injection
+const MAX_TEXT_LENGTH = 10000; // 10K chars (~2500 words)
 
 /**
  * POST /api/analyze
@@ -29,6 +33,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Text is required" }, { status: 400 });
     }
 
+    // Cap text length to prevent DoS and prompt injection
+    if (text.length > MAX_TEXT_LENGTH) {
+      return NextResponse.json(
+        { error: `Text exceeds maximum length of ${MAX_TEXT_LENGTH} characters` },
+        { status: 400 }
+      );
+    }
+
     // Get user ID
     const user = await prisma.user.findUnique({
       where: { email: session.user.email },
@@ -37,6 +49,28 @@ export async function POST(request: NextRequest) {
 
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
+    // Rate limit analysis requests by user (10 analyses per hour)
+    const rateLimitResult = checkRateLimit(`analyze:${user.id}`, {
+      max: 10,
+      windowMs: 60 * 60 * 1000, // 1 hour
+    });
+
+    if (!rateLimitResult.success) {
+      const retryAfter = Math.ceil((rateLimitResult.reset - Date.now()) / 1000);
+      return NextResponse.json(
+        { error: 'Too many analysis requests. Please try again later.' },
+        { 
+          status: 429,
+          headers: {
+            'Retry-After': retryAfter.toString(),
+            'X-RateLimit-Limit': rateLimitResult.limit.toString(),
+            'X-RateLimit-Remaining': '0',
+            'X-RateLimit-Reset': new Date(rateLimitResult.reset).toISOString(),
+          },
+        }
+      );
     }
 
     // Create a PENDING job record (we don't know the ticker yet, use placeholder)

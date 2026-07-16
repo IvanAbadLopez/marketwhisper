@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import bcrypt from "bcrypt";
 import { prisma } from "@/shared/api/prisma";
+import { checkRateLimit, getClientIp } from "@/shared";
 
 // Email validation regex (RFC 5322 simplified)
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -11,6 +12,29 @@ const MAX_PASSWORD_LENGTH = 200;
 
 export async function POST(request: Request) {
   try {
+    // Rate limit registration attempts by IP (3 registrations per hour)
+    const ip = getClientIp(request);
+    const rateLimitResult = checkRateLimit(`register:${ip}`, {
+      max: 3,
+      windowMs: 60 * 60 * 1000, // 1 hour
+    });
+
+    if (!rateLimitResult.success) {
+      const retryAfter = Math.ceil((rateLimitResult.reset - Date.now()) / 1000);
+      return NextResponse.json(
+        { error: 'Too many registration attempts. Please try again later.' },
+        { 
+          status: 429,
+          headers: {
+            'Retry-After': retryAfter.toString(),
+            'X-RateLimit-Limit': rateLimitResult.limit.toString(),
+            'X-RateLimit-Remaining': '0',
+            'X-RateLimit-Reset': new Date(rateLimitResult.reset).toISOString(),
+          },
+        }
+      );
+    }
+
     const { email, password, name } = await request.json();
 
     // 1. ROBUST INPUT VALIDATION (before DB queries)

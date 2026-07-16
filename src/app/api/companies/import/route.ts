@@ -8,7 +8,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { after } from "next/server";
 import { auth } from "@/lib/auth";
 import { processEnrichment } from "@/features/enrich-company/api/processEnrichment";
-import { fetchFinnhubData, normalizeTicker } from "@/shared";
+import { fetchFinnhubData, normalizeTicker, checkRateLimit } from "@/shared";
 
 // Vercel serverless function timeout (60s for Hobby tier)
 export const maxDuration = 60;
@@ -21,6 +21,28 @@ export async function POST(request: NextRequest) {
     const session = await auth();
     if (!session?.user?.email) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Rate limit import requests by user (20 imports per hour)
+    const rateLimitResult = checkRateLimit(`import:${session.user.id}`, {
+      max: 20,
+      windowMs: 60 * 60 * 1000, // 1 hour
+    });
+
+    if (!rateLimitResult.success) {
+      const retryAfter = Math.ceil((rateLimitResult.reset - Date.now()) / 1000);
+      return NextResponse.json(
+        { error: 'Too many import requests. Please try again later.' },
+        { 
+          status: 429,
+          headers: {
+            'Retry-After': retryAfter.toString(),
+            'X-RateLimit-Limit': rateLimitResult.limit.toString(),
+            'X-RateLimit-Remaining': '0',
+            'X-RateLimit-Reset': new Date(rateLimitResult.reset).toISOString(),
+          },
+        }
+      );
     }
 
     // 2. Parse request body

@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { POST } from './route';
 import { prisma } from '@/shared/api/prisma';
 import bcrypt from 'bcrypt';
+import { getClientIp } from '@/shared';
 
 // Mock Prisma
 vi.mock('@/shared/api/prisma', () => ({
@@ -16,9 +17,38 @@ vi.mock('@/shared/api/prisma', () => ({
 // Mock bcrypt
 vi.mock('bcrypt');
 
+// Mock rate limiting
+vi.mock('@/shared', async () => {
+  const actual = await vi.importActual('@/shared');
+  return {
+    ...actual,
+    getClientIp: vi.fn(() => '127.0.0.1'),
+    checkRateLimit: vi.fn(() => ({
+      success: true,
+      limit: 3,
+      remaining: 2,
+      reset: Date.now() + 3600000,
+    })),
+  };
+});
+
 describe('POST /api/auth/register', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    
+    // Reset default mock implementations
+    const { checkRateLimit, getClientIp } = vi.importMock('@/shared');
+    if (checkRateLimit) {
+      vi.mocked(checkRateLimit).mockReturnValue({
+        success: true,
+        limit: 3,
+        remaining: 2,
+        reset: Date.now() + 3600000,
+      });
+    }
+    if (getClientIp) {
+      vi.mocked(getClientIp).mockReturnValue('127.0.0.1');
+    }
   });
 
   describe('Input Validation - Email', () => {
@@ -639,6 +669,80 @@ describe('POST /api/auth/register', () => {
 
       expect(response.status).toBe(500);
       expect(data.error).toBe('Internal server error');
+    });
+  });
+
+  describe('Rate Limiting', () => {
+    it('returns 429 when rate limit exceeded', async () => {
+      const mockIp = '1.2.3.4';
+      
+      // Import checkRateLimit to mock it properly
+      const { checkRateLimit } = await import('@/shared');
+      
+      vi.mocked(getClientIp).mockReturnValue(mockIp);
+      vi.mocked(checkRateLimit).mockReturnValue({
+        success: false,
+        limit: 3,
+        remaining: 0,
+        reset: Date.now() + 3600000, // 1 hour from now
+      });
+
+      const request = new Request('http://localhost/api/auth/register', {
+        method: 'POST',
+        body: JSON.stringify({ 
+          email: 'test@example.com', 
+          password: 'password123' 
+        }),
+      });
+
+      const response = await POST(request);
+      const data = await response.json();
+
+      expect(response.status).toBe(429);
+      expect(data.error).toContain('Too many');
+      expect(response.headers.get('Retry-After')).toBeTruthy();
+      expect(response.headers.get('X-RateLimit-Limit')).toBe('3');
+      expect(response.headers.get('X-RateLimit-Remaining')).toBe('0');
+      expect(response.headers.get('X-RateLimit-Reset')).toBeTruthy();
+    });
+
+    it('allows request when within rate limit', async () => {
+      const { checkRateLimit } = await import('@/shared');
+      
+      vi.mocked(getClientIp).mockReturnValue('1.2.3.4');
+      vi.mocked(checkRateLimit).mockReturnValue({
+        success: true,
+        limit: 3,
+        remaining: 2,
+        reset: Date.now() + 3600000,
+      });
+      
+      vi.mocked(prisma.user.findUnique).mockResolvedValue(null);
+      vi.mocked(bcrypt.hash).mockResolvedValue('hashed_password' as never);
+      vi.mocked(prisma.user.create).mockResolvedValue({
+        id: '1',
+        email: 'test@example.com',
+        name: null,
+        password: 'hashed_password',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+
+      const request = new Request('http://localhost/api/auth/register', {
+        method: 'POST',
+        body: JSON.stringify({ 
+          email: 'test@example.com', 
+          password: 'password123' 
+        }),
+      });
+
+      const response = await POST(request);
+
+      expect(response.status).toBe(200);
+      expect(vi.mocked(checkRateLimit)).toHaveBeenCalledWith(
+        'register:1.2.3.4',
+        { max: 3, windowMs: 3600000 }
+      );
     });
   });
 });

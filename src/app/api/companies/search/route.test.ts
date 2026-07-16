@@ -26,6 +26,15 @@ vi.mock("@/shared/api/finnhub", () => ({
   searchFinnhubSymbols: vi.fn(),
 }));
 
+vi.mock("@/shared", () => ({
+  checkRateLimit: vi.fn(() => ({
+    success: true,
+    limit: 30,
+    remaining: 29,
+    reset: Date.now() + 60000,
+  })),
+}));
+
 const mockAuth = vi.mocked(await import("@/lib/auth")).auth;
 const mockPrisma = vi.mocked(await import("@/shared/api/prisma")).prisma;
 const mockSearchFinnhubSymbols = vi.mocked(await import("@/shared/api/finnhub")).searchFinnhubSymbols;
@@ -147,5 +156,67 @@ describe("GET /api/companies/search", () => {
 
     expect(response.status).toBe(429);
     expect(data.error).toContain("rate limit");
+  });
+
+  it("should return 429 when our rate limit exceeded", async () => {
+    const { checkRateLimit } = await import('@/shared');
+
+    mockAuth.mockResolvedValue({
+      user: { id: "user1", email: "test@example.com" },
+    } as Session);
+
+    vi.mocked(checkRateLimit).mockReturnValue({
+      success: false,
+      limit: 30,
+      remaining: 0,
+      reset: Date.now() + 60000,
+    });
+
+    const request = new NextRequest(
+      new URL("http://localhost:3000/api/companies/search?q=apple")
+    );
+
+    const response = await GET(request);
+    const data = await response.json();
+
+    expect(response.status).toBe(429);
+    expect(data.error).toContain("Too many");
+    expect(response.headers.get('Retry-After')).toBeTruthy();
+    expect(response.headers.get('X-RateLimit-Limit')).toBe('30');
+    expect(response.headers.get('X-RateLimit-Remaining')).toBe('0');
+    expect(response.headers.get('X-RateLimit-Reset')).toBeTruthy();
+  });
+
+  it("should allow request when within our rate limit", async () => {
+    const { checkRateLimit } = await import('@/shared');
+
+    mockAuth.mockResolvedValue({
+      user: { id: "user1", email: "test@example.com" },
+    } as Session);
+
+    vi.mocked(checkRateLimit).mockReturnValue({
+      success: true,
+      limit: 30,
+      remaining: 29,
+      reset: Date.now() + 60000,
+    });
+
+    mockSearchFinnhubSymbols.mockResolvedValue([
+      { symbol: "AAPL", description: "Apple Inc", displaySymbol: "AAPL", type: "Common Stock" }
+    ]);
+
+    mockPrisma.company.findMany.mockResolvedValue([]);
+
+    const request = new NextRequest(
+      new URL("http://localhost:3000/api/companies/search?q=apple")
+    );
+
+    const response = await GET(request);
+
+    expect(response.status).toBe(200);
+    expect(vi.mocked(checkRateLimit)).toHaveBeenCalledWith(
+      'search:user1',
+      { max: 30, windowMs: 60000 }
+    );
   });
 });

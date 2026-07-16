@@ -6,6 +6,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { searchFinnhubSymbols } from "@/shared/api/finnhub";
+import { checkRateLimit } from "@/shared";
 
 // Vercel serverless function timeout (30s for external API calls)
 export const maxDuration = 30;
@@ -29,6 +30,28 @@ export async function GET(request: NextRequest) {
     const session = await auth();
     if (!session?.user?.email) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Rate limit search requests by user (30 searches per minute)
+    const rateLimitResult = checkRateLimit(`search:${session.user.id}`, {
+      max: 30,
+      windowMs: 60 * 1000, // 1 minute
+    });
+
+    if (!rateLimitResult.success) {
+      const retryAfter = Math.ceil((rateLimitResult.reset - Date.now()) / 1000);
+      return NextResponse.json(
+        { error: 'Too many search requests. Please slow down.' },
+        { 
+          status: 429,
+          headers: {
+            'Retry-After': retryAfter.toString(),
+            'X-RateLimit-Limit': rateLimitResult.limit.toString(),
+            'X-RateLimit-Remaining': '0',
+            'X-RateLimit-Reset': new Date(rateLimitResult.reset).toISOString(),
+          },
+        }
+      );
     }
 
     // 2. Get search query

@@ -36,6 +36,12 @@ vi.mock("@/shared/api/prisma", () => ({
 vi.mock("@/shared", () => ({
   fetchFinnhubData: vi.fn(),
   normalizeTicker: (ticker: string) => ticker.toUpperCase().trim(),
+  checkRateLimit: vi.fn(() => ({
+    success: true,
+    limit: 20,
+    remaining: 19,
+    reset: Date.now() + 3600000,
+  })),
 }));
 
 vi.mock("@/features/enrich-company/api/processEnrichment", () => ({
@@ -235,5 +241,68 @@ describe("POST /api/companies/import", () => {
 
     expect(response.status).toBe(404);
     expect(data.error).toContain("not found");
+  });
+
+  it("should return 429 when rate limit exceeded", async () => {
+    const { checkRateLimit } = await import('@/shared');
+
+    mockAuth.mockResolvedValue({
+      user: { id: "user1", email: "test@example.com" },
+    } as Session);
+
+    vi.mocked(checkRateLimit).mockReturnValue({
+      success: false,
+      limit: 20,
+      remaining: 0,
+      reset: Date.now() + 3600000,
+    });
+
+    const request = new NextRequest("http://localhost:3000/api/companies/import", {
+      method: "POST",
+      body: JSON.stringify({ ticker: "AAPL" }),
+    });
+
+    const response = await POST(request);
+    const data = await response.json();
+
+    expect(response.status).toBe(429);
+    expect(data.error).toContain("Too many");
+    expect(response.headers.get('Retry-After')).toBeTruthy();
+    expect(response.headers.get('X-RateLimit-Limit')).toBe('20');
+    expect(response.headers.get('X-RateLimit-Remaining')).toBe('0');
+    expect(response.headers.get('X-RateLimit-Reset')).toBeTruthy();
+  });
+
+  it("should allow request when within rate limit", async () => {
+    const { checkRateLimit } = await import('@/shared');
+
+    mockAuth.mockResolvedValue({
+      user: { id: "user1", email: "test@example.com" },
+    } as Session);
+
+    vi.mocked(checkRateLimit).mockReturnValue({
+      success: true,
+      limit: 20,
+      remaining: 19,
+      reset: Date.now() + 3600000,
+    });
+
+    mockPrisma.company.findFirst.mockResolvedValue({
+      id: "company1",
+      ticker: "AAPL",
+    } as any);
+
+    const request = new NextRequest("http://localhost:3000/api/companies/import", {
+      method: "POST",
+      body: JSON.stringify({ ticker: "AAPL" }),
+    });
+
+    const response = await POST(request);
+
+    expect(response.status).toBe(200);
+    expect(vi.mocked(checkRateLimit)).toHaveBeenCalledWith(
+      'import:user1',
+      { max: 20, windowMs: 3600000 }
+    );
   });
 });
