@@ -1,8 +1,3 @@
-/**
- * Analysis entity types
- * @module entities/analysis
- */
-
 export interface FinancialSnapshot {
   currentPrice: number | null;
   peRatio: number | null;
@@ -18,7 +13,7 @@ export interface Analysis {
   text: string;
   source: string | null;
   sentiment: "BULLISH" | "BEARISH" | "NEUTRAL";
-  reliabilityScore: number; // 1-10
+  reliabilityScore: number;
   reasoning: string;
   financialSnapshot?: FinancialSnapshot | null;
   createdAt: string;

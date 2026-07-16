@@ -2,7 +2,6 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { POST } from './route';
 import type { NextRequest } from 'next/server';
 
-// Mock dependencies
 vi.mock('@/lib/auth', () => ({
   auth: vi.fn(),
 }));
@@ -30,7 +29,6 @@ vi.mock('next/server', async () => {
   };
 });
 
-// Mock rate limiting
 vi.mock('@/shared', async () => {
   const actual = await vi.importActual('@/shared');
   return {
@@ -51,7 +49,6 @@ describe('POST /api/analyze', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     
-    // Reset default mocks
     const { checkRateLimit } = vi.importMock('@/shared');
     if (checkRateLimit) {
       vi.mocked(checkRateLimit).mockReturnValue({
@@ -425,4 +422,3 @@ describe('POST /api/analyze', () => {
     });
   });
 });
-

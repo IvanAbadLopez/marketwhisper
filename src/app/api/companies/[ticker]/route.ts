@@ -36,7 +36,7 @@ export async function GET(
           orderBy: {
             createdAt: "desc",
           },
-          take: 10, // Get latest enrichments
+          take: 10,
         },
       },
     });
@@ -55,12 +55,6 @@ export async function GET(
   }
 }
 
-/**
- * DELETE /api/companies/[ticker] - Delete a company and all related data
- * Requires authentication
- * Cascade deletes: analyses, enrichments, mentions, content
- * Manual delete: jobs (no FK, relates by ticker string)
- */
 export async function DELETE(
   request: Request,
   { params }: { params: Promise<{ ticker: string }> }
@@ -75,7 +69,6 @@ export async function DELETE(
   const upperTicker = ticker.toUpperCase();
 
   try {
-    // Check if company exists and belongs to user
     const company = await prisma.company.findFirst({
       where: {
         userId: session.user.id,
@@ -87,7 +80,6 @@ export async function DELETE(
       return NextResponse.json({ error: "Company not found" }, { status: 404 });
     }
 
-    // Manual deletion: Jobs (no FK, relates by ticker string)
     await prisma.job.deleteMany({
       where: {
         userId: session.user.id,
@@ -95,12 +87,6 @@ export async function DELETE(
       },
     });
 
-    // Delete company (cascade handles related data via Prisma schema)
-    // This will automatically delete:
-    // - analyses (onDelete: Cascade)
-    // - enrichments (onDelete: Cascade)
-    // - mentions (onDelete: Cascade)
-    // - content (via CompanyContent intermediate table)
     await prisma.company.delete({
       where: { id: company.id },
     });

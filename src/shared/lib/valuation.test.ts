@@ -37,7 +37,6 @@ describe('computeValuation', () => {
       fiftyTwoWeekLow: 100,
     }));
     
-    // Graham = sqrt(22.5 * 5 * 25) = sqrt(2812.5) ≈ 53.03
     expect(result.breakdown.targetPriceMethods.grahamNumber).toBeCloseTo(53.03, 1);
   });
 
@@ -45,13 +44,11 @@ describe('computeValuation', () => {
     const result = computeValuation(createInputs({
       eps: 10.0,
       peRatio: 30,
-      epsGrowth: 0.15, // 15% growth
+      epsGrowth: 0.15,
       fiftyTwoWeekHigh: 350,
       fiftyTwoWeekLow: 250,
     }));
     
-    // Fair P/E = min(15 + 15*0.5, 25, 30) = min(22.5, 25, 30) = 22.5
-    // Target = 10 * 22.5 = 225
     expect(result.breakdown.targetPriceMethods.fairPE).toBeCloseTo(225, 0);
   });
 
@@ -66,11 +63,11 @@ describe('computeValuation', () => {
 
   it('should compute financial health score with ideal metrics', () => {
     const result = computeValuation(createInputs({
-      peRatio: 18, // Ideal range
-      profitMargins: 0.25, // 25% excellent
-      roe: 20, // Excellent
-      debtToEquity: 0.3, // Low debt
-      dividendYield: 0.03, // 3%
+      peRatio: 18,
+      profitMargins: 0.25,
+      roe: 20,
+      debtToEquity: 0.3,
+      dividendYield: 0.03,
     }));
     
     expect(result.breakdown.financialHealthScore).toBeGreaterThan(90);
@@ -78,10 +75,10 @@ describe('computeValuation', () => {
 
   it('should penalize poor financial metrics', () => {
     const result = computeValuation(createInputs({
-      peRatio: 50, // High P/E
-      profitMargins: 0.05, // 5% poor
-      roe: 5, // Poor
-      debtToEquity: 2.5, // High debt
+      peRatio: 50,
+      profitMargins: 0.05,
+      roe: 5,
+      debtToEquity: 2.5,
     }));
     
     expect(result.breakdown.financialHealthScore).toBeLessThan(50);
@@ -89,28 +86,23 @@ describe('computeValuation', () => {
 
   it('should compute analyst score from consensus', () => {
     const result = computeValuation(createInputs({
-      analystScore: 0.6, // Strong buy
+      analystScore: 0.6,
       fiftyTwoWeekHigh: 100,
       fiftyTwoWeekLow: 80,
     }));
     
-    // Analyst: (0.6 + 1)/2 * 100 = 80
     expect(result.breakdown.analystScore).toBe(80);
   });
 
   it('should compute text sentiment score with reliability weighting', () => {
     const result = computeValuation(createInputs({
-      avgSentimentScore: 0.5, // Bullish
-      avgReliabilityScore: 8, // High reliability
+      avgSentimentScore: 0.5,
+      avgReliabilityScore: 8,
       analysisCount: 5,
       fiftyTwoWeekHigh: 100,
       fiftyTwoWeekLow: 80,
     }));
     
-    // Base: (0.5 + 1)/2 * 100 = 75
-    // Reliability weight: 8/10 = 0.8
-    // Volume weight: min(1, 5/10) = 0.5
-    // Score: 75 * (0.7 + 0.3 * 0.8 * 0.5) = 75 * 0.82 = 61.5
     expect(result.breakdown.textSentimentScore).toBeCloseTo(61.5, 0);
   });
 
@@ -118,11 +110,8 @@ describe('computeValuation', () => {
     const result = computeValuation(createInputs({
       peRatio: 15,
       analystScore: 0.4,
-      // No text data
     }));
     
-    // Only financial (40%) and analyst (35%) available
-    // Rescaled: financial = 40/75 = 0.533, analyst = 35/75 = 0.467
     expect(result.breakdown.weights.financial).toBeCloseTo(0.533, 2);
     expect(result.breakdown.weights.analyst).toBeCloseTo(0.467, 2);
     expect(result.breakdown.weights.text).toBe(0);
@@ -141,11 +130,9 @@ describe('computeValuation', () => {
       bookValuePerShare: 50,
       fiftyTwoWeekHigh: 200,
       fiftyTwoWeekLow: 100,
-      analystScore: 0.8, // Strong = 90 score
+      analystScore: 0.8,
     }));
     
-    // Global score should be high (90)
-    // Adjustment: 0.15 * (90-50)/50 = 0.15 * 0.8 = 0.12 = +12%
     expect(result.breakdown.sentimentAdjustment).toBeCloseTo(12, 0);
     expect(result.targetPrice).toBeGreaterThan(result.breakdown.baseTargetPrice!);
   });
@@ -155,13 +142,11 @@ describe('computeValuation', () => {
       eps: 10,
       bookValuePerShare: 50,
       peRatio: 20,
-      epsGrowth: 0.10, // 10% growth → fair P/E = min(15 + 5, 25, 20) = 20
+      epsGrowth: 0.10,
       fiftyTwoWeekHigh: 250,
       fiftyTwoWeekLow: 150,
     }));
     
-    // Graham ≈ 106, Fair P/E = 10*20 = 200, 52w mid = 200
-    // Weighted: 106*0.35 + 200*0.40 + 200*0.25 = 37.1 + 80 + 50 = 167.1
     expect(result.breakdown.baseTargetPrice).toBeCloseTo(167, 0);
   });
 
@@ -176,7 +161,7 @@ describe('computeValuation', () => {
     expect(result.breakdown.targetPriceMethods.grahamNumber).toBeNull();
     expect(result.breakdown.targetPriceMethods.fairPE).toBeNull();
     expect(result.breakdown.targetPriceMethods.fiftyTwoWeekMid).toBe(75);
-    expect(result.targetPrice).toBeCloseTo(75, 0); // Only 52w mid available
+    expect(result.targetPrice).toBeCloseTo(75, 0);
   });
 
   it('should handle partial data gracefully', () => {
@@ -188,6 +173,6 @@ describe('computeValuation', () => {
     }));
     
     expect(result.globalScore).toBeGreaterThan(0);
-    expect(result.targetPrice).toBeNull(); // No price methods available
+    expect(result.targetPrice).toBeNull();
   });
 });

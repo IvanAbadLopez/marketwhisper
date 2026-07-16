@@ -1,5 +1,3 @@
-// Feature: Auth - Registration API
-
 import type { RegisterFormData, AuthResponse } from "../model/types";
 
 export async function registerUser(data: RegisterFormData): Promise<AuthResponse> {

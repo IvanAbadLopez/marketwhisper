@@ -1,14 +1,9 @@
-/**
- * Tests for DELETE /api/analysis/[id]
- * @vitest-environment node
- */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { DELETE } from "./route";
 import { NextRequest } from "next/server";
 
-// Mock dependencies
 vi.mock("@/lib/auth", () => ({
   auth: vi.fn(),
 }));
@@ -122,15 +117,12 @@ describe("DELETE /api/analysis/[id]", () => {
     expect(data.success).toBe(true);
     expect(data.message).toBe("Analysis deleted and company metrics recomputed");
 
-    // Verify analysis was deleted
     expect(prisma.analysis.delete).toHaveBeenCalledWith({
       where: { id: "analysis123" },
     });
 
-    // Verify aggregate recomputation was called
     expect(recalculateCompanyAggregatesFromScratch).toHaveBeenCalledWith("company123");
     
-    // Verify valuation recomputation was called
     expect(recomputeCompanyValuation).toHaveBeenCalledWith("company123");
   });
 

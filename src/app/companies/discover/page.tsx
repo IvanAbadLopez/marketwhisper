@@ -34,7 +34,7 @@ export default function DiscoverPage() {
     <MainLayout user={session?.user ?? undefined}>
       <div className="p-8">
         <div className="max-w-7xl mx-auto">
-          {/* Back Button */}
+          {}
           <button
             onClick={() => router.push("/situations")}
             className="flex items-center gap-2 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 mb-6 transition-colors"
@@ -43,7 +43,7 @@ export default function DiscoverPage() {
             Back to Companies
           </button>
 
-          {/* Header */}
+          {}
           <div className="mb-8">
             <h1 className="text-3xl font-bold text-zinc-900 dark:text-zinc-100">
               Discover Companies
@@ -53,7 +53,7 @@ export default function DiscoverPage() {
             </p>
           </div>
 
-          {/* Discover Feature */}
+          {}
           <DiscoverSearch />
         </div>
       </div>

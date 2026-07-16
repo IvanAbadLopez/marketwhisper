@@ -1,9 +1,3 @@
-/**
- * AnalysisCard component
- * Displays a single analysis with sentiment and reliability
- * @module entities/analysis
- */
-
 "use client";
 
 import { TrendingUp, TrendingDown, Minus, Calendar, FileText } from "lucide-react";
@@ -37,7 +31,7 @@ export function AnalysisCard({ analysis, showCompany = false }: AnalysisCardProp
 
   return (
     <div className="bg-white dark:bg-zinc-900 rounded-lg shadow-md p-4 border border-zinc-200 dark:border-zinc-800">
-      {/* Header */}
+      {}
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-center gap-2">
           <SentimentIcon className={`w-5 h-5 ${getSentimentColor()}`} />
@@ -53,7 +47,7 @@ export function AnalysisCard({ analysis, showCompany = false }: AnalysisCardProp
         </div>
       </div>
 
-      {/* Company (optional) */}
+      {}
       {showCompany && (
         <div className="mb-2">
           <span className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
@@ -62,12 +56,12 @@ export function AnalysisCard({ analysis, showCompany = false }: AnalysisCardProp
         </div>
       )}
 
-      {/* Reasoning */}
+      {}
       <p className="text-sm text-zinc-700 dark:text-zinc-300 mb-3">
         {analysis.reasoning}
       </p>
 
-      {/* Financial Snapshot */}
+      {}
       {analysis.financialSnapshot && (
         <FinancialSnapshot 
           snapshot={analysis.financialSnapshot} 
@@ -75,7 +69,7 @@ export function AnalysisCard({ analysis, showCompany = false }: AnalysisCardProp
         />
       )}
 
-      {/* Footer */}
+      {}
       <div className="flex items-center justify-between text-xs text-zinc-500 dark:text-zinc-500 border-t border-zinc-200 dark:border-zinc-800 pt-2">
         <div className="flex items-center gap-1">
           <Calendar className="w-3 h-3" />

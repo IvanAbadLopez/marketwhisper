@@ -1,8 +1,3 @@
-/**
- * Feature: Discover Company - Type Definitions
- * @module features/discover-company/model
- */
-
 export interface FinnhubSearchResult {
   symbol: string;
   description: string;

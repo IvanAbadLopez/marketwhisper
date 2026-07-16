@@ -1,8 +1,3 @@
-/**
- * Company Enrichment Types
- * @module features/enrich-company/model
- */
-
 export type EnrichmentSource = "FINNHUB";
 
 export interface CompanyInfo {
@@ -68,7 +63,6 @@ export interface EnrichmentResult {
 
 export type EnrichmentStatus = "PENDING" | "PROCESSING" | "COMPLETED" | "FAILED";
 
-/** Response of POST /enrich - background job accepted */
 export interface EnrichmentJobStarted {
   success: boolean;
   ticker: string;
@@ -77,7 +71,6 @@ export interface EnrichmentJobStarted {
   source: EnrichmentSource;
 }
 
-/** Response of GET /enrich/[id] - current status of a background job */
 export interface EnrichmentStatusResult {
   enrichmentId: string;
   ticker: string;

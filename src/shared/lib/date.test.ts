@@ -91,7 +91,6 @@ describe('formatRelativeTime', () => {
     expect(result).toBe('3 months ago');
   });
 
-  // Boundary tests
   it('returns "just now" for exactly 59 seconds ago', () => {
     const now = new Date('2026-07-09T10:00:00Z');
     vi.setSystemTime(now);
@@ -164,7 +163,6 @@ describe('formatRelativeTime', () => {
     expect(result).toBe('1 month ago');
   });
 
-  // Error case tests
   it('returns "just now" for future dates (clock skew protection)', () => {
     const now = new Date('2026-07-09T10:00:00Z');
     vi.setSystemTime(now);

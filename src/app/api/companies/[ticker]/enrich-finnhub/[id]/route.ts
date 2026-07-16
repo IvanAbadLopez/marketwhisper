@@ -1,15 +1,6 @@
-/**
- * Finnhub Enrichment Status Endpoint
- * Returns the current status/result of a background Finnhub enrichment job.
- */
-
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 
-/**
- * GET /api/companies/[ticker]/enrich-finnhub/[id]
- * Poll the status of a background Finnhub enrichment job.
- */
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ ticker: string; id: string }> }
@@ -17,7 +8,6 @@ export async function GET(
   const { prisma } = await import("@/shared/api/prisma");
 
   try {
-    // 1. Check authentication
     const session = await auth();
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -25,7 +15,6 @@ export async function GET(
 
     const { ticker, id } = await params;
 
-    // 2. Look up the enrichment record and verify ownership
     const enrichment = await prisma.companyEnrichment.findUnique({
       where: { id },
       select: {
@@ -48,12 +37,10 @@ export async function GET(
       );
     }
 
-    // Verify ownership
     if (enrichment.userId !== session.user.id) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    // 3. Return the current status and result (if completed)
     return NextResponse.json({
       enrichmentId: enrichment.id,
       ticker: enrichment.ticker,

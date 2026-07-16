@@ -14,7 +14,7 @@ export default async function JobsPage() {
     <MainLayout user={session.user}>
       <div className="p-8">
         <div className="max-w-7xl mx-auto space-y-6">
-          {/* Page header */}
+          {}
           <div>
             <h1 className="text-3xl font-bold text-zinc-900 dark:text-zinc-100 mb-2">
               Process Queue
@@ -24,7 +24,7 @@ export default async function JobsPage() {
             </p>
           </div>
 
-          {/* Job queue component */}
+          {}
           <JobQueue />
         </div>
       </div>

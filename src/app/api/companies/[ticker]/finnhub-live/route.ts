@@ -1,25 +1,14 @@
-/**
- * Finnhub Live Data Endpoint
- * Fetches current financial metrics and price data from Finnhub without persisting
- */
-
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { fetchFinnhubData, normalizeTicker } from "@/shared";
 
-// Vercel serverless function timeout (30s for external API calls)
 export const maxDuration = 30;
 
-/**
- * GET /api/companies/[ticker]/finnhub-live
- * Returns live financial and price data from Finnhub (read-only, no persistence)
- */
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ ticker: string }> }
 ) {
   try {
-    // 1. Check authentication
     const session = await auth();
     if (!session?.user?.email) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -28,7 +17,6 @@ export async function GET(
     const { ticker: rawTicker } = await params;
     const ticker = normalizeTicker(rawTicker);
 
-    // 2. Fetch live data from Finnhub (via enrichment service)
     console.log(`[Finnhub-Live] Fetching live data for ${ticker}...`);
     const finnhubData = await fetchFinnhubData(ticker);
 
@@ -39,7 +27,6 @@ export async function GET(
       );
     }
 
-    // 3. Return only the financial and price data (no persistence)
     return NextResponse.json({
       success: true,
       ticker,

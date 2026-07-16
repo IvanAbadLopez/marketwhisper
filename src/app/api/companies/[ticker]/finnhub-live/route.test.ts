@@ -2,12 +2,10 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { GET } from "./route";
 import { NextRequest } from "next/server";
 
-// Mock auth module
 vi.mock("@/lib/auth", () => ({
   auth: vi.fn(),
 }));
 
-// Mock fetchFinnhubData
 vi.mock("@/shared", () => ({
   fetchFinnhubData: vi.fn(),
   normalizeTicker: (ticker: string) => ticker.replace(/^\$/, '').trim().toUpperCase(),

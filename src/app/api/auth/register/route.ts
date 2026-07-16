@@ -3,7 +3,6 @@ import bcrypt from "bcrypt";
 import { prisma } from "@/shared/api/prisma";
 import { checkRateLimit, getClientIp } from "@/shared";
 
-// Email validation regex (RFC 5322 simplified)
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const MAX_EMAIL_LENGTH = 254;
 const MAX_NAME_LENGTH = 100;
@@ -12,11 +11,10 @@ const MAX_PASSWORD_LENGTH = 200;
 
 export async function POST(request: Request) {
   try {
-    // Rate limit registration attempts by IP (3 registrations per hour)
     const ip = getClientIp(request);
     const rateLimitResult = checkRateLimit(`register:${ip}`, {
       max: 3,
-      windowMs: 60 * 60 * 1000, // 1 hour
+      windowMs: 60 * 60 * 1000,
     });
 
     if (!rateLimitResult.success) {
@@ -37,9 +35,7 @@ export async function POST(request: Request) {
 
     const { email, password, name } = await request.json();
 
-    // 1. ROBUST INPUT VALIDATION (before DB queries)
     
-    // Email validation
     if (!email || typeof email !== 'string') {
       return NextResponse.json(
         { error: "Email is required" },
@@ -63,7 +59,6 @@ export async function POST(request: Request) {
       );
     }
 
-    // Password validation
     if (!password || typeof password !== 'string') {
       return NextResponse.json(
         { error: "Password is required" },
@@ -85,7 +80,6 @@ export async function POST(request: Request) {
       );
     }
 
-    // Name validation (optional field)
     let processedName: string | null = null;
     if (name !== undefined && name !== null) {
       if (typeof name !== 'string') {
@@ -104,22 +98,16 @@ export async function POST(request: Request) {
         );
       }
       
-      // Convert empty string to null after trim
       processedName = trimmedName.length > 0 ? trimmedName : null;
     }
 
-    // 2. ANTI-ENUMERATION PATTERN
-    // Check if user exists
     const existingUser = await prisma.user.findUnique({
       where: { email: trimmedEmail },
     });
 
     if (existingUser) {
-      // User already exists - DO NOT reveal this fact
-      // Simulate hashing time to prevent timing attacks
       await bcrypt.hash("dummy-password-for-timing-attack-prevention", 12);
       
-      // Return SAME response as successful registration
       return NextResponse.json(
         { 
           message: "Registration processed successfully. If the email is not already registered, your account has been created. You can now sign in."
@@ -128,7 +116,6 @@ export async function POST(request: Request) {
       );
     }
 
-    // 3. CREATE NEW USER
     const hashedPassword = await bcrypt.hash(password, 12);
 
     const user = await prisma.user.create({
@@ -139,11 +126,10 @@ export async function POST(request: Request) {
       },
     });
 
-    // Return SAME message as existing user (anti-enumeration)
     return NextResponse.json(
       { 
         message: "Registration processed successfully. If the email is not already registered, your account has been created. You can now sign in.",
-        userId: user.id // Include userId only for actual new users (optional)
+        userId: user.id
       },
       { status: 200 }
     );

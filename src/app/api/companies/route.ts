@@ -31,7 +31,7 @@ export async function GET() {
           orderBy: {
             createdAt: "desc",
           },
-          take: 3, // Only latest 3 for summary
+          take: 3,
         },
       },
       orderBy: {

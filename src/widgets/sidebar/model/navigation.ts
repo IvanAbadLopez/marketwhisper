@@ -1,9 +1,7 @@
-// Widget: Sidebar - Navigation Items Configuration
-
 import { Home, Building2, Newspaper, Brain, ListTodo } from "lucide-react";
 
 export type NavigationItem = {
-  nameKey: string; // i18n key
+  nameKey: string;
   href: string;
   icon: typeof Home;
 };

@@ -1,8 +1,3 @@
-/**
- * Shared server utilities for company enrichment with Finnhub + AI
- * @module features/enrich-company/api/processEnrichment
- */
-
 import type { Prisma } from "@/generated/prisma/client";
 import { env } from "@/shared/config/env";
 import { calcAnalystScore, analystScoreLabel } from "../lib/analystScore";
@@ -17,9 +12,6 @@ interface UserAnalysis {
   createdAt: Date;
 }
 
-/**
- * Generate AI analysis prompt from Finnhub data + user text analyses
- */
 function generateAnalysisPrompt(
   ticker: string, 
   data: FinnhubData, 
@@ -45,7 +37,6 @@ function generateAnalysisPrompt(
 - 52-Week High: $${price?.fiftyTwoWeekHigh?.toFixed(2) || "N/A"}
 - 52-Week Low: $${price?.fiftyTwoWeekLow?.toFixed(2) || "N/A"}`;
 
-  // Add analyst recommendations if available
   if (data.recommendations && data.recommendations.length > 0) {
     const latest = data.recommendations[data.recommendations.length - 1];
     const score = calcAnalystScore(latest);
@@ -56,7 +47,6 @@ function generateAnalysisPrompt(
 - Consensus Score: ${score !== null ? score.toFixed(2) : "N/A"} (${label})`;
   }
 
-  // Add user text analyses if available
   if (userAnalyses.length > 0) {
     prompt += `\n\n**User Text Analyses (${userAnalyses.length} total):**\n`;
     userAnalyses.slice(0, 10).forEach((analysis, idx) => {
@@ -116,9 +106,6 @@ Keep each bullet point concise (1-2 sentences max). Integrate both quantitative 
   return prompt;
 }
 
-/**
- * Call LLM API to generate AI analysis (Groq only)
- */
 async function generateLLMAnalysis(prompt: string): Promise<string> {
   const apiKey = env.GROQ_API_KEY;
   if (!apiKey) {
@@ -153,22 +140,17 @@ async function generateLLMAnalysis(prompt: string): Promise<string> {
   }
 }
 
-/**
- * Process Finnhub enrichment in the background
- * Used by both the enrich endpoint and the import endpoint
- */
 export async function processEnrichment(
   enrichmentId: string,
   companyId: string,
   ticker: string,
-  jobId: string | undefined, // Optional job ID for queue tracking
+  jobId: string | undefined,
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  _userId: string // User ID for ownership (reserved for future use)
+  _userId: string
 ): Promise<void> {
   const { prisma } = await import("@/shared/api/prisma");
 
   try {
-    // Mark enrichment and job as processing
     await prisma.companyEnrichment.update({
       where: { id: enrichmentId },
       data: { status: "PROCESSING" },
@@ -181,7 +163,6 @@ export async function processEnrichment(
       });
     }
 
-    // 1. Fetch financial data from Finnhub (via enrichment service)
     console.log(`[Enrich-Finnhub:${enrichmentId}] Fetching Finnhub data for ${ticker}...`);
     const finnhubData = await fetchFinnhubData(ticker);
 
@@ -189,7 +170,6 @@ export async function processEnrichment(
       throw new Error("Failed to fetch financial data from Finnhub");
     }
 
-    // 2. Update company metadata from Finnhub if available
     if (finnhubData.companyInfo) {
       const { name, sector, industry, website, marketCap } = finnhubData.companyInfo;
       const company = await prisma.company.findUnique({ where: { id: companyId } });
@@ -207,12 +187,11 @@ export async function processEnrichment(
       }
     }
 
-    // 3. Fetch user text analyses for this company
     console.log(`[Enrich-Finnhub:${enrichmentId}] Fetching user text analyses for ${ticker}...`);
     const userAnalyses = await prisma.analysis.findMany({
       where: { companyId },
       orderBy: { createdAt: 'desc' },
-      take: 20, // Limit to most recent 20 analyses
+      take: 20,
       select: {
         text: true,
         source: true,
@@ -223,13 +202,10 @@ export async function processEnrichment(
       },
     });
 
-    // 4. Generate AI analysis with LLM (combining Finnhub data + user texts)
     console.log(`[Enrich-Finnhub:${enrichmentId}] Generating AI analysis for ${ticker} (${userAnalyses.length} user analyses)...`);
     const prompt = generateAnalysisPrompt(ticker, finnhubData, userAnalyses);
     const aiAnalysis = await generateLLMAnalysis(prompt);
 
-    // 5. Store final result and mark as completed
-    // Note: Translation is done on-demand, not persisted
     await prisma.companyEnrichment.update({
       where: { id: enrichmentId },
       data: {
@@ -241,7 +217,6 @@ export async function processEnrichment(
       },
     });
 
-    // 6. Update job status if exists
     if (jobId) {
       await prisma.job.update({
         where: { id: jobId },
@@ -269,7 +244,6 @@ export async function processEnrichment(
         },
       });
 
-      // Update job status if exists
       if (jobId) {
         await prisma.job.update({
           where: { id: jobId },

@@ -58,7 +58,6 @@ export default function SituationsPage() {
       });
 
       if (response.ok) {
-        // Refresh company list
         await fetchCompanies();
       } else {
         const error = await response.json();
@@ -70,7 +69,6 @@ export default function SituationsPage() {
     }
   };
 
-  // Use company search feature (FSD)
   const filteredCompanies = useCompanySearch(companies, searchQuery);
 
   if (status === "loading" || loading) {
@@ -107,7 +105,7 @@ export default function SituationsPage() {
             </button>
           </div>
 
-          {/* Search Bar */}
+          {}
           {companies.length > 0 && (
             <SearchBar 
               value={searchQuery}
@@ -165,5 +163,3 @@ export default function SituationsPage() {
     </MainLayout>
   );
 }
-
-

@@ -11,13 +11,11 @@ export default async function Home() {
     redirect("/login");
   }
 
-  // Get user ID for job counting
   const user = await prisma.user.findUnique({
     where: { email: session.user.email! },
     select: { id: true },
   });
 
-  // Fetch stats from database (scoped to user)
   const [companyCount, analysisCount, reportCount, activeJobsCount] = await Promise.all([
     prisma.company.count({ where: { userId: user!.id } }),
     prisma.analysis.count({ where: { userId: user!.id } }),
@@ -39,7 +37,7 @@ export default async function Home() {
     <MainLayout user={session.user}>
       <div className="p-8">
         <div className="max-w-4xl mx-auto space-y-6">
-          {/* Welcome section */}
+          {}
           <div>
             <h2 className="text-3xl font-bold text-zinc-900 dark:text-zinc-100 mb-2">
               Welcome back, {session.user.name?.split(" ")[0] || 'User'}!
@@ -49,7 +47,7 @@ export default async function Home() {
             </p>
           </div>
 
-          {/* Stats cards */}
+          {}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg p-6">
               <div className="flex items-center justify-between">
@@ -116,7 +114,7 @@ export default async function Home() {
             </div>
           </div>
 
-          {/* Getting started */}
+          {}
           <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg p-6">
             <h3 className="text-lg font-semibold text-blue-900 dark:text-blue-100 mb-2">
               🚀 How It Works
@@ -141,7 +139,7 @@ export default async function Home() {
             </ul>
           </div>
 
-          {/* Recent activity */}
+          {}
           <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg p-6">
             <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100 mb-4">
               Recent Activity

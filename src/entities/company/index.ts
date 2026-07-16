@@ -1,9 +1,3 @@
-/**
- * Company entity public API
- * @module entities/company
- */
-
-// ===== TYPES =====
 export type {
   Company,
   CompanyWithDetails,
@@ -12,7 +6,6 @@ export type {
   AnalysisSummary,
 } from "./model/types";
 
-// ===== UTILS =====
 export {
   formatMarketCap,
   getSentimentColor,
@@ -20,9 +13,7 @@ export {
   getSentimentLabel,
 } from "./model/utils";
 
-// ===== HOOKS =====
 export { useCompanies, useCompany } from "./model/hooks";
 
-// ===== UI =====
 export { CompanyCard } from "./ui/CompanyCard";
 export { EnrichmentDisplay } from "./ui/EnrichmentDisplay";

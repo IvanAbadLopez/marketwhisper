@@ -1,7 +1,3 @@
-/**
- * Test: Company Import API Route
- * @vitest-environment node
- */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
@@ -10,7 +6,6 @@ import { NextRequest } from "next/server";
 import type { Session } from "next-auth";
 import type { Company, CompanyEnrichment } from "@/generated/prisma/client";
 
-// Mock dependencies
 vi.mock("@/lib/auth", () => ({
   auth: vi.fn(),
 }));
@@ -56,13 +51,11 @@ vi.mock("@/features/enrich-company/api/processEnrichment", () => ({
   processEnrichment: vi.fn(),
 }));
 
-// Mock Next.js after() for background tasks
 vi.mock("next/server", async () => {
   const actual = await vi.importActual("next/server");
   return {
     ...actual,
     after: () => {
-      // Don't actually run the background task in tests
       return;
     },
   };
@@ -145,16 +138,13 @@ describe("POST /api/companies/import", () => {
       user: { id: "user1", email: "test@example.com" },
     } as Session);
 
-    // Mock user lookup
     mockPrisma.user.findUnique.mockResolvedValue({
       id: "user1",
       email: "test@example.com",
     } as any);
 
-    // Company doesn't exist
     mockPrisma.company.findFirst.mockResolvedValue(null);
 
-    // Mock Finnhub data fetch
     mockFetchFinnhubData.mockResolvedValue({
       success: true,
       ticker: "TSLA",
@@ -172,14 +162,12 @@ describe("POST /api/companies/import", () => {
       price: undefined,
     });
 
-    // Mock company creation
     mockPrisma.company.create.mockResolvedValue({
       id: "company-456",
       ticker: "TSLA",
       name: "Tesla Inc.",
     } as Company);
 
-    // Mock job creation
     mockPrisma.job.create.mockResolvedValue({
       id: "job-123",
       userId: "user1",
@@ -194,7 +182,6 @@ describe("POST /api/companies/import", () => {
       updatedAt: new Date(),
     } as any);
 
-    // Mock enrichment creation
     mockPrisma.companyEnrichment.create.mockResolvedValue({
       id: "enrichment-789",
       companyId: "company-456",
@@ -234,7 +221,6 @@ describe("POST /api/companies/import", () => {
 
     mockPrisma.company.findFirst.mockResolvedValue(null);
 
-    // Mock Finnhub fetch error
     mockFetchFinnhubData.mockRejectedValue(
       new Error("Ticker XYZ not found in Finnhub")
     );

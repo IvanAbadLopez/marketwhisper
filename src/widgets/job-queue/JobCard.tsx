@@ -1,10 +1,5 @@
 "use client";
 
-/**
- * Job Card Component
- * Individual job item with expandable details
- * @module widgets/job-queue
- */
 
 import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
@@ -34,7 +29,7 @@ interface Job {
 
 interface JobCardProps {
   job: Job;
-  onCancelled?: () => void; // Callback when job is cancelled
+  onCancelled?: () => void;
 }
 
 export function JobCard({ job, onCancelled }: JobCardProps) {
@@ -42,7 +37,6 @@ export function JobCard({ job, onCancelled }: JobCardProps) {
   const [cancelling, setCancelling] = useState(false);
   const router = useRouter();
 
-  // Get status icon and color
   const getStatusDisplay = () => {
     switch (job.status) {
       case "PENDING":
@@ -85,14 +79,12 @@ export function JobCard({ job, onCancelled }: JobCardProps) {
 
   const statusDisplay = getStatusDisplay();
 
-  // Get type icon
   const typeIcon = job.type === "ANALYSIS" ? (
     <Brain className="w-4 h-4" />
   ) : (
     <Sparkles className="w-4 h-4" />
   );
 
-  // Calculate elapsed time
   const elapsedTime = useMemo(() => {
     const start = new Date(job.createdAt).getTime();
     const end = job.status === "COMPLETED" || job.status === "FAILED" || job.status === "CANCELLED"
@@ -106,15 +98,13 @@ export function JobCard({ job, onCancelled }: JobCardProps) {
     return `${Math.floor(elapsed / 3600)}h ${Math.floor((elapsed % 3600) / 60)}m`;
   }, [job.createdAt, job.updatedAt, job.status]);
 
-  // Navigate to company detail
   const viewResult = () => {
     if (job.status === "COMPLETED" && job.ticker && job.ticker !== "PENDING") {
-      const ticker = job.ticker.split(" ")[0]; // Handle "AAPL +2" format
+      const ticker = job.ticker.split(" ")[0];
       router.push(`/companies/${ticker.toLowerCase()}`);
     }
   };
 
-  // Cancel the job
   const handleCancel = async () => {
     if (!confirm(`Cancel this ${job.type.toLowerCase()} job for ${job.ticker}?`)) {
       return;
@@ -131,7 +121,6 @@ export function JobCard({ job, onCancelled }: JobCardProps) {
         throw new Error(data.error || "Failed to cancel job");
       }
 
-      // Notify parent to refresh
       onCancelled?.();
     } catch (error) {
       console.error("Error cancelling job:", error);
@@ -143,16 +132,16 @@ export function JobCard({ job, onCancelled }: JobCardProps) {
 
   return (
     <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg overflow-hidden">
-      {/* Main row */}
+      {}
       <div className="p-4 flex items-center gap-4">
-        {/* Status indicator */}
+        {}
         <div className={`flex items-center justify-center w-10 h-10 rounded-lg ${statusDisplay.bg}`}>
           <div className={statusDisplay.color}>
             {statusDisplay.icon}
           </div>
         </div>
 
-        {/* Job info */}
+        {}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
             <div className="flex items-center gap-1.5 text-sm font-medium text-zinc-700 dark:text-zinc-300">
@@ -175,9 +164,9 @@ export function JobCard({ job, onCancelled }: JobCardProps) {
           </div>
         </div>
 
-        {/* Actions */}
+        {}
         <div className="flex items-center gap-2">
-          {/* Cancel button for PENDING/PROCESSING jobs */}
+          {}
           {(job.status === "PENDING" || job.status === "PROCESSING") && (
             <button
               onClick={handleCancel}
@@ -218,7 +207,7 @@ export function JobCard({ job, onCancelled }: JobCardProps) {
         </div>
       </div>
 
-      {/* Expandable details */}
+      {}
       {expanded && (job.result || job.errorMessage) && (
         <div className="border-t border-zinc-200 dark:border-zinc-800 p-4 bg-zinc-50 dark:bg-zinc-900/50">
           {job.errorMessage ? (

@@ -1,13 +1,5 @@
-/**
- * Company entity utilities
- * @module entities/company
- */
-
 import { MARKET_CAP_UNITS } from "@/shared/config/constants";
 
-/**
- * Format market cap to human-readable string (T, B, M)
- */
 export function formatMarketCap(marketCap: number | null): string {
   if (!marketCap) return "N/A";
   
@@ -26,9 +18,6 @@ export function formatMarketCap(marketCap: number | null): string {
   return `$${marketCap.toLocaleString()}`;
 }
 
-/**
- * Get sentiment color based on score (-1 to 1)
- */
 export function getSentimentColor(score: number | null): string {
   if (score === null) return "bg-zinc-300 dark:bg-zinc-700";
   if (score > 0.3) return "bg-green-500 dark:bg-green-600";
@@ -36,9 +25,6 @@ export function getSentimentColor(score: number | null): string {
   return "bg-zinc-400 dark:bg-zinc-600";
 }
 
-/**
- * Get reliability color based on score (1-10)
- */
 export function getReliabilityColor(score: number | null): string {
   if (score === null) return "bg-zinc-300 dark:bg-zinc-700";
   if (score >= 8) return "bg-green-500 dark:bg-green-600";
@@ -46,9 +32,6 @@ export function getReliabilityColor(score: number | null): string {
   return "bg-red-500 dark:bg-red-600";
 }
 
-/**
- * Get sentiment label
- */
 export function getSentimentLabel(score: number | null): string {
   if (score === null) return "NEUTRAL";
   if (score > 0.3) return "BULLISH";
@@ -56,10 +39,6 @@ export function getSentimentLabel(score: number | null): string {
   return "NEUTRAL";
 }
 
-/**
- * Get global score color based on score (0-100)
- * Thresholds match company detail page: 75 (green), 60 (blue), 40 (amber), <40 (red)
- */
 export function getGlobalScoreColor(score: number | null): string {
   if (score === null) return "bg-zinc-300 dark:bg-zinc-700";
   if (score >= 75) return "bg-green-500 dark:bg-green-600";
@@ -68,10 +47,6 @@ export function getGlobalScoreColor(score: number | null): string {
   return "bg-red-500 dark:bg-red-600";
 }
 
-/**
- * Get global score label color for text
- * Matches company detail page colors
- */
 export function getGlobalScoreLabelColor(label: string | null): string {
   if (!label) return "text-zinc-600 dark:text-zinc-400";
   if (label === "Strong") return "text-green-600 dark:text-green-400";

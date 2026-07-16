@@ -1,28 +1,14 @@
-/**
- * Jobs List Endpoint
- * Returns all jobs for the authenticated user
- */
-
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/shared/api/prisma";
 
-/**
- * GET /api/jobs
- * List all jobs for the current user with optional filters
- * Query params:
- *   - type: ANALYSIS | ENRICHMENT (optional)
- *   - status: PENDING | PROCESSING | COMPLETED | FAILED (optional, comma-separated)
- */
 export async function GET(request: NextRequest) {
   try {
-    // 1. Check authentication
     const session = await auth();
     if (!session?.user?.email) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // 2. Get user ID
     const user = await prisma.user.findUnique({
       where: { email: session.user.email },
       select: { id: true },
@@ -32,12 +18,10 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    // 3. Parse query parameters
     const { searchParams } = new URL(request.url);
     const typeFilter = searchParams.get("type") as "ANALYSIS" | "ENRICHMENT" | null;
     const statusParam = searchParams.get("status");
 
-    // Build where clause
     const where: Record<string, unknown> = {
       userId: user.id,
     };
@@ -53,7 +37,6 @@ export async function GET(request: NextRequest) {
       };
     }
 
-    // 4. Fetch jobs ordered by creation date (newest first)
     const jobs = await prisma.job.findMany({
       where,
       orderBy: {
@@ -71,7 +54,6 @@ export async function GET(request: NextRequest) {
       },
     });
 
-    // 5. Return jobs
     return NextResponse.json({
       success: true,
       count: jobs.length,

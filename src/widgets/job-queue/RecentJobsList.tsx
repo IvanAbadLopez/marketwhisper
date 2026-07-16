@@ -1,10 +1,5 @@
 "use client";
 
-/**
- * Recent Jobs List - Compact version for Dashboard
- * Shows last 10 jobs with basic info
- * @module widgets/job-queue
- */
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -29,7 +24,7 @@ export function RecentJobsList() {
       if (!response.ok) throw new Error("Failed to fetch jobs");
       
       const data = await response.json();
-      setJobs((data.jobs || []).slice(0, 10)); // Only show last 10
+      setJobs((data.jobs || []).slice(0, 10));
     } catch (error) {
       console.error("Error fetching recent jobs:", error);
     } finally {
@@ -41,7 +36,6 @@ export function RecentJobsList() {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchJobs();
 
-    // Auto-refresh every 5 seconds if there are active jobs
     const interval = setInterval(() => {
       fetchJobs();
     }, 5000);
@@ -100,10 +94,10 @@ export function RecentJobsList() {
           key={job.id}
           className="flex items-center gap-3 p-3 rounded-lg bg-zinc-50 dark:bg-zinc-800/50 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
         >
-          {/* Status icon */}
+          {}
           <div>{getStatusIcon(job.status)}</div>
 
-          {/* Type icon */}
+          {}
           <div className="text-zinc-600 dark:text-zinc-400">
             {job.type === "ANALYSIS" ? (
               <Brain className="w-4 h-4" />
@@ -112,7 +106,7 @@ export function RecentJobsList() {
             )}
           </div>
 
-          {/* Info */}
+          {}
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
               <span className="text-sm font-medium text-zinc-900 dark:text-zinc-100 font-mono">
@@ -127,7 +121,7 @@ export function RecentJobsList() {
             </p>
           </div>
 
-          {/* Status badge */}
+          {}
           <span
             className={`text-xs px-2 py-1 rounded-full ${
               job.status === "COMPLETED"
@@ -144,7 +138,7 @@ export function RecentJobsList() {
         </div>
       ))}
 
-      {/* Link to full queue */}
+      {}
       <button
         onClick={() => router.push("/jobs")}
         className="w-full flex items-center justify-center gap-2 py-2 text-sm font-medium text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors"

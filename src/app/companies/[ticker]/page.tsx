@@ -103,11 +103,10 @@ interface Company {
     }>;
     aiAnalysis: string | null;
     aiModel: string | null;
-    createdAt: string; // Comes as string from JSON
+    createdAt: string;
   }[];
 }
 
-// UpsideIndicator Component
 function UpsideIndicator({ ticker, targetPrice }: { ticker: string; targetPrice: number }) {
   const [livePrice, setLivePrice] = useState<number | null>(null);
   
@@ -171,7 +170,7 @@ export default function CompanyDetailPage({ params }: { params: Promise<{ ticker
   }, [status, router]);
 
   const fetchCompany = useCallback(async () => {
-    if (!ticker) return; // Don't fetch if ticker is empty
+    if (!ticker) return;
     
     try {
       const response = await fetch(`/api/companies/${ticker}`);
@@ -179,7 +178,6 @@ export default function CompanyDetailPage({ params }: { params: Promise<{ ticker
         const data = await response.json();
         setCompany(data);
       } else if (response.status === 404) {
-        // Company not found
         setCompany(null);
       }
     } catch (error) {
@@ -202,7 +200,6 @@ export default function CompanyDetailPage({ params }: { params: Promise<{ ticker
       });
 
       if (response.ok) {
-        // Refresh company data after deletion
         await fetchCompany();
       } else {
         const error = await response.json();
@@ -274,7 +271,7 @@ export default function CompanyDetailPage({ params }: { params: Promise<{ ticker
     <MainLayout user={session?.user}>
       <div className="p-8">
         <div className="max-w-7xl mx-auto">
-          {/* Back Button */}
+          {}
           <button
             onClick={() => router.back()}
             className="mb-6 flex items-center gap-2 text-blue-600 dark:text-blue-400 hover:underline"
@@ -283,11 +280,11 @@ export default function CompanyDetailPage({ params }: { params: Promise<{ ticker
             Back to Companies
           </button>
 
-          {/* Company Header */}
+          {}
           <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg p-6 mb-6">
-            {/* Main Info Grid */}
+            {}
             <div className="grid grid-cols-1 lg:grid-cols-[1fr_auto] gap-6 items-start">
-              {/* Left: Company Info */}
+              {}
               <div className="flex gap-4">
                 {company.logoUrl && (
                   // eslint-disable-next-line @next/next/no-img-element
@@ -312,7 +309,7 @@ export default function CompanyDetailPage({ params }: { params: Promise<{ ticker
                     )}
                   </div>
                   
-                  {/* Metadata Row */}
+                  {}
                   <div className="flex flex-wrap items-center gap-3 text-xs text-zinc-600 dark:text-zinc-400 mb-2">
                     {company.sector && (
                       <span className="flex items-center gap-1">
@@ -355,7 +352,7 @@ export default function CompanyDetailPage({ params }: { params: Promise<{ ticker
                     </p>
                   )}
                   
-                  {/* Valuation Breakdown (Detail Section) - Compact */}
+                  {}
                   {company.valuationBreakdown && (
                     <div className="mt-3 pt-3 border-t border-zinc-200 dark:border-zinc-700">
                       <button
@@ -372,7 +369,7 @@ export default function CompanyDetailPage({ params }: { params: Promise<{ ticker
                       
                       {isValuationExpanded && (
                         <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs">
-                          {/* Scores Row */}
+                          {}
                           {company.valuationBreakdown.financialHealthScore !== null && (
                             <div className="flex items-center gap-1">
                               <span className="text-zinc-600 dark:text-zinc-400">Financial:</span>
@@ -409,7 +406,7 @@ export default function CompanyDetailPage({ params }: { params: Promise<{ ticker
                             </>
                           )}
                           
-                          {/* Target Price Methods */}
+                          {}
                           {company.targetPrice && (
                             <>
                               {company.valuationBreakdown.targetPriceMethods.grahamNumber && (
@@ -469,10 +466,10 @@ export default function CompanyDetailPage({ params }: { params: Promise<{ ticker
                 </div>
               </div>
               
-              {/* Right: Valuation Metrics */}
+              {}
               {(company.globalScore !== null || company.targetPrice !== null) && (
                 <div className="flex gap-3">
-                  {/* Global Score */}
+                  {}
                   {company.globalScore !== null && (
                     <div className="flex flex-col items-center justify-center min-w-[110px] px-4 py-3 bg-zinc-50 dark:bg-zinc-800 rounded-lg">
                       <div className="flex items-center gap-1 mb-1.5">
@@ -495,7 +492,7 @@ export default function CompanyDetailPage({ params }: { params: Promise<{ ticker
                     </div>
                   )}
                   
-                  {/* Target Price */}
+                  {}
                   {company.targetPrice !== null && (
                     <div className="flex flex-col items-center justify-center min-w-[110px] px-4 py-3 bg-zinc-50 dark:bg-zinc-800 rounded-lg">
                       <div className="flex items-center gap-1 mb-1.5">
@@ -517,7 +514,7 @@ export default function CompanyDetailPage({ params }: { params: Promise<{ ticker
             </div>
           </div>
 
-          {/* Enrichment Section */}
+          {}
           <div className="mb-6">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">
@@ -531,7 +528,7 @@ export default function CompanyDetailPage({ params }: { params: Promise<{ ticker
               />
             </div>
 
-            {/* AI Analysis (synthesized verdict) - always visible above tabs */}
+            {}
             <div className="mb-6">
               <EnrichmentDisplay
                 enrichment={company.enrichments?.find(e => e.source === "FINNHUB") || null}
@@ -539,7 +536,7 @@ export default function CompanyDetailPage({ params }: { params: Promise<{ ticker
               />
             </div>
 
-            {/* Tabs */}
+            {}
             <div className="flex gap-2 mb-4 border-b border-zinc-200 dark:border-zinc-800">
               <button
                 onClick={() => setActiveTab('financial')}
@@ -569,24 +566,23 @@ export default function CompanyDetailPage({ params }: { params: Promise<{ ticker
               </button>
             </div>
 
-            {/* Content based on active tab */}
+            {}
             {activeTab === 'financial' ? (
               <EnrichmentDisplay
                 enrichment={company.enrichments?.find(e => e.source === "FINNHUB") || null}
                 mode="financial"
               />
             ) : (
-              /* AI Text Analyses Content */
               company.analyses && company.analyses.length > 0 ? (
             <div>
 
-              {/* Aggregated Scores */}
+              {}
               <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-6 mb-4">
                 <h4 className="text-sm font-semibold text-zinc-700 dark:text-zinc-300 mb-4">
                   Overall Sentiment & Reliability
                 </h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/* Sentiment Score */}
+                  {}
                   <div>
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
@@ -621,7 +617,7 @@ export default function CompanyDetailPage({ params }: { params: Promise<{ ticker
                     </div>
                   </div>
 
-                  {/* Reliability Score */}
+                  {}
                   <div>
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
@@ -652,17 +648,17 @@ export default function CompanyDetailPage({ params }: { params: Promise<{ ticker
                 </div>
               </div>
 
-              {/* Individual Analyses */}
+              {}
               <div className="space-y-4">
                 {company.analyses.map((analysis) => (
                   <div
                     key={analysis.id}
                     className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg p-6"
                   >
-                    {/* Header */}
+                    {}
                     <div className="flex items-start justify-between mb-4">
                       <div className="flex items-center gap-3 flex-1">
-                        {/* Sentiment Badge */}
+                        {}
                         <div
                           className={`px-3 py-1 rounded-full text-xs font-bold ${
                             analysis.sentiment === 'BULLISH'
@@ -675,7 +671,7 @@ export default function CompanyDetailPage({ params }: { params: Promise<{ ticker
                           {analysis.sentiment}
                         </div>
 
-                        {/* Reliability Score */}
+                        {}
                         <div className="flex items-center gap-1">
                           <span className="text-xs text-zinc-500 dark:text-zinc-400">
                             Reliability:
@@ -694,7 +690,7 @@ export default function CompanyDetailPage({ params }: { params: Promise<{ ticker
                         </div>
                       </div>
 
-                      {/* Date & Source */}
+                      {}
                       <div className="flex items-start gap-3">
                         <div className="text-right">
                           <div className="flex items-center gap-1 text-xs text-zinc-500 dark:text-zinc-400">
@@ -712,7 +708,7 @@ export default function CompanyDetailPage({ params }: { params: Promise<{ ticker
                           )}
                         </div>
                         
-                        {/* Delete Button */}
+                        {}
                         <button
                           onClick={() => handleDeleteAnalysis(analysis.id, analysis.text)}
                           disabled={deletingAnalysisId === analysis.id}
@@ -724,7 +720,7 @@ export default function CompanyDetailPage({ params }: { params: Promise<{ ticker
                       </div>
                     </div>
 
-                    {/* AI Reasoning */}
+                    {}
                     <div className="mb-3 p-3 bg-purple-50 dark:bg-purple-900/20 rounded border border-purple-200 dark:border-purple-800">
                       <p className="text-xs font-medium text-purple-700 dark:text-purple-300 mb-2">
                         AI Reasoning:
@@ -732,7 +728,7 @@ export default function CompanyDetailPage({ params }: { params: Promise<{ ticker
                       <AnalysisContent text={analysis.reasoning} className="text-sm" />
                     </div>
 
-                    {/* Original Text */}
+                    {}
                     <div>
                       <div className="flex items-center justify-between mb-1">
                         <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400">

@@ -1,10 +1,5 @@
 "use client";
 
-/**
- * Job Queue Component
- * Displays all AI processing jobs (analysis + enrichment) with real-time updates
- * @module widgets/job-queue
- */
 
 import { useState, useEffect } from "react";
 import { Loader2, Filter } from "lucide-react";
@@ -27,7 +22,6 @@ export function JobQueue() {
   const [typeFilter, setTypeFilter] = useState<"ALL" | "ANALYSIS" | "ENRICHMENT">("ALL");
   const [statusFilter, setStatusFilter] = useState<"ALL" | "ACTIVE" | "COMPLETED" | "FAILED" | "CANCELLED">("ALL");
 
-  // Fetch jobs
   const fetchJobs = async () => {
     try {
       const params = new URLSearchParams();
@@ -56,14 +50,12 @@ export function JobQueue() {
     }
   };
 
-  // Initial fetch
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchJobs();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [typeFilter, statusFilter]);
 
-  // Auto-refresh for active jobs (every 3 seconds)
   useEffect(() => {
     const hasActiveJobs = jobs.some(
       (job) => job.status === "PENDING" || job.status === "PROCESSING"
@@ -79,14 +71,13 @@ export function JobQueue() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [jobs]);
 
-  // Count active jobs
   const activeCount = jobs.filter(
     (job) => job.status === "PENDING" || job.status === "PROCESSING"
   ).length;
 
   return (
     <div className="space-y-4">
-      {/* Filters */}
+      {}
       <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg p-4">
         <div className="flex items-center gap-4 flex-wrap">
           <div className="flex items-center gap-2">
@@ -94,7 +85,7 @@ export function JobQueue() {
             <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">Filters:</span>
           </div>
 
-          {/* Type filter */}
+          {}
           <select
             value={typeFilter}
             onChange={(e) => setTypeFilter(e.target.value as "ALL" | "ANALYSIS" | "ENRICHMENT")}
@@ -105,7 +96,7 @@ export function JobQueue() {
             <option value="ENRICHMENT">Enrichment</option>
           </select>
 
-          {/* Status filter */}
+          {}
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value as "ALL" | "ACTIVE" | "COMPLETED" | "FAILED" | "CANCELLED")}
@@ -118,7 +109,7 @@ export function JobQueue() {
             <option value="CANCELLED">Cancelled</option>
           </select>
 
-          {/* Active jobs indicator */}
+          {}
           {activeCount > 0 && (
             <div className="ml-auto flex items-center gap-2 text-sm text-blue-600 dark:text-blue-400">
               <Loader2 className="w-4 h-4 animate-spin" />
@@ -128,7 +119,7 @@ export function JobQueue() {
         </div>
       </div>
 
-      {/* Jobs list */}
+      {}
       {loading ? (
         <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg p-12 text-center">
           <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-zinc-400" />
@@ -148,7 +139,7 @@ export function JobQueue() {
         </div>
       )}
 
-      {/* Results summary */}
+      {}
       {!loading && jobs.length > 0 && (
         <p className="text-sm text-zinc-500 dark:text-zinc-400 text-center">
           Showing {jobs.length} job{jobs.length !== 1 ? "s" : ""}

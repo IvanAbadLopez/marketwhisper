@@ -40,7 +40,6 @@ export function RegisterForm() {
         return;
       }
 
-      // Auto-login after registration
       const loginResult = await signIn("credentials", {
         email,
         password,
@@ -48,8 +47,6 @@ export function RegisterForm() {
       });
 
       if (loginResult?.error) {
-        // Could be: new registration successful but auto-login failed, 
-        // OR email already existed (anti-enumeration pattern)
         setError('Registration processed. Please sign in with your credentials.');
         router.push("/login");
       } else {
@@ -65,7 +62,7 @@ export function RegisterForm() {
 
   return (
     <div className="w-full max-w-md">
-      {/* Logo */}
+      {}
       <div className="text-center mb-8">
         <h1 className="text-3xl font-bold text-white">
           🎧 MarketWhisper
@@ -73,16 +70,16 @@ export function RegisterForm() {
         <p className="text-gray-400 mt-2">Create your account</p>
       </div>
 
-      {/* Card */}
+      {}
       <div className="bg-[#12121a] border border-[#1e1e2e] rounded-lg p-8">
-        {/* Error message */}
+        {}
         {error && (
           <div className="bg-red-500/10 border border-red-500/20 text-red-400 px-4 py-3 rounded-md mb-6 text-sm">
             {error}
           </div>
         )}
 
-        {/* Registration form */}
+        {}
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label htmlFor="name" className="block text-sm font-medium text-gray-300 mb-1">
@@ -154,7 +151,7 @@ export function RegisterForm() {
           </button>
         </form>
 
-        {/* Login link */}
+        {}
         <p className="text-center text-gray-400 text-sm mt-6">
           Already have an account?{" "}
           <Link href="/login" className="text-blue-400 hover:text-blue-300">

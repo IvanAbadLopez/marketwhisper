@@ -1,7 +1,3 @@
-/**
- * Test: Jobs List API Route
- * @vitest-environment node
- */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
@@ -10,7 +6,6 @@ import { NextRequest } from "next/server";
 import type { Session } from "next-auth";
 import type { Job, JobType, JobStatus } from "@/generated/prisma/client";
 
-// Mock dependencies
 vi.mock("@/lib/auth", () => ({
   auth: vi.fn(),
 }));
@@ -52,7 +47,6 @@ describe("GET /api/jobs", () => {
       expires: "2026-12-31",
     } as Session);
 
-    // Mock user lookup
     mockPrisma.user.findUnique.mockResolvedValue({
       id: "user1",
       email: "test@example.com",
@@ -100,7 +94,6 @@ describe("GET /api/jobs", () => {
     expect(data.jobs[0].id).toBe("job1");
     expect(data.jobs[1].id).toBe("job2");
 
-    // Verify query was correct
     expect(mockPrisma.job.findMany).toHaveBeenCalledWith({
       where: { userId: "user1" },
       orderBy: { createdAt: "desc" },
@@ -155,7 +148,6 @@ describe("GET /api/jobs", () => {
     expect(data.jobs).toHaveLength(1);
     expect(data.jobs[0].type).toBe("ANALYSIS");
 
-    // Verify type filter was applied
     expect(mockPrisma.job.findMany).toHaveBeenCalledWith({
       where: {
         userId: "user1",
@@ -213,7 +205,6 @@ describe("GET /api/jobs", () => {
     expect(data.jobs).toHaveLength(1);
     expect(data.jobs[0].status).toBe("PENDING");
 
-    // Verify status filter was applied
     expect(mockPrisma.job.findMany).toHaveBeenCalledWith({
       where: {
         userId: "user1",
@@ -284,7 +275,6 @@ describe("GET /api/jobs", () => {
     expect(data.jobs).toHaveLength(2);
     expect(data.count).toBe(2);
 
-    // Verify status filter with multiple values was applied
     expect(mockPrisma.job.findMany).toHaveBeenCalledWith({
       where: {
         userId: "user1",
@@ -341,7 +331,6 @@ describe("GET /api/jobs", () => {
     expect(response.status).toBe(200);
     expect(data.jobs).toHaveLength(1);
 
-    // Verify both filters were applied
     expect(mockPrisma.job.findMany).toHaveBeenCalledWith({
       where: {
         userId: "user1",

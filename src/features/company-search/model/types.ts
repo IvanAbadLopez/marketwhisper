@@ -1,5 +1,3 @@
-// Feature: Company Search - Type Definitions
-
 export interface SearchFilters {
   query: string;
 }

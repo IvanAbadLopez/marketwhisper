@@ -4,10 +4,6 @@ import { prisma } from "@/shared/api/prisma";
 import { recalculateCompanyAggregatesFromScratch } from "@/features/analyze-text/api/processAnalysis";
 import { recomputeCompanyValuation } from "@/entities/company/api/recomputeValuation";
 
-/**
- * DELETE /api/analysis/[id]
- * Deletes an analysis and recomputes company aggregates and valuation
- */
 export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -25,7 +21,6 @@ export async function DELETE(
   }
 
   try {
-    // Check if analysis exists and verify ownership
     const analysis = await prisma.analysis.findUnique({
       where: { id },
       select: {
@@ -39,20 +34,16 @@ export async function DELETE(
       return NextResponse.json({ error: "Analysis not found" }, { status: 404 });
     }
 
-    // Verify ownership
     if (analysis.userId !== session.user.id) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    // Delete the analysis
     await prisma.analysis.delete({
       where: { id },
     });
 
-    // Recalculate company aggregates from scratch (avgSentimentScore, avgReliabilityScore, analysisCount)
     await recalculateCompanyAggregatesFromScratch(analysis.companyId);
 
-    // Recompute company valuation (globalScore, targetPrice)
     await recomputeCompanyValuation(analysis.companyId);
 
     return NextResponse.json({ 

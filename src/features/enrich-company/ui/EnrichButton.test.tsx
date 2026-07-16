@@ -1,13 +1,9 @@
-/**
- * @vitest-environment jsdom
- */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { EnrichButton } from './EnrichButton';
 import { NotificationProvider } from '@/shared/ui/notifications';
 
-// Mock enrichCompany API
 vi.mock('../api/enrichCompany', () => ({
   enrichCompany: vi.fn(),
   getEnrichmentStatus: vi.fn(),
@@ -18,7 +14,6 @@ import { enrichCompany, getEnrichmentStatus } from '../api/enrichCompany';
 const mockEnrichCompany = vi.mocked(enrichCompany);
 const mockGetEnrichmentStatus = vi.mocked(getEnrichmentStatus);
 
-// Wrapper component to provide NotificationProvider
 function TestWrapper({ children }: { children: React.ReactNode }) {
   return <NotificationProvider>{children}</NotificationProvider>;
 }
@@ -55,7 +50,6 @@ describe('EnrichButton - timestamp display', () => {
       </TestWrapper>
     );
 
-    // The timestamp text should not be in the document
     expect(screen.queryByText(/ago/)).not.toBeInTheDocument();
   });
 
@@ -121,19 +115,15 @@ describe('EnrichButton - timestamp display', () => {
       </TestWrapper>
     );
 
-    // Initially timestamp should be visible
     expect(screen.getByText('2 hours ago')).toBeInTheDocument();
 
-    // Click the enrich button to trigger loading state
     const enrichButton = screen.getByRole('button', { name: /enrich with finnhub/i });
     await user.click(enrichButton);
 
-    // Wait for loading state to activate
     await waitFor(() => {
       expect(screen.getByText(/queued|analyzing/i)).toBeInTheDocument();
     });
 
-    // Timestamp should be hidden during loading
     expect(screen.queryByText('2 hours ago')).not.toBeInTheDocument();
   });
 });

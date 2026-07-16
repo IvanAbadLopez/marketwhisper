@@ -1,10 +1,5 @@
 "use client";
 
-/**
- * Analyst Sentiment Chart
- * Displays analyst recommendation trends as a time-series line chart
- * @module entities/company/ui
- */
 
 import { useMemo } from "react";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLine, CartesianGrid } from "recharts";
@@ -22,7 +17,7 @@ export function AnalystSentimentChart({ recommendations }: AnalystSentimentChart
         score: calcAnalystScore(r),
       }))
       .filter(d => d.score !== null)
-      .reverse(); // Chronological order (oldest first)
+      .reverse();
   }, [recommendations]);
 
   if (chartData.length < 2) {
@@ -33,7 +28,6 @@ export function AnalystSentimentChart({ recommendations }: AnalystSentimentChart
     );
   }
 
-  // Determine line color based on latest score
   const latestScore = chartData[chartData.length - 1]?.score ?? 0;
   const lineColor = latestScore >= 0 ? "#22c55e" : "#ef4444";
 

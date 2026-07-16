@@ -1,8 +1,3 @@
-/**
- * Application-wide constants
- * @module shared/config
- */
-
 export const MARKET_CAP_UNITS = {
   TRILLION: 1_000_000_000_000,
   BILLION: 1_000_000_000,

@@ -1,16 +1,6 @@
-/**
- * Finnhub Server-Only Utilities
- * Functions that use Prisma and can only run on the server
- * @module shared/api/finnhub-server
- */
-
 import { prisma } from '@/shared/api/prisma';
 import type { FinancialSnapshot } from './finnhub';
 
-/**
- * Get cached financial data from recent Analysis records
- * Returns cached data if found within TTL, otherwise null
- */
 export async function getCachedFinnhub(
   companyId: string,
   ttlHours: number = 24
@@ -18,7 +8,6 @@ export async function getCachedFinnhub(
   const cutoff = new Date(Date.now() - ttlHours * 60 * 60 * 1000);
   
   try {
-    // Find the most recent analysis with financialSnapshot for this company
     const recentAnalysis = await prisma.analysis.findFirst({
       where: {
         companyId,

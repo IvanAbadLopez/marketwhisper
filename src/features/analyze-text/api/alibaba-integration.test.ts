@@ -1,13 +1,3 @@
-/**
- * Integration test for Alibaba detection with name-only text
- * This validates the complete flow: LLM analysis -> ticker resolution -> company creation
- * 
- * Prerequisites:
- * - Docker services running (local LLM, enrichment, db)
- * - Finnhub API key configured
- * - qwen2.5:7b model loaded in local LLM
- */
-
 import { describe, it, expect } from 'vitest';
 import { analyzeText } from '@/shared/api/llm';
 import { resolveTicker } from '@/shared/api/finnhub';
@@ -20,7 +10,6 @@ El gasto en CAPEX de IA ha disparado las inversiones, generando un flujo de caja
 A precios actuales, el mercado paga el escenario más pesimista de la compañía, valorándola como si la inversión en IA fuera dinero tirado y el descuento chino fuera permanente.`;
 
   it.skip('should detect Alibaba from Spanish text via LLM', async () => {
-    // This test requires local LLM running with qwen2.5:7b
     const results = await analyzeText(alibabaTextSpanish);
     
     expect(results).toBeDefined();
@@ -31,19 +20,17 @@ A precios actuales, el mercado paga el escenario más pesimista de la compañía
     );
     
     expect(alibaba).toBeDefined();
-    expect(alibaba?.sentiment).toBe('BULLISH'); // Text is positive about Alibaba
+    expect(alibaba?.sentiment).toBe('BULLISH');
     expect(alibaba?.reliabilityScore).toBeGreaterThanOrEqual(6);
-  }, 120000); // 120s timeout for LLM
+  }, 120000);
 
   it.skip('should resolve "Alibaba" to BABA ticker via Finnhub', async () => {
-    // This test requires enrichment service running with Finnhub API key
     const ticker = await resolveTicker('Alibaba');
     
     expect(ticker).toBe('BABA');
   });
 
   it('should document the complete flow', () => {
-    // This is a documentation test - always passes
     const flow = `
     Complete flow for Alibaba detection:
     

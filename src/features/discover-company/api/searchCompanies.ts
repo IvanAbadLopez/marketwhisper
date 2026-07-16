@@ -1,8 +1,3 @@
-/**
- * Feature: Discover Company - Search API
- * @module features/discover-company/api
- */
-
 import type { SearchResponse, SearchError } from "../model/types";
 
 export async function searchCompanies(query: string): Promise<SearchResponse> {

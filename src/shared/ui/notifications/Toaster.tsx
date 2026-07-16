@@ -1,16 +1,11 @@
 "use client";
 
-/**
- * Toast Notification Display
- * Renders toasts in a fixed position (bottom-right)
- * @module shared/ui/notifications
- */
 
 import { useEffect } from "react";
 import { CheckCircle, XCircle, Info, X } from "lucide-react";
 import { useNotifications } from "./NotificationProvider";
 
-const TOAST_DURATION = 8000; // 8 seconds
+const TOAST_DURATION = 8000;
 
 export function Toaster() {
   const { toasts, removeToast } = useNotifications();

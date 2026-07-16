@@ -1,5 +1,3 @@
-// Feature: Analyze Text - API Client
-
 import type { AnalysisFormData, AnalysisResponse } from "../model/types";
 
 export async function analyzeText(data: AnalysisFormData): Promise<AnalysisResponse> {

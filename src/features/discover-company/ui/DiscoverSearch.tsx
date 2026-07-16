@@ -1,8 +1,3 @@
-/**
- * Feature: Discover Company - Discovery Search UI
- * @module features/discover-company/ui
- */
-
 "use client";
 
 import { Search, Building2, TrendingUp, AlertCircle, CheckCircle } from "lucide-react";
@@ -25,17 +20,15 @@ export function DiscoverSearch() {
   const handleImportClick = async (ticker: string) => {
     try {
       const importedTicker = await handleImport(ticker);
-      // Redirect to company detail page
       router.push(`/companies/${importedTicker.toLowerCase()}`);
     } catch (error) {
-      // Error already set in hook
       console.error("Import failed:", error);
     }
   };
 
   return (
     <div className="space-y-6">
-      {/* Search Input */}
+      {}
       <div className="max-w-2xl">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-400" />
@@ -53,14 +46,14 @@ export function DiscoverSearch() {
           )}
         </div>
 
-        {/* Min chars hint */}
+        {}
         {query.length > 0 && query.length < 2 && (
           <p className="mt-2 text-sm text-zinc-500 dark:text-zinc-400">
             Enter at least 2 characters to search
           </p>
         )}
 
-        {/* Results count */}
+        {}
         {query.length >= 2 && !isSearching && results.length > 0 && (
           <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
             {results.length} {results.length === 1 ? 'company' : 'companies'} found
@@ -68,7 +61,7 @@ export function DiscoverSearch() {
         )}
       </div>
 
-      {/* Search Error */}
+      {}
       {searchError && (
         <div className="flex items-start gap-3 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
           <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
@@ -83,7 +76,7 @@ export function DiscoverSearch() {
         </div>
       )}
 
-      {/* Import Error */}
+      {}
       {importError && (
         <div className="flex items-start gap-3 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
           <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
@@ -98,7 +91,7 @@ export function DiscoverSearch() {
         </div>
       )}
 
-      {/* No results when searched */}
+      {}
       {query.length >= 2 && !isSearching && results.length === 0 && !searchError && (
         <div className="text-center py-12 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg">
           <div className="text-6xl mb-4">🔍</div>
@@ -111,7 +104,7 @@ export function DiscoverSearch() {
         </div>
       )}
 
-      {/* Results Grid */}
+      {}
       {results.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {results.map((result) => (

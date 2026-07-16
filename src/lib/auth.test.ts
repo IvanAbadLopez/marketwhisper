@@ -68,10 +68,9 @@ describe("Password Requirements", () => {
   });
 
   it("should validate password strength", () => {
-    const weakPassword = "password"; // Only letters
+    const weakPassword = "password";
     const strongPassword = "SecurePass123!";
 
-    // Basic strength check: has letters and numbers
     const hasLetters = (pwd: string) => /[a-zA-Z]/.test(pwd);
     const hasNumbers = (pwd: string) => /[0-9]/.test(pwd);
 

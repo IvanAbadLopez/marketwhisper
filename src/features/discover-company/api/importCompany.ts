@@ -1,8 +1,3 @@
-/**
- * Feature: Discover Company - Import API
- * @module features/discover-company/api
- */
-
 import type { ImportResponse, SearchError } from "../model/types";
 
 export async function importCompany(ticker: string): Promise<ImportResponse> {

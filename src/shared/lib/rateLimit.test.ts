@@ -34,7 +34,6 @@ describe('checkRateLimit', () => {
     const blocked = checkRateLimit('test:key3', { max: 1, windowMs: 60000 });
     expect(blocked.success).toBe(false);
 
-    // Advance time by 61 seconds
     vi.advanceTimersByTime(61000);
 
     const allowed = checkRateLimit('test:key3', { max: 1, windowMs: 60000 });
@@ -55,7 +54,7 @@ describe('checkRateLimit', () => {
     checkRateLimit('user:1', { max: 1, windowMs: 60000 });
     
     const result = checkRateLimit('user:2', { max: 1, windowMs: 60000 });
-    expect(result.success).toBe(true); // Different key, not blocked
+    expect(result.success).toBe(true);
   });
 
   it('returns correct limit values', () => {
@@ -76,17 +75,16 @@ describe('checkRateLimit', () => {
     const result1 = checkRateLimit('test:key7', { max: 5, windowMs: 60000 });
     expect(result1.remaining).toBe(4);
     
-    vi.advanceTimersByTime(30000); // 30 seconds (still within window)
+    vi.advanceTimersByTime(30000);
     
     const result2 = checkRateLimit('test:key7', { max: 5, windowMs: 60000 });
-    expect(result2.remaining).toBe(3); // Count continues
+    expect(result2.remaining).toBe(3);
   });
 
   it('allows first request immediately after expiration', () => {
     checkRateLimit('test:key8', { max: 1, windowMs: 60000 });
-    checkRateLimit('test:key8', { max: 1, windowMs: 60000 }); // Blocked
+    checkRateLimit('test:key8', { max: 1, windowMs: 60000 });
     
-    // Advance past window
     vi.advanceTimersByTime(60001);
     
     const result = checkRateLimit('test:key8', { max: 1, windowMs: 60000 });

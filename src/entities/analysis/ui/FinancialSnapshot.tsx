@@ -1,10 +1,5 @@
 "use client";
 
-/**
- * Financial Snapshot Display
- * Compact view of financial metrics from Finnhub (price, P/E, EPS, 52w range, analyst consensus)
- * @module entities/analysis/ui
- */
 
 import { useState } from "react";
 import { DollarSign, TrendingUp, TrendingDown, ChevronDown, ChevronUp, BarChart3 } from "lucide-react";
@@ -42,7 +37,7 @@ export function FinancialSnapshot({ snapshot }: FinancialSnapshotProps) {
 
   return (
     <div className="mt-3 border-t border-zinc-200 dark:border-zinc-800 pt-3">
-      {/* Header */}
+      {}
       <button
         onClick={() => setIsExpanded(!isExpanded)}
         className="flex items-center justify-between w-full text-xs text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors"
@@ -57,10 +52,10 @@ export function FinancialSnapshot({ snapshot }: FinancialSnapshotProps) {
         {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
       </button>
 
-      {/* Expanded Content */}
+      {}
       {isExpanded && (
         <div className="mt-2 grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs">
-          {/* Current Price */}
+          {}
           {snapshot.currentPrice !== null && (
             <div className="bg-zinc-50 dark:bg-zinc-800/50 rounded p-2">
               <div className="flex items-center gap-1 text-zinc-500 dark:text-zinc-400 mb-1">
@@ -73,7 +68,7 @@ export function FinancialSnapshot({ snapshot }: FinancialSnapshotProps) {
             </div>
           )}
 
-          {/* P/E Ratio */}
+          {}
           {snapshot.peRatio !== null && (
             <div className="bg-zinc-50 dark:bg-zinc-800/50 rounded p-2">
               <div className="flex items-center gap-1 text-zinc-500 dark:text-zinc-400 mb-1">
@@ -86,7 +81,7 @@ export function FinancialSnapshot({ snapshot }: FinancialSnapshotProps) {
             </div>
           )}
 
-          {/* EPS */}
+          {}
           {snapshot.eps !== null && (
             <div className="bg-zinc-50 dark:bg-zinc-800/50 rounded p-2">
               <div className="flex items-center gap-1 text-zinc-500 dark:text-zinc-400 mb-1">
@@ -99,7 +94,7 @@ export function FinancialSnapshot({ snapshot }: FinancialSnapshotProps) {
             </div>
           )}
 
-          {/* 52w High */}
+          {}
           {snapshot.fiftyTwoWeekHigh !== null && (
             <div className="bg-zinc-50 dark:bg-zinc-800/50 rounded p-2">
               <div className="flex items-center gap-1 text-zinc-500 dark:text-zinc-400 mb-1">
@@ -112,7 +107,7 @@ export function FinancialSnapshot({ snapshot }: FinancialSnapshotProps) {
             </div>
           )}
 
-          {/* 52w Low */}
+          {}
           {snapshot.fiftyTwoWeekLow !== null && (
             <div className="bg-zinc-50 dark:bg-zinc-800/50 rounded p-2">
               <div className="flex items-center gap-1 text-zinc-500 dark:text-zinc-400 mb-1">
@@ -125,7 +120,7 @@ export function FinancialSnapshot({ snapshot }: FinancialSnapshotProps) {
             </div>
           )}
 
-          {/* Analyst Consensus */}
+          {}
           {snapshot.analystConsensus && (
             <div className="bg-zinc-50 dark:bg-zinc-800/50 rounded p-2 sm:col-span-1">
               <div className="flex items-center gap-1 text-zinc-500 dark:text-zinc-400 mb-1">

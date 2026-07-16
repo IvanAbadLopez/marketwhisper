@@ -1,8 +1,3 @@
-/**
- * Parse AI analysis text into structured bullets with icon mappings
- * @module shared/lib/parseAnalysis
- */
-
 export type IconKey = 
   | 'strength' 
   | 'weakness' 
@@ -24,13 +19,9 @@ export interface ParsedParagraph {
 
 export type ParsedContent = ParsedBullet | ParsedParagraph;
 
-/**
- * Detect icon key from bullet text based on keywords
- */
 function detectIconKey(text: string): IconKey {
   const lowerText = text.toLowerCase();
   
-  // Financial indicators (check first - very specific)
   if (
     lowerText.includes('financial') ||
     lowerText.includes('revenue') ||
@@ -45,7 +36,6 @@ function detectIconKey(text: string): IconKey {
     return 'financial';
   }
   
-  // Sentiment/market indicators (specific)
   if (
     lowerText.includes('sentiment') ||
     lowerText.includes('analyst') ||
@@ -56,7 +46,6 @@ function detectIconKey(text: string): IconKey {
     return 'sentiment';
   }
   
-  // Outlook/forecast indicators (specific)
   if (
     lowerText.includes('outlook') ||
     lowerText.includes('forecast') ||
@@ -67,7 +56,6 @@ function detectIconKey(text: string): IconKey {
     return 'outlook';
   }
   
-  // Weakness/risk indicators (negative - check before strength)
   if (
     lowerText.includes('weakness') ||
     lowerText.includes('concern') ||
@@ -81,7 +69,6 @@ function detectIconKey(text: string): IconKey {
     return 'weakness';
   }
   
-  // Strength indicators (positive - check last, more general)
   if (
     lowerText.includes('strength') ||
     lowerText.includes('advantage') ||
@@ -99,20 +86,12 @@ function detectIconKey(text: string): IconKey {
   return 'default';
 }
 
-/**
- * Process inline bold markdown (**text**) and clean up asterisks
- */
 function processBoldText(text: string): string {
-  // Remove bold markdown (**text**)
   let cleaned = text.replace(/\*\*(.*?)\*\*/g, '$1');
-  // Remove any remaining asterisks
   cleaned = cleaned.replace(/\*/g, '');
   return cleaned;
 }
 
-/**
- * Check if line is a bullet point (•, -, *, or numbered 1.)
- */
 function isBullet(line: string): boolean {
   const trimmed = line.trim();
   return (
@@ -123,28 +102,20 @@ function isBullet(line: string): boolean {
   );
 }
 
-/**
- * Extract bullet text (remove marker and optional category prefix)
- */
 function extractBulletText(line: string): string {
   const trimmed = line.trim();
   let text = trimmed;
   
-  // Remove bullet markers
   if (text.startsWith('•') || text.startsWith('-') || text.startsWith('*')) {
     text = text.substring(1).trim();
   }
   
-  // Remove numbered markers (1., 2., etc.)
   if (/^\d+\./.test(text)) {
     text = text.replace(/^\d+\.\s*/, '');
   }
   
-  // Process bold text early to normalize format
   text = processBoldText(text);
   
-  // Remove common category prefixes that will be redundant with section headers
-  // These patterns match various ways the LLM might prefix content
   const categoryPrefixes = [
     /^strengths?:?\s*/i,
     /^weaknesses?:?\s*/i,
@@ -168,11 +139,6 @@ function extractBulletText(line: string): string {
   return text.trim();
 }
 
-/**
- * Parse AI analysis text into structured content
- * @param text - Raw analysis text (without VERDICT line)
- * @returns Array of parsed bullets and paragraphs
- */
 export function parseAnalysisBullets(text: string): ParsedContent[] {
   if (!text || typeof text !== 'string') {
     return [];
@@ -183,13 +149,9 @@ export function parseAnalysisBullets(text: string): ParsedContent[] {
     .map(l => l.trim())
     .filter(l => {
       if (l.length === 0) return false;
-      // Filter out Markdown headers (###, ####, etc.)
       if (/^#{1,6}\s/.test(l)) return false;
-      // Filter out standalone category labels without content
       if (/^(\/)?[A-Z][a-z]+(\s*\/\s*[A-Z][a-z]+)*:\s*$/.test(l)) return false;
-      // Filter out separator lines (---)
       if (/^-{3,}$/.test(l)) return false;
-      // Filter out SUMMARY line
       if (/^SUMMARY:/i.test(l)) return false;
       return true;
     });
@@ -197,12 +159,9 @@ export function parseAnalysisBullets(text: string): ParsedContent[] {
   
   for (const line of lines) {
     if (isBullet(line)) {
-      // Detect icon key from original line (before removing prefixes)
-      // This ensures "Outlook: ..." is detected as outlook, not as strength due to "positive"
       const iconKey = detectIconKey(line);
       const bulletText = extractBulletText(line);
       
-      // Only add if there's actual content after cleaning
       if (bulletText && bulletText.length > 0) {
         result.push({
           type: 'bullet',
@@ -211,10 +170,8 @@ export function parseAnalysisBullets(text: string): ParsedContent[] {
         });
       }
     } else {
-      // Regular paragraph (fallback)
       const processedText = processBoldText(line);
       
-      // Only add if there's actual content
       if (processedText && processedText.length > 0) {
         result.push({
           type: 'paragraph',
@@ -227,23 +184,15 @@ export function parseAnalysisBullets(text: string): ParsedContent[] {
   return result;
 }
 
-/**
- * Verdict summary extracted from analysis
- */
 export interface VerdictSummary {
   verdict: 'BULLISH' | 'BEARISH' | 'NEUTRAL';
   risk: 'Low' | 'Medium' | 'High';
-  confidence: number; // 1-10
+  confidence: number;
 }
 
-/**
- * Parse verdict summary line from analysis text
- * Format: "SUMMARY: BULLISH | Risk: Medium | Confidence: 7/10"
- */
 export function parseVerdict(text: string): VerdictSummary | null {
   if (!text || typeof text !== 'string') return null;
   
-  // Look for the SUMMARY line (case-insensitive)
   const summaryMatch = text.match(/SUMMARY:\s*(BULLISH|BEARISH|NEUTRAL)\s*\|\s*Risk:\s*(Low|Medium|High)\s*\|\s*Confidence:\s*(\d+)\/10/i);
   
   if (!summaryMatch) return null;

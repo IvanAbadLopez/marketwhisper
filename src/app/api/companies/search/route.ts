@@ -1,14 +1,8 @@
-/**
- * Company Search API - proxies Finnhub symbol lookup
- * GET /api/companies/search?q=query
- */
-
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { searchFinnhubSymbols } from "@/shared/api/finnhub";
 import { checkRateLimit, createErrorResponse, getSafeErrorMessage } from "@/shared";
 
-// Vercel serverless function timeout (30s for external API calls)
 export const maxDuration = 30;
 
 interface FinnhubSearchResult {
@@ -26,16 +20,14 @@ export async function GET(request: NextRequest) {
   const { prisma } = await import("@/shared/api/prisma");
 
   try {
-    // 1. Check authentication
     const session = await auth();
     if (!session?.user?.email) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Rate limit search requests by user (30 searches per minute)
     const rateLimitResult = checkRateLimit(`search:${session.user.id}`, {
       max: 30,
-      windowMs: 60 * 1000, // 1 minute
+      windowMs: 60 * 1000,
     });
 
     if (!rateLimitResult.success) {
@@ -54,7 +46,6 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // 2. Get search query
     const searchParams = request.nextUrl.searchParams;
     const query = searchParams.get("q");
 
@@ -65,10 +56,8 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // 3. Search Finnhub directly
     const results = await searchFinnhubSymbols(query);
 
-    // 4. Check which tickers already exist in database for this user
     const tickers = results.map((r) => r.symbol.toUpperCase());
     const existingCompanies = await prisma.company.findMany({
       where: {
@@ -80,7 +69,6 @@ export async function GET(request: NextRequest) {
 
     const existingTickers = new Set(existingCompanies.map((c) => c.ticker));
 
-    // 5. Mark results with existsInDatabase flag
     const resultsWithExists: SearchResultWithExists[] = results.map((result) => ({
       ...result,
       existsInDatabase: existingTickers.has(result.symbol.toUpperCase()),
@@ -96,7 +84,6 @@ export async function GET(request: NextRequest) {
   } catch (error: unknown) {
     const message = getSafeErrorMessage(error, 'Failed to search companies');
     
-    // Handle specific errors (rate limit, API key)
     if (message.includes('rate limit')) {
       return NextResponse.json({ error: message }, { status: 429 });
     }

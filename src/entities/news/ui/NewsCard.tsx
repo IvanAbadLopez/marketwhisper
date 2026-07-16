@@ -36,7 +36,6 @@ export function NewsCard({ news }: NewsCardProps) {
   const [success, setSuccess] = useState(false);
 
   const handleAnalyze = async () => {
-    // Prepare text: headline + summary
     const textToAnalyze = news.summary 
       ? `${news.title}\n\n${news.summary}`
       : news.title;
@@ -59,25 +58,25 @@ export function NewsCard({ news }: NewsCardProps) {
 
   return (
     <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg p-4 hover:border-zinc-300 dark:hover:border-zinc-700 transition-colors flex flex-col h-full">
-      {/* Header: Publisher and Date */}
+      {}
       <div className="flex items-center justify-between mb-2 text-xs text-zinc-500 dark:text-zinc-500">
         <span className="font-medium">{news.publisher || "Unknown Source"}</span>
         <span>{formatRelativeDate(news.publishedAt)}</span>
       </div>
 
-      {/* Title */}
+      {}
       <h3 className="text-base font-semibold text-zinc-900 dark:text-zinc-100 mb-2 leading-snug line-clamp-2">
         {news.title}
       </h3>
 
-      {/* Summary */}
+      {}
       {news.summary && (
         <p className="text-sm text-zinc-600 dark:text-zinc-400 mb-3 line-clamp-2">
           {news.summary}
         </p>
       )}
 
-      {/* Image */}
+      {}
       {news.image && (
         <div className="mb-3 rounded-md overflow-hidden">
           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -90,9 +89,9 @@ export function NewsCard({ news }: NewsCardProps) {
         </div>
       )}
 
-      {/* Actions */}
+      {}
       <div className="flex items-center gap-2 mt-auto pt-3">
-        {/* Read Full Article */}
+        {}
         {news.link && (
           <a
             href={news.link}
@@ -105,7 +104,7 @@ export function NewsCard({ news }: NewsCardProps) {
           </a>
         )}
 
-        {/* Analyze as Text */}
+        {}
         <button
           onClick={handleAnalyze}
           disabled={isAnalyzing || success}
@@ -127,14 +126,14 @@ export function NewsCard({ news }: NewsCardProps) {
         </button>
       </div>
 
-      {/* Error message */}
+      {}
       {error && (
         <div className="mt-3 text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/30 px-3 py-2 rounded">
           {error}
         </div>
       )}
 
-      {/* Success message */}
+      {}
       {success && (
         <div className="mt-3 text-sm text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-950/30 px-3 py-2 rounded">
           Analysis queued successfully! Check the company page for results.

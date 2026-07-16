@@ -1,9 +1,3 @@
-/**
- * Lightweight info tooltip (no external deps)
- * Uses CSS hover popover, accessible with keyboard
- * @module shared/ui
- */
-
 import { Info } from 'lucide-react';
 
 interface InfoTooltipProps {
@@ -22,10 +16,10 @@ export function InfoTooltip({ content, className = '' }: InfoTooltipProps) {
       >
         <Info className="w-4 h-4" />
         
-        {/* Popover */}
+        {}
         <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-64 p-3 bg-zinc-900 dark:bg-zinc-800 text-white text-xs rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible group-focus:opacity-100 group-focus:visible transition-all duration-200 pointer-events-none z-50">
           {content}
-          {/* Arrow */}
+          {}
           <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-1 w-2 h-2 bg-zinc-900 dark:bg-zinc-800 rotate-45"></div>
         </div>
       </button>

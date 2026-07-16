@@ -1,8 +1,3 @@
-/**
- * Feature: Discover Company - Public API
- * @module features/discover-company
- */
-
 export { DiscoverSearch } from "./ui/DiscoverSearch";
 export { useCompanyDiscovery } from "./model/useCompanyDiscovery";
 export { searchCompanies } from "./api/searchCompanies";

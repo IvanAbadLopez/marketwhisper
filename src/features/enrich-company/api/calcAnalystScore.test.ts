@@ -1,7 +1,3 @@
-/**
- * Tests for analyst sentiment score calculation
- */
-
 import { describe, it, expect } from 'vitest';
 import { calcAnalystScore, analystScoreLabel } from '../lib/analystScore';
 
@@ -66,7 +62,6 @@ describe('calcAnalystScore', () => {
     const score = calcAnalystScore(rec);
     expect(score).toBeGreaterThan(0);
     expect(score).toBeLessThanOrEqual(1);
-    // Calculation: (12*2 + 18 - 1) / (36*2) = 41/72 ≈ 0.57
     expect(score).toBeCloseTo(0.57, 2);
   });
 
@@ -82,7 +77,6 @@ describe('calcAnalystScore', () => {
     const score = calcAnalystScore(rec);
     expect(score).toBeLessThan(0);
     expect(score).toBeGreaterThanOrEqual(-1);
-    // Calculation: (1*2 + 2 - 10 - 8*2) / (26*2) = -22/52 ≈ -0.42
     expect(score).toBeCloseTo(-0.42, 2);
   });
 

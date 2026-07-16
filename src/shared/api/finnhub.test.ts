@@ -1,19 +1,14 @@
-/**
- * Tests for Finnhub API client (direct API calls, no Python service)
- */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { resolveTicker, fetchCompanyNews } from './finnhub';
 
-// Mock env to provide FINNHUB_API_KEY
 vi.mock('@/shared/config/env', () => ({
   env: {
     FINNHUB_API_KEY: 'test-api-key',
   },
 }));
 
-// Mock fetch globally
 global.fetch = vi.fn();
 
 describe('resolveTicker', () => {
@@ -100,7 +95,6 @@ describe('resolveTicker', () => {
 
     const ticker = await resolveTicker('Tencent');
     
-    // Should prefer TCEHY (no dot) over 0700.HK
     expect(ticker).toBe('TCEHY');
   });
 
@@ -169,14 +163,13 @@ describe('fetchCompanyNews', () => {
   });
 
   it('should fetch news for a ticker successfully', async () => {
-    // Finnhub API returns array of news items directly
     const mockResponse = [
       {
         headline: 'Apple announces new product',
         summary: 'Apple Inc. announced...',
         source: 'Bloomberg',
         url: 'https://example.com/news1',
-        datetime: 1721044800, // Unix timestamp
+        datetime: 1721044800,
         image: 'https://example.com/image1.jpg',
       },
       {

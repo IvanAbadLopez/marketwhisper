@@ -1,5 +1,3 @@
-// Feature: Auth - Type Definitions
-
 export interface LoginFormData {
   email: string;
   password: string;

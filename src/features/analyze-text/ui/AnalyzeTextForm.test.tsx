@@ -3,13 +3,11 @@ import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { AnalyzeTextForm } from "./AnalyzeTextForm";
 import * as analyzeTextApi from "../api/analyzeText";
 
-// Mock next/navigation
 const mockPush = vi.fn();
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: mockPush }),
 }));
 
-// Mock analyzeText API
 vi.mock("../api/analyzeText", () => ({
   analyzeText: vi.fn(),
 }));
@@ -53,7 +51,7 @@ describe("AnalyzeTextForm", () => {
     fireEvent.change(textarea, { target: { value: "Test text" } });
     fireEvent.change(sourceInput, { target: { value: "Twitter" } });
     
-    const clearButton = screen.getAllByRole("button")[1]; // Second button is clear
+    const clearButton = screen.getAllByRole("button")[1];
     fireEvent.click(clearButton);
     
     expect(textarea).toHaveValue("");

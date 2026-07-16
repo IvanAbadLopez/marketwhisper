@@ -1,9 +1,3 @@
-/**
- * Analysis Content Display
- * Renders AI analysis with structured bullets and icons, grouped by section
- * @module shared/ui
- */
-
 import { 
   TrendingUp, 
   AlertTriangle, 
@@ -62,7 +56,6 @@ const iconMap: Record<IconKey, IconConfig> = {
   },
 };
 
-// Logical order for sections
 const sectionOrder: IconKey[] = ['strength', 'financial', 'sentiment', 'outlook', 'weakness', 'default'];
 
 interface AnalysisContentProps {
@@ -71,9 +64,6 @@ interface AnalysisContentProps {
   collapsed?: boolean;
 }
 
-/**
- * Group bullets by icon key
- */
 function groupBulletsBySection(items: ParsedContent[]): Map<IconKey, ParsedBullet[]> {
   const groups = new Map<IconKey, ParsedBullet[]>();
   
@@ -88,9 +78,6 @@ function groupBulletsBySection(items: ParsedContent[]): Map<IconKey, ParsedBulle
   return groups;
 }
 
-/**
- * Render structured analysis content with icons, grouped by section
- */
 export function AnalysisContent({ text, className = "", collapsed = false }: AnalysisContentProps) {
   if (!text) {
     return (
@@ -100,11 +87,8 @@ export function AnalysisContent({ text, className = "", collapsed = false }: Ana
     );
   }
 
-  // Parse verdict summary (if present)
   const verdict = parseVerdict(text);
   
-  // Remove SUMMARY line and separator from text before parsing bullets
-  // Match: optional ---, optional whitespace/newlines, SUMMARY: and everything until end of line
   const cleanText = text
     .replace(/---\s*[\r\n]+\s*SUMMARY:[^\n]*/gi, '')
     .replace(/^\s*SUMMARY:[^\n]*/gim, '')
@@ -113,7 +97,6 @@ export function AnalysisContent({ text, className = "", collapsed = false }: Ana
   
   const parsed = parseAnalysisBullets(cleanText);
 
-  // Fallback: if no structured content, show as clean paragraph
   if (parsed.length === 0) {
     return (
       <p className={`text-sm text-zinc-300 whitespace-pre-wrap ${className}`}>
@@ -122,11 +105,9 @@ export function AnalysisContent({ text, className = "", collapsed = false }: Ana
     );
   }
 
-  // Separate bullets from paragraphs
   const bullets = parsed.filter(item => item.type === 'bullet') as ParsedBullet[];
   const paragraphs = parsed.filter(item => item.type === 'paragraph');
 
-  // If no bullets, just show paragraphs
   if (bullets.length === 0) {
     return (
       <div className={`space-y-3 ${className}`}>
@@ -139,15 +120,14 @@ export function AnalysisContent({ text, className = "", collapsed = false }: Ana
     );
   }
 
-  // Group bullets by section
   const grouped = groupBulletsBySection(parsed);
 
   return (
     <div className={`space-y-5 ${className} ${collapsed ? 'max-h-48 overflow-hidden relative' : ''}`}>
-      {/* Verdict Summary Badges */}
+      {}
       {verdict && (
         <div className="flex flex-wrap gap-2 pb-3 border-b border-zinc-700/50">
-          {/* Verdict Badge */}
+          {}
           <div className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold ${
             verdict.verdict === 'BULLISH' 
               ? 'bg-green-500/20 text-green-300 border border-green-500/30'
@@ -159,7 +139,7 @@ export function AnalysisContent({ text, className = "", collapsed = false }: Ana
             <span>{verdict.verdict}</span>
           </div>
           
-          {/* Risk Badge */}
+          {}
           <div className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold ${
             verdict.risk === 'Low'
               ? 'bg-green-500/20 text-green-300 border border-green-500/30'
@@ -171,7 +151,7 @@ export function AnalysisContent({ text, className = "", collapsed = false }: Ana
             <span>Risk: {verdict.risk}</span>
           </div>
           
-          {/* Confidence Badge */}
+          {}
           <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-purple-500/20 text-purple-300 border border-purple-500/30">
             <Award className="h-3.5 w-3.5" />
             <span>Confidence: {verdict.confidence}/10</span>
@@ -179,11 +159,10 @@ export function AnalysisContent({ text, className = "", collapsed = false }: Ana
         </div>
       )}
 
-      {/* Render sections in logical order */}
+      {}
       {sectionOrder.map(sectionKey => {
         const sectionBullets = grouped.get(sectionKey);
         
-        // Filter out empty bullets
         const validBullets = sectionBullets?.filter(b => b.text && b.text.trim().length > 0);
         
         if (!validBullets || validBullets.length === 0) return null;
@@ -192,7 +171,7 @@ export function AnalysisContent({ text, className = "", collapsed = false }: Ana
 
         return (
           <div key={sectionKey} className="space-y-2">
-            {/* Section Header */}
+            {}
             <div className={`flex items-center gap-2 pb-1.5 border-b ${headerClass}`}>
               <Icon className={`h-4 w-4 ${colorClass}`} />
               <h4 className="text-xs font-semibold uppercase tracking-wide">
@@ -200,7 +179,7 @@ export function AnalysisContent({ text, className = "", collapsed = false }: Ana
               </h4>
             </div>
 
-            {/* Section Bullets */}
+            {}
             <div className="space-y-2 pl-4">
               {validBullets.map((bullet, idx) => (
                 <div key={idx} className="flex items-start gap-2.5">
@@ -215,7 +194,7 @@ export function AnalysisContent({ text, className = "", collapsed = false }: Ana
         );
       })}
 
-      {/* Paragraphs at the end if any */}
+      {}
       {paragraphs.length > 0 && (
         <div className="space-y-2 pt-2 border-t border-zinc-700/50">
           {paragraphs
@@ -228,7 +207,7 @@ export function AnalysisContent({ text, className = "", collapsed = false }: Ana
         </div>
       )}
       
-      {/* Fade gradient when collapsed */}
+      {}
       {collapsed && (
         <div className="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-purple-900/40 via-purple-900/20 to-transparent pointer-events-none" />
       )}

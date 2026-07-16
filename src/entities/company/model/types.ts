@@ -1,8 +1,3 @@
-/**
- * Company entity types
- * @module entities/company
- */
-
 export interface ContentSummary {
   id: string;
   title: string | null;

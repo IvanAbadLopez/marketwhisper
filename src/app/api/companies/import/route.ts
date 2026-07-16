@@ -1,32 +1,23 @@
-/**
- * Company Import API - creates company from Finnhub and starts enrichment
- * POST /api/companies/import
- * Body: { ticker: string }
- */
-
 import { NextRequest, NextResponse } from "next/server";
 import { after } from "next/server";
 import { auth } from "@/lib/auth";
 import { processEnrichment } from "@/features/enrich-company/api/processEnrichment";
 import { fetchFinnhubData, normalizeTicker, checkRateLimit, createErrorResponse, getSafeErrorMessage } from "@/shared";
 
-// Vercel serverless function timeout (60s for Hobby tier)
 export const maxDuration = 60;
 
 export async function POST(request: NextRequest) {
   const { prisma } = await import("@/shared/api/prisma");
 
   try {
-    // 1. Check authentication
     const session = await auth();
     if (!session?.user?.email) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Rate limit import requests by user (20 imports per hour)
     const rateLimitResult = checkRateLimit(`import:${session.user.id}`, {
       max: 20,
-      windowMs: 60 * 60 * 1000, // 1 hour
+      windowMs: 60 * 60 * 1000,
     });
 
     if (!rateLimitResult.success) {
@@ -45,7 +36,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 2. Parse request body
     const body = await request.json();
     const { ticker: rawTicker } = body;
 
@@ -58,7 +48,6 @@ export async function POST(request: NextRequest) {
 
     const ticker = normalizeTicker(rawTicker);
 
-    // 3. Check if company already exists for this user
     const existingCompany = await prisma.company.findFirst({
       where: {
         userId: session.user.id as string,
@@ -79,7 +68,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 4. Fetch profile from Finnhub to populate basic company data
     console.log(`[Import] Fetching Finnhub profile for ${ticker}...`);
     let finnhubData;
     try {
@@ -101,7 +89,6 @@ export async function POST(request: NextRequest) {
 
     const { name, sector, industry, website, marketCap } = finnhubData.companyInfo;
 
-    // 5. Create company in database
     const company = await prisma.company.create({
       data: {
         userId: session.user.id as string,
@@ -118,7 +105,6 @@ export async function POST(request: NextRequest) {
 
     console.log(`[Import] Created company ${ticker} (ID: ${company.id})`);
 
-    // 6. Create a Job record for tracking in the queue
     const job = await prisma.job.create({
       data: {
         userId: session.user.id as string,
@@ -128,7 +114,6 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    // 7. Create a PENDING enrichment record
     const enrichment = await prisma.companyEnrichment.create({
       data: {
         userId: session.user.id as string,
@@ -136,18 +121,16 @@ export async function POST(request: NextRequest) {
         ticker,
         source: "FINNHUB",
         status: "PENDING",
-        jobId: job.id, // Link to job for tracking
+        jobId: job.id,
       },
     });
 
-    // 8. Kick off background enrichment (full analysis with AI)
     after(() => processEnrichment(enrichment.id, company.id, ticker, job.id, session.user.id as string));
 
     console.log(
       `[Import] Started enrichment for ${ticker} (Enrichment ID: ${enrichment.id}, Job ID: ${job.id})`
     );
 
-    // 10. Respond immediately
     return NextResponse.json(
       {
         success: true,

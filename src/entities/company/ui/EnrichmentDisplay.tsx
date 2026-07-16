@@ -1,10 +1,5 @@
 "use client";
 
-/**
- * Company Enrichment Display
- * Shows financial data and AI analysis from Finnhub
- * @module entities/company/ui
- */
 
 import { useState } from "react";
 import { 
@@ -102,11 +97,9 @@ export function EnrichmentDisplay({ enrichment, mode = 'full' }: EnrichmentDispl
   const dayChangeColor = (priceData?.dayChange || 0) >= 0 ? "text-green-400" : "text-red-400";
   const DayChangeIcon = (priceData?.dayChange || 0) >= 0 ? TrendingUp : TrendingDown;
 
-  // Calculate recommendation sentiment
   const latestRec = recommendations && recommendations.length > 0 ? recommendations[recommendations.length - 1] : null;
   const totalRecs = latestRec ? latestRec.strongBuy + latestRec.buy + latestRec.hold + latestRec.sell + latestRec.strongSell : 0;
 
-  // If mode is 'ai', only show AI Analysis section
   if (mode === 'ai') {
     return (
       <div>
@@ -149,7 +142,7 @@ export function EnrichmentDisplay({ enrichment, mode = 'full' }: EnrichmentDispl
 
   return (
     <div className="space-y-4">
-      {/* Price Summary */}
+      {}
       {priceData && (
         <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-6">
           <div className="flex items-center justify-between mb-4">
@@ -186,7 +179,7 @@ export function EnrichmentDisplay({ enrichment, mode = 'full' }: EnrichmentDispl
         </div>
       )}
 
-      {/* AI Analysis */}
+      {}
       {aiAnalysis && mode !== 'financial' && (
         <div className="bg-gradient-to-br from-purple-900/20 to-blue-900/20 border border-purple-500/30 rounded-lg p-6">
           <div className="flex items-center justify-between mb-4">
@@ -221,7 +214,7 @@ export function EnrichmentDisplay({ enrichment, mode = 'full' }: EnrichmentDispl
         </div>
       )}
 
-      {/* Financials Collapsible */}
+      {}
       {financialData && (
         <div className="bg-zinc-900 border border-zinc-800 rounded-lg overflow-hidden">
           <button
@@ -270,7 +263,7 @@ export function EnrichmentDisplay({ enrichment, mode = 'full' }: EnrichmentDispl
         </div>
       )}
 
-      {/* News Collapsible */}
+      {}
       {newsHeadlines && newsHeadlines.length > 0 && (
         <div className="bg-zinc-900 border border-zinc-800 rounded-lg overflow-hidden">
           <button
@@ -317,7 +310,7 @@ export function EnrichmentDisplay({ enrichment, mode = 'full' }: EnrichmentDispl
         </div>
       )}
 
-      {/* Analyst Recommendations */}
+      {}
       {recommendations && recommendations.length > 0 ? (
         <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-6">
           <div className="flex items-center gap-2 mb-4">
@@ -325,14 +318,14 @@ export function EnrichmentDisplay({ enrichment, mode = 'full' }: EnrichmentDispl
             <h3 className="text-lg font-semibold text-white">Analyst Sentiment</h3>
           </div>
 
-          {/* Trend Chart */}
+          {}
           {recommendations.length >= 2 && (
             <div className="mb-4">
               <AnalystSentimentChart recommendations={recommendations} />
             </div>
           )}
 
-          {/* Latest Period Breakdown */}
+          {}
           {latestRec && totalRecs > 0 && (
             <div>
               <p className="text-sm text-zinc-400 mb-3">

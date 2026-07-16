@@ -1,5 +1,3 @@
-// Widget: Header - UI Component
-
 "use client";
 
 import { signOut } from "next-auth/react";
@@ -14,7 +12,7 @@ export function Header({ user }: HeaderProps) {
     <header className="w-full border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-black">
       <div className="px-6 py-4">
         <div className="flex items-center justify-between">
-          {/* Page title */}
+          {}
           <div className="flex items-center gap-4">
             <h1 className="text-xl font-semibold text-zinc-900 dark:text-zinc-100">
               Dashboard
@@ -22,7 +20,7 @@ export function Header({ user }: HeaderProps) {
           </div>
 
           <div className="flex items-center gap-4">
-            {/* User menu */}
+            {}
             {user && (
               <div className="flex items-center gap-3">
                 {user.image ? (

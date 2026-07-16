@@ -18,11 +18,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           return null;
         }
 
-        // Rate limit login attempts by IP (5 attempts per 15 minutes)
         const ip = getClientIp(request as Request);
         const rateLimitResult = checkRateLimit(`login:${ip}`, {
           max: 5,
-          windowMs: 15 * 60 * 1000, // 15 minutes
+          windowMs: 15 * 60 * 1000,
         });
 
         if (!rateLimitResult.success) {

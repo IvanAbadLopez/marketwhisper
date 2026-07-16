@@ -4,7 +4,6 @@ import { prisma } from '@/shared/api/prisma';
 import bcrypt from 'bcrypt';
 import { getClientIp } from '@/shared';
 
-// Mock Prisma
 vi.mock('@/shared/api/prisma', () => ({
   prisma: {
     user: {
@@ -14,10 +13,8 @@ vi.mock('@/shared/api/prisma', () => ({
   },
 }));
 
-// Mock bcrypt
 vi.mock('bcrypt');
 
-// Mock rate limiting
 vi.mock('@/shared', async () => {
   const actual = await vi.importActual('@/shared');
   return {
@@ -36,7 +33,6 @@ describe('POST /api/auth/register', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     
-    // Reset default mock implementations
     const { checkRateLimit, getClientIp } = vi.importMock('@/shared');
     if (checkRateLimit) {
       vi.mocked(checkRateLimit).mockReturnValue({
@@ -118,7 +114,7 @@ describe('POST /api/auth/register', () => {
     });
 
     it('returns 400 for email exceeding 254 characters', async () => {
-      const longEmail = 'a'.repeat(246) + '@test.com'; // 255 chars total (246 + 9)
+      const longEmail = 'a'.repeat(246) + '@test.com';
       const request = new Request('http://localhost/api/auth/register', {
         method: 'POST',
         body: JSON.stringify({ email: longEmail, password: 'password123' }),
@@ -132,7 +128,7 @@ describe('POST /api/auth/register', () => {
     });
 
     it('accepts email at exactly 254 characters', async () => {
-      const maxEmail = 'a'.repeat(244) + '@test.com'; // 254 chars total
+      const maxEmail = 'a'.repeat(244) + '@test.com';
       
       vi.mocked(prisma.user.findUnique).mockResolvedValue(null);
       vi.mocked(bcrypt.hash).mockResolvedValue('hashed_password' as never);
@@ -409,12 +405,10 @@ describe('POST /api/auth/register', () => {
 
       await POST(request);
 
-      // Check findUnique was called with normalized email
       expect(vi.mocked(prisma.user.findUnique)).toHaveBeenCalledWith({
         where: { email: 'test@example.com' },
       });
 
-      // Check create was called with normalized email
       expect(vi.mocked(prisma.user.create)).toHaveBeenCalledWith({
         data: {
           email: 'test@example.com',
@@ -454,10 +448,8 @@ describe('POST /api/auth/register', () => {
       expect(data.message).toBe('Registration processed successfully. If the email is not already registered, your account has been created. You can now sign in.');
       expect(data.userId).toBe('123');
 
-      // Verify bcrypt.hash was called with correct parameters
       expect(vi.mocked(bcrypt.hash)).toHaveBeenCalledWith('password123', 12);
 
-      // Verify user was created
       expect(vi.mocked(prisma.user.create)).toHaveBeenCalledWith({
         data: {
           email: 'test@example.com',
@@ -501,7 +493,6 @@ describe('POST /api/auth/register', () => {
 
   describe('Anti-Enumeration Pattern', () => {
     it('returns generic success message for existing user (anti-enumeration)', async () => {
-      // Mock existing user
       vi.mocked(prisma.user.findUnique).mockResolvedValue({
         id: '999',
         email: 'existing@example.com',
@@ -524,24 +515,18 @@ describe('POST /api/auth/register', () => {
       const response = await POST(request);
       const data = await response.json();
 
-      // Should return success status (anti-enumeration)
       expect(response.status).toBe(200);
       
-      // Should return generic message (same as new user)
       expect(data.message).toBe('Registration processed successfully. If the email is not already registered, your account has been created. You can now sign in.');
       
-      // Should NOT include userId for existing users
       expect(data.userId).toBeUndefined();
 
-      // Should call bcrypt.hash for timing attack prevention
       expect(vi.mocked(bcrypt.hash)).toHaveBeenCalledWith('dummy-password-for-timing-attack-prevention', 12);
 
-      // Should NOT create a new user
       expect(vi.mocked(prisma.user.create)).not.toHaveBeenCalled();
     });
 
     it('returns generic success message for new user (same as existing)', async () => {
-      // Mock no existing user
       vi.mocked(prisma.user.findUnique).mockResolvedValue(null);
       vi.mocked(bcrypt.hash).mockResolvedValue('hashed_password' as never);
       vi.mocked(prisma.user.create).mockResolvedValue({
@@ -564,20 +549,15 @@ describe('POST /api/auth/register', () => {
       const response = await POST(request);
       const data = await response.json();
 
-      // Should return same status as existing user (anti-enumeration)
       expect(response.status).toBe(200);
       
-      // Should return SAME generic message as existing user
       expect(data.message).toBe('Registration processed successfully. If the email is not already registered, your account has been created. You can now sign in.');
 
-      // Should create the user
       expect(vi.mocked(prisma.user.create)).toHaveBeenCalled();
     });
 
     it('ensures timing consistency between existing and new user flows', async () => {
-      // This test verifies that bcrypt.hash is called in both paths
       
-      // Test existing user path
       vi.mocked(prisma.user.findUnique).mockResolvedValue({
         id: '999',
         email: 'existing@example.com',
@@ -598,14 +578,11 @@ describe('POST /api/auth/register', () => {
 
       await POST(existingRequest);
 
-      // bcrypt.hash should be called once for timing attack prevention
       expect(vi.mocked(bcrypt.hash)).toHaveBeenCalledTimes(1);
       expect(vi.mocked(bcrypt.hash)).toHaveBeenCalledWith('dummy-password-for-timing-attack-prevention', 12);
 
-      // Clear mocks
       vi.clearAllMocks();
 
-      // Test new user path
       vi.mocked(prisma.user.findUnique).mockResolvedValue(null);
       vi.mocked(bcrypt.hash).mockResolvedValue('hashed_password' as never);
       vi.mocked(prisma.user.create).mockResolvedValue({
@@ -627,7 +604,6 @@ describe('POST /api/auth/register', () => {
 
       await POST(newRequest);
 
-      // bcrypt.hash should also be called once for actual password hashing
       expect(vi.mocked(bcrypt.hash)).toHaveBeenCalledTimes(1);
       expect(vi.mocked(bcrypt.hash)).toHaveBeenCalledWith('password123', 12);
     });
@@ -676,7 +652,6 @@ describe('POST /api/auth/register', () => {
     it('returns 429 when rate limit exceeded', async () => {
       const mockIp = '1.2.3.4';
       
-      // Import checkRateLimit to mock it properly
       const { checkRateLimit } = await import('@/shared');
       
       vi.mocked(getClientIp).mockReturnValue(mockIp);
@@ -684,7 +659,7 @@ describe('POST /api/auth/register', () => {
         success: false,
         limit: 3,
         remaining: 0,
-        reset: Date.now() + 3600000, // 1 hour from now
+        reset: Date.now() + 3600000,
       });
 
       const request = new Request('http://localhost/api/auth/register', {

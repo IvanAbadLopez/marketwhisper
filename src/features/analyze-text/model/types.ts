@@ -1,5 +1,3 @@
-// Feature: Analyze Text - Type Definitions
-
 export interface AnalysisFormData {
   text: string;
   source?: string;

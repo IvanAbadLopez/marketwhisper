@@ -1,5 +1,3 @@
-// Widget: Sidebar - UI Component
-
 "use client";
 
 import { useState, useEffect } from "react";
@@ -11,7 +9,6 @@ export function Sidebar() {
   const pathname = usePathname();
   const [activeJobsCount, setActiveJobsCount] = useState(0);
 
-  // Fetch active jobs count
   useEffect(() => {
     const fetchActiveJobs = async () => {
       try {
@@ -27,14 +24,13 @@ export function Sidebar() {
 
     fetchActiveJobs();
 
-    // Poll every 5 seconds
     const interval = setInterval(fetchActiveJobs, 5000);
     return () => clearInterval(interval);
   }, []);
 
   return (
     <aside className="w-64 bg-zinc-50 dark:bg-zinc-950 border-r border-zinc-200 dark:border-zinc-800 flex flex-col">
-      {/* Logo */}
+      {}
       <div className="p-6 border-b border-zinc-200 dark:border-zinc-800">
         <Link href="/" className="flex items-center gap-2">
           <span className="text-2xl">🎧</span>
@@ -44,14 +40,13 @@ export function Sidebar() {
         </Link>
       </div>
 
-      {/* Navigation */}
+      {}
       <nav className="flex-1 p-4 space-y-1">
         {navigationItems.map((item) => {
           const isActive = pathname === item.href;
           const Icon = item.icon;
           const showBadge = item.href === "/jobs" && activeJobsCount > 0;
 
-          // Translate navigation item names
           const navNames: Record<string, string> = {
             'nav.dashboard': 'Dashboard',
             'nav.analyze': 'Analyze',
@@ -85,7 +80,7 @@ export function Sidebar() {
         })}
       </nav>
 
-      {/* Footer info */}
+      {}
       <div className="p-4 border-t border-zinc-200 dark:border-zinc-800">
         <p className="text-xs text-zinc-500 dark:text-zinc-400">
           MarketWhisper v0.1.0

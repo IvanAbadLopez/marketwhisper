@@ -1,8 +1,3 @@
-/**
- * Company entity hooks
- * @module entities/company
- */
-
 "use client";
 
 import { useState, useEffect, useCallback } from "react";

@@ -1,9 +1,3 @@
-/**
- * CompanyCard component
- * Displays company information in a card format (simplified)
- * @module entities/company
- */
-
 "use client";
 
 import { Target, Trash2 } from "lucide-react";
@@ -27,7 +21,7 @@ export function CompanyCard({ company, onClick, onDelete }: CompanyCardProps) {
       onClick={() => onClick?.(company.ticker)}
       className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg p-6 hover:border-blue-500 dark:hover:border-blue-500 hover:shadow-lg transition-all cursor-pointer relative"
     >
-      {/* Delete button */}
+      {}
       {onDelete && (
         <button
           onClick={handleDelete}
@@ -37,7 +31,7 @@ export function CompanyCard({ company, onClick, onDelete }: CompanyCardProps) {
           <Trash2 className="w-4 h-4" />
         </button>
       )}
-      {/* Header: Name (primary) + Ticker badge */}
+      {}
       <div className="mb-4">
         <div className="flex items-center gap-2 mb-1">
           <h3 className="text-xl font-bold text-zinc-900 dark:text-zinc-100 leading-tight">
@@ -47,7 +41,7 @@ export function CompanyCard({ company, onClick, onDelete }: CompanyCardProps) {
             ${company.ticker}
           </span>
         </div>
-        {/* Sector */}
+        {}
         {company.sector && (
           <p className="text-xs text-zinc-600 dark:text-zinc-400">
             {company.sector}
@@ -55,7 +49,7 @@ export function CompanyCard({ company, onClick, onDelete }: CompanyCardProps) {
         )}
       </div>
 
-      {/* Global Score */}
+      {}
       {company.globalScore !== null && (
         <div className="mb-4">
           <div className="flex items-center justify-between mb-2">
@@ -86,7 +80,7 @@ export function CompanyCard({ company, onClick, onDelete }: CompanyCardProps) {
         </div>
       )}
 
-      {/* Footer: Analyses count */}
+      {}
       <div className="flex items-center justify-between text-xs text-zinc-600 dark:text-zinc-400 border-t border-zinc-200 dark:border-zinc-800 pt-3">
         <span>
           {company._count?.analyses || company.analysisCount || 0}{" "}

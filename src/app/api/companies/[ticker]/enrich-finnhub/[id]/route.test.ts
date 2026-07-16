@@ -2,12 +2,10 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { GET } from "./route";
 import { NextRequest } from "next/server";
 
-// Mock auth module
 vi.mock("@/lib/auth", () => ({
   auth: vi.fn(),
 }));
 
-// Mock prisma module
 vi.mock("@/shared/api/prisma", () => ({
   prisma: {
     companyEnrichment: {
@@ -69,7 +67,7 @@ describe("GET /api/companies/[ticker]/enrich-finnhub/[id]", () => {
       id: "123",
       companyId: "company1",
       userId: "user1",
-      ticker: "MSFT", // Different ticker
+      ticker: "MSFT",
       source: "FINNHUB" as const,
       status: "COMPLETED" as const,
       errorMessage: null,

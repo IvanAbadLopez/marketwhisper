@@ -3,12 +3,10 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { POST } from "./route";
 import { NextRequest } from "next/server";
 
-// Mock auth module
 vi.mock("@/lib/auth", () => ({
   auth: vi.fn(),
 }));
 
-// Mock prisma module
 vi.mock("@/shared/api/prisma", () => ({
   prisma: {
     user: {
@@ -26,14 +24,11 @@ vi.mock("@/shared/api/prisma", () => ({
   },
 }));
 
-// Mock Next.js after function (used for background processing)
 vi.mock("next/server", async (importOriginal) => {
   const actual = await importOriginal<typeof import("next/server")>();
   return {
     ...actual,
     after: vi.fn(() => {
-      // Don't execute the background function in tests
-      // In real code, this runs after the response is sent
     }),
   };
 });
@@ -174,7 +169,6 @@ describe("POST /api/companies/[ticker]/enrich-finnhub", () => {
     expect(data.status).toBe("PENDING");
     expect(data.source).toBe("FINNHUB");
 
-    // Verify enrichment was created with correct source and job
     expect(prisma.job.create).toHaveBeenCalledWith({
       data: {
         userId: "user1",

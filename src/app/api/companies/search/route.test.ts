@@ -1,15 +1,9 @@
-/**
- * Test: Company Search API Route
- * @vitest-environment node
- */
-
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { GET } from "./route";
 import { NextRequest } from "next/server";
 import type { Session } from "next-auth";
 import type { Company } from "@/generated/prisma/client";
 
-// Mock dependencies
 vi.mock("@/lib/auth", () => ({
   auth: vi.fn(),
 }));
@@ -87,7 +81,6 @@ describe("GET /api/companies/search", () => {
       user: { email: "test@example.com" },
     } as Session);
 
-    // Mock searchFinnhubSymbols response
     mockSearchFinnhubSymbols.mockResolvedValue([
       {
         symbol: "AAPL",
@@ -103,7 +96,6 @@ describe("GET /api/companies/search", () => {
       },
     ]);
 
-    // Mock database check - AAPL exists, APLD doesn't
     mockPrisma.company.findMany.mockResolvedValue([
       { ticker: "AAPL" } as Pick<Company, "ticker">,
     ]);
@@ -120,8 +112,8 @@ describe("GET /api/companies/search", () => {
     expect(data.query).toBe("apple");
     expect(data.count).toBe(2);
     expect(data.results).toHaveLength(2);
-    expect(data.results[0].existsInDatabase).toBe(true); // AAPL exists
-    expect(data.results[1].existsInDatabase).toBe(false); // APLD doesn't exist
+    expect(data.results[0].existsInDatabase).toBe(true);
+    expect(data.results[1].existsInDatabase).toBe(false);
   });
 
   it("should return 503 if Finnhub service is unavailable", async () => {
@@ -129,7 +121,6 @@ describe("GET /api/companies/search", () => {
       user: { email: "test@example.com" },
     } as Session);
 
-    // Mock searchFinnhubSymbols throwing FINNHUB_API_KEY error
     mockSearchFinnhubSymbols.mockRejectedValue(
       new Error("FINNHUB_API_KEY not configured. Please set it in your .env file.")
     );
@@ -150,7 +141,6 @@ describe("GET /api/companies/search", () => {
       user: { email: "test@example.com" },
     } as Session);
 
-    // Mock searchFinnhubSymbols throwing rate limit error
     mockSearchFinnhubSymbols.mockRejectedValue(
       new Error("Finnhub rate limit exceeded. Please try again later.")
     );

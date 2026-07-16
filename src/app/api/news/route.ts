@@ -3,7 +3,6 @@ import { auth } from "@/lib/auth";
 import { fetchCompanyNews } from "@/shared";
 import { prisma } from "@/shared/api/prisma";
 
-// Vercel serverless function timeout (30s for external API calls)
 export const maxDuration = 30;
 
 export async function GET(request: Request) {
@@ -14,13 +13,11 @@ export async function GET(request: Request) {
   }
 
   try {
-    // Parse query params
     const { searchParams } = new URL(request.url);
     const ticker = searchParams.get("ticker");
     const daysParam = searchParams.get("days");
     const days = daysParam ? parseInt(daysParam, 10) : 7;
 
-    // Validate days parameter
     if (days < 1 || days > 365) {
       return NextResponse.json(
         { error: "Days parameter must be between 1 and 365" },
@@ -30,7 +27,6 @@ export async function GET(request: Request) {
 
     let targetTicker = ticker;
 
-    // If no ticker provided, use the first tracked company
     if (!targetTicker) {
       const firstCompany = await prisma.company.findFirst({
         where: { userId: session.user.id },
@@ -48,7 +44,6 @@ export async function GET(request: Request) {
       targetTicker = firstCompany.ticker;
     }
 
-    // Validate ticker exists in tracked companies
     const company = await prisma.company.findFirst({
       where: {
         userId: session.user.id,
@@ -64,7 +59,6 @@ export async function GET(request: Request) {
       );
     }
 
-    // Fetch news from Finnhub
     const news = await fetchCompanyNews(company.ticker, days);
 
     return NextResponse.json({
@@ -79,7 +73,6 @@ export async function GET(request: Request) {
     const message = error instanceof Error ? error.message : "Unknown error";
     console.error("Error fetching news:", message);
 
-    // Handle specific errors
     if (message.includes("rate limit")) {
       return NextResponse.json(
         { error: "Finnhub rate limit exceeded. Please try again later." },

@@ -1,8 +1,3 @@
-/**
- * Feature: Discover Company - Discovery Hook
- * @module features/discover-company/model
- */
-
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
@@ -32,16 +27,13 @@ export function useCompanyDiscovery(): UseCompanyDiscoveryResult {
   const [importError, setImportError] = useState<string | null>(null);
   const { addJob } = useNotifications();
 
-  // Auto-search with debounce when query changes
   useEffect(() => {
     const trimmedQuery = query.trim();
 
-    // Don't search if query is too short
     if (trimmedQuery.length < 2) {
       return;
     }
 
-    // Set debounce timeout
     const timeoutId = setTimeout(async () => {
       setIsSearching(true);
       setSearchError(null);
@@ -56,9 +48,8 @@ export function useCompanyDiscovery(): UseCompanyDiscoveryResult {
       } finally {
         setIsSearching(false);
       }
-    }, 500); // 500ms debounce
+    }, 500);
 
-    // Cleanup on unmount or query change
     return () => {
       clearTimeout(timeoutId);
     };
@@ -94,13 +85,10 @@ export function useCompanyDiscovery(): UseCompanyDiscoveryResult {
     try {
       const response = await importCompany(ticker);
 
-      // Register the background enrichment in the global notification system
-      // so the user gets a toast when it completes (even after navigating away)
       if (response.enrichmentId && !response.alreadyExists) {
         addJob(ticker, response.enrichmentId);
       }
       
-      // Mark as imported in results
       setResults((prev) =>
         prev.map((result) =>
           result.symbol === ticker
@@ -109,7 +97,6 @@ export function useCompanyDiscovery(): UseCompanyDiscoveryResult {
         )
       );
 
-      // Return the ticker so the caller can redirect
       return response.ticker;
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : "Import failed";

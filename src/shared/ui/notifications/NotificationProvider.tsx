@@ -1,10 +1,5 @@
 "use client";
 
-/**
- * Background Job Notification System
- * Manages enrichment jobs with localStorage persistence and global polling
- * @module shared/ui/notifications
- */
 
 import { createContext, useContext, useState, useEffect, useCallback, useRef } from "react";
 import { getEnrichmentStatus } from "@/features/enrich-company/api/enrichCompany";
@@ -12,7 +7,7 @@ import { getEnrichmentStatus } from "@/features/enrich-company/api/enrichCompany
 export interface EnrichmentJob {
   ticker: string;
   enrichmentId: string;
-  startedAt: number; // timestamp
+  startedAt: number;
 }
 
 export interface Toast {
@@ -32,21 +27,19 @@ interface NotificationContextValue {
 const NotificationContext = createContext<NotificationContextValue | null>(null);
 
 const STORAGE_KEY = "marketwhisper_enrichment_jobs";
-const POLL_INTERVAL = 5000; // 5 seconds
-const MAX_JOB_AGE = 30 * 60 * 1000; // 30 minutes
+const POLL_INTERVAL = 5000;
+const MAX_JOB_AGE = 30 * 60 * 1000;
 
 export function NotificationProvider({ children }: { children: React.ReactNode }) {
   const [jobs, setJobs] = useState<EnrichmentJob[]>([]);
   const [toasts, setToasts] = useState<Toast[]>([]);
   const pollTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Load jobs from localStorage on mount
   useEffect(() => {
     try {
       const stored = localStorage.getItem(STORAGE_KEY);
       if (stored) {
         const parsed: EnrichmentJob[] = JSON.parse(stored);
-        // Filter out stale jobs (> 30 min old)
         const now = Date.now();
         const fresh = parsed.filter(job => now - job.startedAt < MAX_JOB_AGE);
         // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -57,7 +50,6 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     }
   }, []);
 
-  // Persist jobs to localStorage whenever they change
   useEffect(() => {
     try {
       if (jobs.length > 0) {
@@ -70,7 +62,6 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     }
   }, [jobs]);
 
-  // Poll job statuses
   const pollJobs = useCallback(async () => {
     if (jobs.length === 0) return;
 
@@ -82,7 +73,6 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         console.log(`[NotificationProvider] Job ${job.ticker} status: ${result.status}`);
 
         if (result.status === "COMPLETED") {
-          // Remove job and show success toast
           console.log(`[NotificationProvider] Job ${job.ticker} completed! Showing toast.`);
           setJobs(prev => prev.filter(j => j.enrichmentId !== job.enrichmentId));
           setToasts(prev => [
@@ -95,7 +85,6 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
             },
           ]);
         } else if (result.status === "FAILED") {
-          // Remove job and show error toast
           setJobs(prev => prev.filter(j => j.enrichmentId !== job.enrichmentId));
           setToasts(prev => [
             ...prev,
@@ -107,18 +96,16 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
             },
           ]);
         }
-        // PENDING/PROCESSING: keep polling
       } catch (error) {
         console.error(`[Notifications] Failed to poll job ${job.enrichmentId}:`, error);
       }
     }
   }, [jobs]);
 
-  // Start polling when jobs exist
   useEffect(() => {
     if (jobs.length > 0) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
-      pollJobs(); // Poll immediately
+      pollJobs();
       pollTimerRef.current = setInterval(pollJobs, POLL_INTERVAL);
     }
 

@@ -1,8 +1,3 @@
-/**
- * Background processing logic for text analysis jobs
- * @module features/analyze-text/api/processAnalysis
- */
-
 import { 
   detectCompanies,
   analyzeWithFinancials,
@@ -24,10 +19,6 @@ interface AnalysisJobResult {
   count: number;
 }
 
-/**
- * Process a text analysis job in the background (2-call LLM + Finnhub enrichment)
- * Updates Job status and creates Analysis records with financial snapshots
- */
 export async function processAnalysis(
   jobId: string,
   text: string,
@@ -35,16 +26,13 @@ export async function processAnalysis(
   userId: string
 ): Promise<void> {
   try {
-    // Update job status to PROCESSING
     await prisma.job.update({
       where: { id: jobId },
       data: { status: "PROCESSING" },
     });
 
-    // Checkpoint: check if job was cancelled before starting
     await assertJobNotCancelled(jobId);
 
-    // PHASE 1: Detect companies (LLM call #1 - lightweight)
     console.log(`[Job ${jobId}] Phase 1: Detecting companies...`);
     const detections = await detectCompanies(text);
 
@@ -61,7 +49,6 @@ export async function processAnalysis(
 
     console.log(`[Job ${jobId}] Detected ${detections.length} companies: ${detections.map(d => d.companyName).join(', ')}`);
 
-    // PHASE 2: Resolve tickers and find/create companies
     console.log(`[Job ${jobId}] Phase 2: Resolving tickers and companies...`);
     const companiesData: Array<{
       ticker: string;
@@ -74,7 +61,6 @@ export async function processAnalysis(
     for (const detection of detections) {
       let ticker = detection.ticker.replace(/^\$/, "").trim().toUpperCase();
 
-      // Resolve ticker if missing
       if (!ticker && detection.companyName) {
         console.log(`[processAnalysis] Ticker missing for "${detection.companyName}", resolving via Finnhub...`);
         ticker = await resolveTicker(detection.companyName);
@@ -90,7 +76,6 @@ export async function processAnalysis(
         continue;
       }
 
-      // Find or create company
       let company = await prisma.company.findFirst({
         where: {
           userId,
@@ -116,7 +101,7 @@ export async function processAnalysis(
         ticker,
         companyName: detection.companyName || company.name,
         company: { id: company.id, ticker: company.ticker },
-        finnhubData: null, // Will be fetched in Phase 3
+        finnhubData: null,
         isNewCompany,
       });
     }
@@ -132,16 +117,13 @@ export async function processAnalysis(
       return;
     }
 
-    // PHASE 3: Fetch Finnhub data (with cache, serial to respect rate limits)
     console.log(`[Job ${jobId}] Phase 3: Fetching financial data (with cache)...`);
     for (const companyData of companiesData) {
       try {
-        // Try cache first (24h TTL)
         const cached = await getCachedFinnhub(companyData.company.id);
         
         if (cached) {
           console.log(`[processAnalysis] Using cached Finnhub data for ${companyData.ticker}`);
-          // Reconstruct FinnhubData from snapshot (minimal structure for prompt)
           companyData.finnhubData = {
             success: true,
             ticker: companyData.ticker,
@@ -173,20 +155,17 @@ export async function processAnalysis(
             }] : undefined,
           };
         } else {
-          // Fetch fresh data
           console.log(`[processAnalysis] Fetching fresh Finnhub data for ${companyData.ticker}...`);
           companyData.finnhubData = await fetchFinnhubData(companyData.ticker);
         }
       } catch (error) {
         console.warn(`[processAnalysis] Failed to fetch Finnhub data for ${companyData.ticker}:`, error);
-        companyData.finnhubData = null; // Fallback: analyze without financial data
+        companyData.finnhubData = null;
       }
     }
 
-    // Checkpoint: check cancellation before expensive LLM call
     await assertJobNotCancelled(jobId);
 
-    // PHASE 4: Analyze with financials (LLM call #2 - single call for ALL companies)
     console.log(`[Job ${jobId}] Phase 4: Analyzing with financial data (1 LLM call for all companies)...`);
     const enrichedAnalyses = await analyzeWithFinancials(
       text,
@@ -208,28 +187,23 @@ export async function processAnalysis(
       return;
     }
 
-    // Checkpoint: CRITICAL - check cancellation before writing data
     await assertJobNotCancelled(jobId);
 
-    // PHASE 5: Create Analysis records with financial snapshots
     console.log(`[Job ${jobId}] Phase 5: Saving analyses with financial snapshots...`);
     const results = await Promise.all(
       enrichedAnalyses.map(async (aiResult) => {
         const ticker = aiResult.ticker.replace(/^\$/, "").trim().toUpperCase();
         
-        // Find matching company data
         const companyData = companiesData.find(cd => cd.ticker === ticker);
         if (!companyData) {
           console.warn(`[processAnalysis] No company data found for ticker ${ticker}, skipping`);
           return null;
         }
 
-        // Create financial snapshot if we have Finnhub data
         const financialSnapshot = companyData.finnhubData 
           ? createFinancialSnapshot(companyData.finnhubData)
           : null;
 
-        // Create analysis record
         const analysis = await prisma.analysis.create({
           data: {
             userId,
@@ -245,10 +219,8 @@ export async function processAnalysis(
           },
         });
 
-        // Recalculate company aggregates
         await updateCompanyAggregates(companyData.company.id);
 
-        // Recalculate valuation (global score + target price)
         await recomputeCompanyValuation(companyData.company.id);
 
         return {
@@ -271,14 +243,12 @@ export async function processAnalysis(
       return;
     }
 
-    // Prepare result data
     const jobResult: AnalysisJobResult = {
       analysisIds: validResults.map((r) => r.analysisId),
       companyIds: validResults.map((r) => r.companyId),
       count: validResults.length,
     };
 
-    // Get first ticker for job tracking
     const firstCompany = await prisma.company.findUnique({
       where: { id: validResults[0].companyId },
       select: { ticker: true },
@@ -286,11 +256,10 @@ export async function processAnalysis(
     const firstTicker = firstCompany?.ticker || 'UNKNOWN';
     const tickerDisplay = validResults.length > 1 ? `${firstTicker} +${validResults.length - 1}` : firstTicker;
 
-    // Update job status to COMPLETED (use updateMany to avoid overwriting CANCELLED)
     await prisma.job.updateMany({
       where: { 
         id: jobId,
-        status: "PROCESSING", // Only update if still PROCESSING (not CANCELLED)
+        status: "PROCESSING",
       },
       data: {
         status: "COMPLETED",
@@ -301,13 +270,11 @@ export async function processAnalysis(
 
     console.log(`[Job ${jobId}] Analysis completed successfully: ${validResults.length} companies analyzed (2 LLM calls total)`);
 
-    // PHASE 6: Auto-enrich newly created companies in background
     const newCompanies = companiesData.filter(cd => cd.isNewCompany);
     if (newCompanies.length > 0) {
       console.log(`[Job ${jobId}] Auto-enriching ${newCompanies.length} newly created companies in background...`);
       
       for (const companyData of newCompanies) {
-        // Create PENDING enrichment record
         const enrichment = await prisma.companyEnrichment.create({
           data: {
             userId,
@@ -318,7 +285,6 @@ export async function processAnalysis(
           },
         });
 
-        // Kick off enrichment in background (no await - fire and forget)
         processEnrichment(enrichment.id, companyData.company.id, companyData.ticker, undefined, userId).catch(error => {
           console.error(`[processAnalysis] Background enrichment failed for ${companyData.ticker}:`, error);
         });
@@ -327,7 +293,6 @@ export async function processAnalysis(
       }
     }
   } catch (error: unknown) {
-    // If job was cancelled, don't mark as FAILED (already CANCELLED)
     if (error instanceof JobCancelledError) {
       console.log(`[Job ${jobId}] Analysis cancelled by user`);
       return;
@@ -345,12 +310,7 @@ export async function processAnalysis(
   }
 }
 
-/**
- * Update company aggregate scores incrementally (optimized)
- * Uses moving average formula instead of recalculating from all analyses
- */
 async function updateCompanyAggregates(companyId: string) {
-  // Get current company aggregates
   const company = await prisma.company.findUnique({
     where: { id: companyId },
     select: {
@@ -364,7 +324,6 @@ async function updateCompanyAggregates(companyId: string) {
     return;
   }
 
-  // Get the most recent analysis for this company
   const latestAnalysis = await prisma.analysis.findFirst({
     where: { companyId },
     orderBy: { createdAt: 'desc' },
@@ -378,7 +337,6 @@ async function updateCompanyAggregates(companyId: string) {
     return;
   }
 
-  // Convert sentiment to numeric value
   const sentimentValue = latestAnalysis.sentiment === "BULLISH" ? 1 
                         : latestAnalysis.sentiment === "BEARISH" ? -1 
                         : 0;
@@ -386,8 +344,6 @@ async function updateCompanyAggregates(companyId: string) {
   const oldCount = company.analysisCount;
   const newCount = oldCount + 1;
 
-  // Calculate new averages using incremental formula
-  // newAvg = (oldAvg * oldCount + newValue) / newCount
   const newAvgSentiment = oldCount === 0 
     ? sentimentValue 
     : ((company.avgSentimentScore || 0) * oldCount + sentimentValue) / newCount;
@@ -396,7 +352,6 @@ async function updateCompanyAggregates(companyId: string) {
     ? latestAnalysis.reliabilityScore
     : ((company.avgReliabilityScore || 0) * oldCount + latestAnalysis.reliabilityScore) / newCount;
 
-  // Update company with new aggregates
   await prisma.company.update({
     where: { id: companyId },
     data: {
@@ -407,12 +362,7 @@ async function updateCompanyAggregates(companyId: string) {
   });
 }
 
-/**
- * Recalculate company aggregates from scratch (for data integrity checks)
- * Use only for migrations or corrections, not for regular updates
- */
 export async function recalculateCompanyAggregatesFromScratch(companyId: string) {
-  // Get all analyses for this company
   const analyses = await prisma.analysis.findMany({
     where: { companyId },
     select: {
@@ -422,7 +372,6 @@ export async function recalculateCompanyAggregatesFromScratch(companyId: string)
   });
 
   if (analyses.length === 0) {
-    // Reset aggregates if no analyses
     await prisma.company.update({
       where: { id: companyId },
       data: {
@@ -434,7 +383,6 @@ export async function recalculateCompanyAggregatesFromScratch(companyId: string)
     return;
   }
 
-  // Convert sentiment to numeric values for averaging
   const sentimentValues = analyses.map((a) => {
     switch (a.sentiment) {
       case "BULLISH":
@@ -446,11 +394,9 @@ export async function recalculateCompanyAggregatesFromScratch(companyId: string)
     }
   });
 
-  // Calculate averages
   const avgSentiment = sentimentValues.reduce((sum: number, val) => sum + val, 0) / sentimentValues.length;
   const avgReliability = analyses.reduce((sum: number, a) => sum + a.reliabilityScore, 0) / analyses.length;
 
-  // Update company
   await prisma.company.update({
     where: { id: companyId },
     data: {

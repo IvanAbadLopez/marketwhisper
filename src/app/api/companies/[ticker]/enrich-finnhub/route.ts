@@ -1,20 +1,10 @@
-/**
- * Enrich Company with Finnhub API Endpoint
- * Fetches public financial data from Finnhub and generates AI analysis
- */
-
 import { NextRequest, NextResponse } from "next/server";
 import { after } from "next/server";
 import { auth } from "@/lib/auth";
 import { processEnrichment } from "@/features/enrich-company/api/processEnrichment";
 
-// Vercel serverless function timeout (60s for Hobby tier)
 export const maxDuration = 60;
 
-/**
- * POST /api/companies/[ticker]/enrich-finnhub
- * Kicks off a background Finnhub enrichment job
- */
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ ticker: string }> }
@@ -22,7 +12,6 @@ export async function POST(
   const { prisma } = await import("@/shared/api/prisma");
 
   try {
-    // 1. Check authentication
     const session = await auth();
     if (!session?.user?.email) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -30,7 +19,6 @@ export async function POST(
 
     const { ticker } = await params;
 
-    // 2. Find company in database (user-scoped)
     const company = await prisma.company.findFirst({
       where: {
         userId: session.user.id as string,
@@ -45,7 +33,6 @@ export async function POST(
       );
     }
 
-    // 3. Create a Job record for tracking in the queue
     const job = await prisma.job.create({
       data: {
         userId: session.user.id as string,
@@ -55,7 +42,6 @@ export async function POST(
       },
     });
 
-    // 4. Create a PENDING enrichment record with source=FINNHUB
     const enrichment = await prisma.companyEnrichment.create({
       data: {
         userId: session.user.id as string,
@@ -63,14 +49,12 @@ export async function POST(
         ticker: ticker.toUpperCase(),
         source: "FINNHUB",
         status: "PENDING",
-        jobId: job.id, // Link to job for tracking
+        jobId: job.id,
       },
     });
 
-    // 5. Kick off the heavy work in the background
     after(() => processEnrichment(enrichment.id, company.id, ticker, job.id, session.user.id as string));
 
-    // 7. Respond immediately
     return NextResponse.json(
       {
         success: true,

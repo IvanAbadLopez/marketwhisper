@@ -1,7 +1,3 @@
-/**
- * Test: News API Route
- * @vitest-environment node
- */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
@@ -9,7 +5,6 @@ import { GET } from "./route";
 import { NextRequest } from "next/server";
 import type { Session } from "next-auth";
 
-// Mock dependencies
 vi.mock("@/lib/auth", () => ({
   auth: vi.fn(),
 }));
@@ -218,4 +213,3 @@ describe("GET /api/news", () => {
     expect(data.error).toBe("Failed to fetch news");
   });
 });
-

@@ -1,15 +1,7 @@
-/**
- * Finnhub API Client Helper
- * Calls Finnhub REST API directly (no Python microservice required)
- */
-
 import { env } from '@/shared/config/env';
 
 const FINNHUB_BASE_URL = 'https://finnhub.io/api/v1';
 
-/**
- * Generic fetch helper for Finnhub API with auth header
- */
 async function fetchFinnhub<T>(endpoint: string): Promise<T> {
   if (!env.FINNHUB_API_KEY) {
     throw new Error('FINNHUB_API_KEY not configured. Please set it in your .env file.');
@@ -36,13 +28,6 @@ async function fetchFinnhub<T>(endpoint: string): Promise<T> {
   return response.json();
 }
 
-/**
- * Search for companies using Finnhub symbol lookup
- * Returns raw Finnhub search results
- * 
- * @param query - Search query (company name or ticker)
- * @returns Array of search results with symbol, description, type
- */
 export async function searchFinnhubSymbols(query: string): Promise<FinnhubSearchResult[]> {
   if (!query || !query.trim()) {
     return [];
@@ -99,9 +84,9 @@ export interface FinnhubData {
     debtToEquity: number | null;
     dividendYield: number | null;
     profitMargins: number | null;
-    bookValuePerShare: number | null;  // For Graham Number valuation
-    roe: number | null;  // Return on Equity
-    epsGrowth: number | null;  // EPS growth rate
+    bookValuePerShare: number | null;
+    roe: number | null;
+    epsGrowth: number | null;
   };
   price?: {
     currentPrice: number | null;
@@ -122,8 +107,8 @@ export interface FinancialSnapshot {
   eps: number | null;
   fiftyTwoWeekHigh: number | null;
   fiftyTwoWeekLow: number | null;
-  analystConsensus: string | null; // e.g., "Strong Buy", "Hold"
-  fetchedAt: string; // ISO timestamp
+  analystConsensus: string | null;
+  fetchedAt: string;
 }
 
 export interface NewsItem {
@@ -131,17 +116,10 @@ export interface NewsItem {
   summary: string | null;
   publisher: string | null;
   link: string | null;
-  publishedAt: string | null; // ISO timestamp
+  publishedAt: string | null;
   image: string | null;
 }
 
-/**
- * Resolve a company name to its ticker using Finnhub symbol lookup
- * Prefers Common Stock listings and avoids exotic symbols
- * 
- * @param companyName - The company name to resolve
- * @returns The resolved ticker symbol (uppercase) or empty string if not found
- */
 export async function resolveTicker(companyName: string): Promise<string> {
   if (!companyName || !companyName.trim()) {
     return '';
@@ -158,14 +136,11 @@ export async function resolveTicker(companyName: string): Promise<string> {
       return '';
     }
 
-    // Filter for US-tradeable symbols first (most important for investors)
     const usSymbols = data.result.filter(r => {
       const symbol = r.symbol || r.displaySymbol;
-      // Prefer symbols without dots (US exchanges) or ADRs ending in Y
       return !symbol.includes('.') || symbol.endsWith('Y');
     });
 
-    // Pick candidates: prefer US symbols, fallback to all if none
     const candidates = usSymbols.length > 0 ? usSymbols : data.result;
 
     if (candidates.length === 0) {
@@ -173,7 +148,6 @@ export async function resolveTicker(companyName: string): Promise<string> {
       return '';
     }
 
-    // Sort by: Common Stock first, then by symbol length (shortest first)
     const bestMatch = candidates.sort((a, b) => {
       const aIsCommonStock = a.type === 'Common Stock' ? 0 : 1;
       const bIsCommonStock = b.type === 'Common Stock' ? 0 : 1;
@@ -197,24 +171,16 @@ export async function resolveTicker(companyName: string): Promise<string> {
   }
 }
 
-/**
- * Normalize ticker by removing special characters like $
- */
 export function normalizeTicker(ticker: string): string {
   return ticker.replace(/^\$/, '').trim().toUpperCase();
 }
 
-/**
- * Fetch financial data from Finnhub API directly
- * Combines company profile, financial metrics, and analyst recommendations
- */
 export async function fetchFinnhubData(ticker: string): Promise<FinnhubData> {
   const normalizedTicker = normalizeTicker(ticker);
   
   try {
     console.log(`[fetchFinnhubData] Fetching data for ${normalizedTicker}`);
 
-    // 1. Fetch company profile
     interface ProfileResponse {
       ticker?: string;
       name?: string;
@@ -229,7 +195,6 @@ export async function fetchFinnhubData(ticker: string): Promise<FinnhubData> {
       throw new Error(`Ticker ${normalizedTicker} not found in Finnhub. Please verify the ticker symbol.`);
     }
 
-    // 2. Fetch financial metrics
     interface MetricsResponse {
       metric?: Record<string, number>;
     }
@@ -242,7 +207,6 @@ export async function fetchFinnhubData(ticker: string): Promise<FinnhubData> {
       console.warn(`[fetchFinnhubData] Metrics fetch failed for ${normalizedTicker}:`, error);
     }
 
-    // 3. Fetch analyst recommendations
     interface RecommendationResponse {
       period: string;
       strongBuy: number;
@@ -267,7 +231,6 @@ export async function fetchFinnhubData(ticker: string): Promise<FinnhubData> {
       console.warn(`[fetchFinnhubData] Recommendations fetch failed for ${normalizedTicker}:`, error);
     }
 
-    // Build response matching FinnhubData interface
     return {
       success: true,
       ticker: normalizedTicker,
@@ -276,16 +239,16 @@ export async function fetchFinnhubData(ticker: string): Promise<FinnhubData> {
         name: profile.name || null,
         sector: profile.finnhubIndustry || null,
         industry: profile.finnhubIndustry || null,
-        description: null, // Not available in profile2
+        description: null,
         website: profile.weburl || null,
-        employees: null, // Not available in profile2
+        employees: null,
         marketCap: profile.marketCapitalization 
           ? Math.round(profile.marketCapitalization * 1e6) 
           : null,
       },
       financials: {
-        revenue: null, // Not directly available in basic metrics
-        netIncome: null, // Not directly available in basic metrics
+        revenue: null,
+        netIncome: null,
         eps: metricData['epsBasic'] || null,
         peRatio: metricData['peBasicExclExtraTTM'] || null,
         debtToEquity: metricData['totalDebt/totalEquityQuarterly'] || null,
@@ -296,7 +259,7 @@ export async function fetchFinnhubData(ticker: string): Promise<FinnhubData> {
         epsGrowth: metricData['epsGrowthTTMYoy'] || null,
       },
       price: {
-        currentPrice: null, // Would need quote endpoint (not fetched)
+        currentPrice: null,
         previousClose: null,
         dayChange: null,
         dayChangePercent: null,
@@ -313,10 +276,6 @@ export async function fetchFinnhubData(ticker: string): Promise<FinnhubData> {
   }
 }
 
-/**
- * Calculate analyst consensus score from recommendations
- * Returns a number from -1 (Strong Sell) to +1 (Strong Buy)
- */
 export function calcAnalystScore(rec: AnalystRecommendation): number | null {
   const total = rec.strongBuy + rec.buy + rec.hold + rec.sell + rec.strongSell;
   if (total === 0) return null;
@@ -332,9 +291,6 @@ export function calcAnalystScore(rec: AnalystRecommendation): number | null {
   return score;
 }
 
-/**
- * Get analyst consensus label from score
- */
 export function analystScoreLabel(score: number | null): string {
   if (score === null) return "N/A";
   if (score >= 0.6) return "Strong Buy";
@@ -344,10 +300,6 @@ export function analystScoreLabel(score: number | null): string {
   return "Strong Sell";
 }
 
-/**
- * Format financial data block for LLM prompts
- * Shared between processEnrichment and analyzeWithFinancials
- */
 export function formatFinancialsBlock(ticker: string, data: FinnhubData): string {
   const { companyInfo, financials, price, recommendations } = data;
   
@@ -366,9 +318,6 @@ export function formatFinancialsBlock(ticker: string, data: FinnhubData): string
   return block;
 }
 
-/**
- * Create a compact financial snapshot from Finnhub data
- */
 export function createFinancialSnapshot(data: FinnhubData): FinancialSnapshot {
   const { financials, price, recommendations } = data;
   
@@ -390,15 +339,7 @@ export function createFinancialSnapshot(data: FinnhubData): FinancialSnapshot {
   };
 }
 
-// Note: getCachedFinnhub has been moved to finnhub-server.ts (server-only, uses prisma)
 
-/**
- * Fetch recent news for a company from Finnhub API directly
- * 
- * @param ticker - Stock ticker symbol (e.g., AAPL, MSFT)
- * @param days - Number of days to look back (default: 7)
- * @returns Array of news items with title, summary, source, url, publishedAt
- */
 export async function fetchCompanyNews(
   ticker: string,
   days: number = 7
@@ -417,7 +358,6 @@ export async function fetchCompanyNews(
   try {
     console.log(`[fetchCompanyNews] Fetching news for ${normalizedTicker} (${days} days)`);
 
-    // Calculate date range (Finnhub expects YYYY-MM-DD format)
     const toDate = new Date();
     const fromDate = new Date();
     fromDate.setDate(toDate.getDate() - days);
@@ -430,7 +370,7 @@ export async function fetchCompanyNews(
       summary: string;
       source: string;
       url: string;
-      datetime: number; // Unix timestamp
+      datetime: number;
       image: string;
     }
 

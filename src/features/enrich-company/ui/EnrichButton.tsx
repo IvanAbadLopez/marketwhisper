@@ -1,11 +1,5 @@
 "use client";
 
-/**
- * Enrich Company Button
- * Triggers a background public financial data fetch + AI analysis job,
- * then polls for completion.
- * @module features/enrich-company/ui
- */
 
 import { useState, useRef, useEffect, useMemo } from "react";
 import { Sparkles, Loader2, Clock } from "lucide-react";
@@ -20,9 +14,7 @@ interface EnrichButtonProps {
   lastEnrichment?: { createdAt: Date | string } | null;
 }
 
-/** Poll interval for checking background job status (ms) */
 const POLL_INTERVAL = 3000;
-/** Safety cap on polling attempts (~5 min at 3s each) */
 const MAX_POLLS = 100;
 
 type JobState = "idle" | "pending" | "processing" | "success" | "error";
@@ -38,7 +30,6 @@ export function EnrichButton({
   const [error, setError] = useState<string | null>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Cleanup any pending timer on unmount
   useEffect(() => {
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current);
@@ -48,7 +39,6 @@ export function EnrichButton({
   const loading = state === "pending" || state === "processing";
   const success = state === "success";
 
-  // Calculate age color for timestamp (gray <7 days, yellow >7 days)
   const ageColor = useMemo(() => {
     if (!lastEnrichment) return "text-zinc-500 dark:text-zinc-400";
     
@@ -76,7 +66,6 @@ export function EnrichButton({
           return;
         }
 
-        // Still PENDING or PROCESSING
         setState(result.status === "PROCESSING" ? "processing" : "pending");
 
         if (attempt + 1 >= MAX_POLLS) {

@@ -32,7 +32,6 @@ export default function NewsPage() {
   const [isLoadingNews, setIsLoadingNews] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Redirect if not authenticated
   useEffect(() => {
     if (status === "unauthenticated") {
       router.push("/login");
@@ -52,7 +51,6 @@ export default function NewsPage() {
       const data = await response.json();
       setCompanies(data);
 
-      // Auto-select first company
       if (data.length > 0) {
         setSelectedTicker(data[0].ticker);
       }
@@ -88,7 +86,6 @@ export default function NewsPage() {
     }
   }, []);
 
-  // Fetch companies list on mount
   useEffect(() => {
     if (status === "authenticated") {
       // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -96,7 +93,6 @@ export default function NewsPage() {
     }
   }, [status, fetchCompanies]);
 
-  // Fetch news when a company is selected
   useEffect(() => {
     if (selectedTicker) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -112,7 +108,7 @@ export default function NewsPage() {
     <MainLayout user={session.user}>
       <div className="p-8">
         <div className="max-w-6xl mx-auto">
-          {/* Header */}
+          {}
           <div className="mb-6">
             <div className="flex items-center gap-3 mb-2">
               <Newspaper className="w-8 h-8 text-blue-600 dark:text-blue-400" />
@@ -125,7 +121,7 @@ export default function NewsPage() {
             </p>
           </div>
 
-          {/* Company Selector */}
+          {}
           {isLoadingCompanies ? (
             <div className="flex items-center gap-2 text-zinc-500 mb-6">
               <Loader2 className="w-5 h-5 animate-spin" />
@@ -164,7 +160,7 @@ export default function NewsPage() {
             </div>
           )}
 
-          {/* Error State */}
+          {}
           {error && (
             <div className="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-lg p-6 mb-6">
               <div className="flex items-start gap-3">
@@ -179,7 +175,7 @@ export default function NewsPage() {
             </div>
           )}
 
-          {/* Loading State */}
+          {}
           {isLoadingNews && (
             <div className="flex items-center gap-2 text-zinc-500">
               <Loader2 className="w-5 h-5 animate-spin" />
@@ -187,7 +183,7 @@ export default function NewsPage() {
             </div>
           )}
 
-          {/* News Grid */}
+          {}
           {!isLoadingNews && newsData && (
             <>
               {newsData.count === 0 ? (
