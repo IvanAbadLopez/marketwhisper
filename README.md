@@ -333,9 +333,7 @@ marketwhisper/
 │   ├── finnhub-integration.md         # Finnhub API integration
 │   ├── multi-company-analysis.md      # Multi-company feature docs
 │   ├── fsd-migration.md               # FSD architecture guide
-│   ├── serverless-migration-summary.md # Serverless stack docs
-│   ├── presentation-slides.md         # TFM presentation content
-│   └── video-script.md                # TFM video recording guide
+│   └── serverless-migration-summary.md # Serverless stack docs
 ├── e2e/                 # Playwright E2E tests
 ├── prisma/              # Database schema + migrations
 │   ├── schema.prisma    # Database models
@@ -455,10 +453,8 @@ See [prisma/schema.prisma](prisma/schema.prisma) for full schema.
 ## 📚 Documentation
 
 ### 🎓 Academic Materials
-- **[Presentation Slides](docs/presentation-slides.md)** - Complete slide deck content (ready for Google Slides/PowerPoint)
-- **[Video Script](docs/video-script.md)** - Detailed recording script with demo flow
-- **Presentation Slides**: *(Add your Google Slides/PowerPoint URL here)*
-- **Demo Video**: *(Add your YouTube/Drive URL here)*
+- **Presentation Slides**: [View on Google Slides](https://docs.google.com/presentation/d/1H0mGnPKeSEtUoHk7C33rS5pYxX3hfyfg6tcEi4ph5D4/edit?usp=sharing) (15 slides)
+- **Demo Video**: *(Coming soon)*
 
 ### Core Guides
 - **[Testing Guide](docs/testing.md)** - Vitest unit tests + Playwright E2E tests
