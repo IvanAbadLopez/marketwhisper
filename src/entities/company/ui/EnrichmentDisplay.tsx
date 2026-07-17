@@ -318,60 +318,65 @@ export function EnrichmentDisplay({ enrichment, mode = 'full' }: EnrichmentDispl
             <h3 className="text-lg font-semibold text-white">Analyst Sentiment</h3>
           </div>
 
-          {}
-          {recommendations.length >= 2 && (
-            <div className="mb-4">
-              <AnalystSentimentChart recommendations={recommendations} />
-            </div>
-          )}
-
-          {}
-          {latestRec && totalRecs > 0 && (
-            <div>
-              <p className="text-sm text-zinc-400 mb-3">
-                Latest Period: <span className="text-white font-medium">{latestRec.period}</span>
-              </p>
-              
-              <div className="grid grid-cols-5 gap-2 text-center mb-4">
-                <div>
-                  <p className="text-xs text-zinc-400">Strong Buy</p>
-                  <p className="text-lg font-bold text-green-400">{latestRec.strongBuy}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-zinc-400">Buy</p>
-                  <p className="text-lg font-bold text-green-500">{latestRec.buy}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-zinc-400">Hold</p>
-                  <p className="text-lg font-bold text-zinc-400">{latestRec.hold}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-zinc-400">Sell</p>
-                  <p className="text-lg font-bold text-red-500">{latestRec.sell}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-zinc-400">Strong Sell</p>
-                  <p className="text-lg font-bold text-red-400">{latestRec.strongSell}</p>
-                </div>
-              </div>
-
-              <div className="text-center p-3 bg-zinc-800/50 rounded-lg">
-                <p className="text-sm text-zinc-400">
-                  Consensus Score: 
-                  <span className={`ml-2 font-bold ${
-                    calcAnalystScore(latestRec) !== null && calcAnalystScore(latestRec)! >= 0 
-                      ? 'text-green-400' 
-                      : 'text-red-400'
-                  }`}>
-                    {calcAnalystScore(latestRec)?.toFixed(2) ?? 'N/A'}
-                  </span>
-                  <span className="ml-2 text-zinc-300">
-                    ({analystScoreLabel(calcAnalystScore(latestRec))})
-                  </span>
+          <div className="grid gap-6 lg:grid-cols-2 lg:items-center">
+            {}
+            {recommendations.length >= 2 && (
+              <div>
+                <p className="text-xs uppercase tracking-wide text-zinc-500 mb-2">
+                  Consensus Trend
                 </p>
+                <AnalystSentimentChart recommendations={recommendations} height={160} />
               </div>
-            </div>
-          )}
+            )}
+
+            {}
+            {latestRec && totalRecs > 0 && (
+              <div>
+                <p className="text-sm text-zinc-400 mb-3">
+                  Latest Period: <span className="text-white font-medium">{latestRec.period}</span>
+                </p>
+
+                <div className="grid grid-cols-5 gap-2 text-center mb-4">
+                  <div>
+                    <p className="text-xs text-zinc-400">Strong Buy</p>
+                    <p className="text-lg font-bold text-green-400">{latestRec.strongBuy}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-zinc-400">Buy</p>
+                    <p className="text-lg font-bold text-green-500">{latestRec.buy}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-zinc-400">Hold</p>
+                    <p className="text-lg font-bold text-zinc-400">{latestRec.hold}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-zinc-400">Sell</p>
+                    <p className="text-lg font-bold text-red-500">{latestRec.sell}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-zinc-400">Strong Sell</p>
+                    <p className="text-lg font-bold text-red-400">{latestRec.strongSell}</p>
+                  </div>
+                </div>
+
+                <div className="text-center p-3 bg-zinc-800/50 rounded-lg">
+                  <p className="text-sm text-zinc-400">
+                    Consensus Score:
+                    <span className={`ml-2 font-bold ${
+                      calcAnalystScore(latestRec) !== null && calcAnalystScore(latestRec)! >= 0
+                        ? 'text-green-400'
+                        : 'text-red-400'
+                    }`}>
+                      {calcAnalystScore(latestRec)?.toFixed(2) ?? 'N/A'}
+                    </span>
+                    <span className="ml-2 text-zinc-300">
+                      ({analystScoreLabel(calcAnalystScore(latestRec))})
+                    </span>
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       ) : (
         recommendations !== undefined && (

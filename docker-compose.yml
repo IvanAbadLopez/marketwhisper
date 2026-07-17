@@ -32,6 +32,8 @@ services:
         NEXTAUTH_SECRET: ${NEXTAUTH_SECRET:-generate-secret-with-openssl-rand-base64-32}
     container_name: marketwhisper-web
     restart: unless-stopped
+    env_file:
+      - .env.local
     ports:
       - "3000:3000"
     environment:

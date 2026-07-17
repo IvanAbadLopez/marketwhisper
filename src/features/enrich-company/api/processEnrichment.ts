@@ -2,6 +2,12 @@ import type { Prisma } from "@/generated/prisma/client";
 import { env } from "@/shared/config/env";
 import { calcAnalystScore, analystScoreLabel } from "../lib/analystScore";
 import { fetchFinnhubData, type FinnhubData } from "@/shared/api/finnhub";
+import https from 'https';
+
+// HTTPS agent for corporate proxies with self-signed certificates
+const httpsAgent = new https.Agent({
+  rejectUnauthorized: false
+});
 
 interface UserAnalysis {
   text: string;
@@ -125,6 +131,8 @@ async function generateLLMAnalysis(prompt: string): Promise<string> {
         temperature: 0.3,
         max_tokens: 2000,
       }),
+      // @ts-ignore - Node.js specific option for corporate proxies
+      agent: httpsAgent,
     });
 
     if (!response.ok) {

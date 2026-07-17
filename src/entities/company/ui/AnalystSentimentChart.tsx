@@ -7,9 +7,10 @@ import { calcAnalystScore, type AnalystRecommendation } from "@/features/enrich-
 
 interface AnalystSentimentChartProps {
   recommendations: AnalystRecommendation[];
+  height?: number;
 }
 
-export function AnalystSentimentChart({ recommendations }: AnalystSentimentChartProps) {
+export function AnalystSentimentChart({ recommendations, height = 200 }: AnalystSentimentChartProps) {
   const chartData = useMemo(() => {
     return recommendations
       .map(r => ({
@@ -22,7 +23,10 @@ export function AnalystSentimentChart({ recommendations }: AnalystSentimentChart
 
   if (chartData.length < 2) {
     return (
-      <div className="h-[200px] flex items-center justify-center text-zinc-500 text-sm">
+      <div
+        style={{ height }}
+        className="flex items-center justify-center text-zinc-500 text-sm"
+      >
         Insufficient data for trend chart (need at least 2 periods)
       </div>
     );
@@ -32,7 +36,7 @@ export function AnalystSentimentChart({ recommendations }: AnalystSentimentChart
   const lineColor = latestScore >= 0 ? "#22c55e" : "#ef4444";
 
   return (
-    <ResponsiveContainer width="100%" height={200}>
+    <ResponsiveContainer width="100%" height={height}>
       <LineChart data={chartData} margin={{ top: 5, right: 10, left: -20, bottom: 5 }}>
         <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.3} />
         <XAxis 

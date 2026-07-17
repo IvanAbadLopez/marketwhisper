@@ -74,8 +74,8 @@ git clone https://github.com/IvanAbadLopez/marketwhisper.git
 cd marketwhisper
 
 # Create .env file (optional - only needed for Finnhub features)
-cp .env.example .env
-# Edit .env and add your Finnhub API key (get free key at https://finnhub.io/register)
+cp .env.example .env.local
+# Edit .env.local and add your Finnhub API key (get free key at https://finnhub.io/register)
 
 # Start the application
 docker compose up
@@ -95,20 +95,74 @@ docker compose up
 
 📊 **Company Search & Enrichment** (requires Finnhub API key)
 - Get a free key at https://finnhub.io/register
-- Add to `.env`: `FINNHUB_API_KEY="your_key_here"`
+- Add to `.env.local`: `FINNHUB_API_KEY="your_key_here"`
 - Restart: `docker compose restart web`
 
-🤖 **AI Text Analysis** (requires Groq API key)
-Get a free key at https://console.groq.com (1K RPM / 300K TPM free tier):
-```bash
-# Add to .env:
-GROQ_API_KEY="gsk_your_key_here"
-GROQ_MODEL="llama-3.3-70b-versatile"
-# Restart: docker compose restart web
-```
-Then you can paste financial text and get AI-powered sentiment analysis (~2-5s responses).
+🤖 **AI Analysis** (requires Groq API key)
+- Get a free key at https://console.groq.com/keys (1K RPM free tier)
+- Add to `.env.local`: `GROQ_API_KEY="your_key_here"`
+- Restart: `docker compose restart web`
+- Try analyzing text or enriching companies with AI insights
 
-For detailed Docker instructions, see [docs/docker.md](docs/docker.md)
+---
+
+### 🔧 Configuration by Environment
+
+MarketWhisper supports three deployment scenarios. Choose the one that fits your needs:
+
+#### 🏠 Local Development (Docker)
+
+**Best for:** Quick start, full stack in containers  
+**Database:** PostgreSQL in Docker  
+**AI:** Groq API (free tier)
+
+```bash
+# 1. Copy environment template
+cp .env.example .env.local
+
+# 2. Add your API keys (get free keys at links below)
+# Edit .env.local:
+#   GROQ_API_KEY="..."       # https://console.groq.com
+#   FINNHUB_API_KEY="..."    # https://finnhub.io/register
+
+# 3. Start everything
+docker compose up
+```
+
+#### 💻 Development (No Docker)
+
+**Best for:** Development without Docker  
+**Database:** External PostgreSQL (Neon, Railway, local)  
+**AI:** Groq API
+
+```bash
+# 1. Copy template and configure
+cp .env.example .env.local
+
+# 2. Edit .env.local:
+#   - Set DATABASE_URL to your external database
+#   - Add GROQ_API_KEY and FINNHUB_API_KEY
+
+# 3. Run migrations
+npx prisma migrate deploy
+
+# 4. Start dev server
+npm run dev
+```
+
+#### 🚀 Production (Vercel + Neon)
+
+**Best for:** Production deployment  
+**Database:** Neon PostgreSQL (serverless)  
+**AI:** Groq API (serverless)  
+**Cost:** $0/month (all free tiers)
+
+**Setup:**
+1. Create accounts: [Vercel](https://vercel.com), [Neon](https://neon.tech), [Groq](https://console.groq.com)
+2. Set environment variables in Vercel Dashboard (use [.env.example](.env.example) as reference)
+3. Deploy: `vercel --prod`
+
+Full production guide: [docs/deployment-vercel.md](docs/deployment-vercel.md)
 
 ---
 
@@ -347,10 +401,22 @@ See [prisma/schema.prisma](prisma/schema.prisma) for full schema.
 
 ## 📚 Documentation
 
-- [Testing Guide](docs/testing.md) - Unit and E2E testing
-- [Docker Deployment](docs/docker.md) - Container setup
-- [Multi-Company Analysis](docs/multi-company-analysis.md) - Feature documentation
-- [Copilot Instructions](copilot-instructions.md) - Technical implementation guide
+### Core Guides
+- **[Testing Guide](docs/testing.md)** - Vitest unit tests + Playwright E2E tests
+- **[Docker Deployment](docs/docker.md)** - Docker Compose setup and configuration
+- **[Vercel Deployment](docs/deployment-vercel.md)** - Production deployment guide
+- **[Deployment Checklist](docs/deployment-checklist.md)** - Pre-deployment verification
+
+### Technical Documentation
+- **[Finnhub Integration](docs/finnhub-integration.md)** - Financial data API integration
+- **[Multi-Company Analysis](docs/multi-company-analysis.md)** - AI detection feature
+- **[FSD Migration](docs/fsd-migration.md)** - Feature-Sliced Design architecture
+- **[Serverless Migration](docs/serverless-migration-summary.md)** - Serverless stack details
+- **[Copilot Instructions](copilot-instructions.md)** - Technical implementation guide
+
+### Project Files
+- **[Scripts Utilities](scripts/README.md)** - Database seeding and utilities
+- **[Environment Template](.env.example)** - Configuration template
 
 ---
 
@@ -364,15 +430,6 @@ This project is part of a Master's Thesis and is licensed under the MIT License 
 
 **Ivan Abad López**  
 GitHub: [@IvanAbadLopez](https://github.com/IvanAbadLopez)
-
----
-
-## 📚 Additional Resources
-
-- [copilot-instructions.md](copilot-instructions.md) - Detailed technical documentation for developers
-- [Next.js Documentation](https://nextjs.org/docs)
-- [Prisma Documentation](https://www.prisma.io/docs)
-- [OpenAI Whisper](https://github.com/openai/whisper)
 
 ---
 

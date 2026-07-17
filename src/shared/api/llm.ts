@@ -1,6 +1,12 @@
 import { env } from '@/shared/config/env';
 import type { FinnhubData } from './finnhub';
 import { formatFinancialsBlock } from './finnhub';
+import https from 'https';
+
+// HTTPS agent for corporate proxies with self-signed certificates
+const httpsAgent = new https.Agent({
+  rejectUnauthorized: false
+});
 
 export interface AnalysisResult {
   ticker: string;
@@ -69,6 +75,8 @@ async function callGroq(prompt: string, timeoutMs: number = 60000): Promise<stri
         max_tokens: 2000,
       }),
       signal: controller.signal,
+      // @ts-ignore - Node.js specific option for corporate proxies
+      agent: httpsAgent,
     });
 
     clearTimeout(timeout);
