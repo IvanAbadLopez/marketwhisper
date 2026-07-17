@@ -67,7 +67,7 @@ Output:
 | **Financial Data** | Finnhub API (real-time quotes, news, analyst data) |
 | **Charts** | Recharts + lightweight-charts |
 | **Deployment** | Docker Compose (local), Vercel-ready (production) |
-| **Testing** | Vitest + Playwright + Testing Library (229 tests) |
+| **Testing** | Vitest + Playwright + Testing Library (233 unit tests, 3 E2E suites) |
 | **CI/CD** | GitHub Actions |
 
 ---
@@ -320,7 +320,7 @@ If you discover a security vulnerability, please email ivan_abad_lopez@hotmail.c
 
 ---
 
-## �📁 Project Structure
+## 📁 Project Structure
 
 ```
 marketwhisper/
@@ -328,14 +328,31 @@ marketwhisper/
 ├── docs/                 # 📚 Documentation
 │   ├── testing.md        # Testing guide
 │   ├── docker.md         # Docker deployment
-│   └── finnhub-integration.md
+│   ├── deployment-vercel.md           # Vercel deployment guide
+│   ├── deployment-checklist.md        # Pre-deployment checklist
+│   ├── finnhub-integration.md         # Finnhub API integration
+│   ├── multi-company-analysis.md      # Multi-company feature docs
+│   ├── fsd-migration.md               # FSD architecture guide
+│   ├── serverless-migration-summary.md # Serverless stack docs
+│   ├── presentation-slides.md         # TFM presentation content
+│   └── video-script.md                # TFM video recording guide
+├── e2e/                 # Playwright E2E tests
 ├── prisma/              # Database schema + migrations
-├── public/              # Static assets
-├── scripts/             # Utilities
+│   ├── schema.prisma    # Database models
+│   ├── migrations/      # Migration history
+│   └── docker-init/     # Docker initialization SQL
+├── public/              # Static assets (favicon, images)
+├── scripts/             # Database & setup utilities
 │   ├── seed_companies.py  # Seed companies table
-│   ├── check_user.ts      # User verification tool
-│   ├── clean-tickers.sql  # SQL cleanup utilities
-│   └── seed-demo.js       # Docker entrypoint seeding
+│   ├── seed-demo.js       # Docker entrypoint seeding
+│   ├── init-db.sh         # Database initialization
+│   ├── generate-auth-secret.js # Generate NextAuth secret
+│   └── README.md          # Scripts documentation
+├── services/            # Microservices
+│   └── enrichment/      # Python FastAPI service for Finnhub
+│       ├── main.py      # FastAPI application
+│       ├── Dockerfile   # Service container
+│       └── requirements.txt
 ├── src/
 │   ├── app/             # Next.js App Router
 │   │   ├── (auth)/      # Login/Register pages
@@ -346,12 +363,39 @@ marketwhisper/
 │   │   ├── jobs/        # Job queue page
 │   │   ├── news/        # News viewer
 │   │   └── layout.tsx   # Root layout
+│   ├── components/      # React components (Header, Providers)
 │   ├── entities/        # Business entities (FSD)
+│   │   ├── analysis/    # Analysis entity logic
+│   │   ├── company/     # Company entity logic
+│   │   └── news/        # News entity logic
 │   ├── features/        # Business features (FSD)
-│   ├── widgets/         # UI widgets (FSD)
-│   ├── shared/          # Shared utilities (FSD)
-│   └── types/           # TypeScript types
-└── copilot-instructions.md  # Detailed technical guide
+│   │   ├── analyze-text/    # Text analysis feature
+│   │   ├── auth/            # Authentication feature
+│   │   ├── company-search/  # Company search feature
+│   │   ├── discover-company/ # Company discovery
+│   │   └── enrich-company/  # Company enrichment feature
+│   ├── generated/       # Generated code (Prisma Client)
+│   ├── lib/             # Core utilities (auth, database)
+│   ├── shared/          # Shared utilities & UI components (FSD)
+│   │   ├── api/         # API client utilities
+│   │   ├── config/      # Configuration & environment
+│   │   ├── lib/         # Helper functions
+│   │   └── ui/          # Reusable UI components (shadcn/ui)
+│   ├── types/           # TypeScript type definitions
+│   ├── widgets/         # Complex UI widgets (FSD)
+│   │   ├── header/      # App header widget
+│   │   ├── job-queue/   # Job queue widget
+│   │   ├── layout/      # Layout components
+│   │   └── sidebar/     # Navigation sidebar
+│   └── middleware.ts    # Next.js middleware (auth)
+├── copilot-instructions.md  # Technical implementation guide
+├── docker-compose.yml   # Docker services orchestration
+├── Dockerfile           # Next.js web app container
+├── next.config.ts       # Next.js configuration
+├── prisma.config.ts     # Prisma configuration
+├── tailwind.config.ts   # Tailwind CSS configuration
+├── vitest.config.ts     # Vitest testing configuration
+└── playwright.config.ts # Playwright E2E configuration
 ```
 
 ---
@@ -365,7 +409,6 @@ marketwhisper/
 - **Company**: Stock tickers, metadata, aggregated scores, valuation
 - **Analysis**: User text analysis with sentiment, reliability, reasoning
 - **CompanyEnrichment**: Finnhub data + AI-generated insights
-- **Account/Session**: NextAuth.js tables
 
 See [prisma/schema.prisma](prisma/schema.prisma) for full schema.
 
@@ -397,7 +440,7 @@ See [prisma/schema.prisma](prisma/schema.prisma) for full schema.
 - [x] Company-centric UI with aggregated metrics
 - [x] Search functionality
 - [x] Docker deployment
-- [x] Testing suite (19 unit + 7 E2E tests)
+- [x] Testing suite (233 unit tests, 3 E2E test suites)
 - [x] GitHub Actions CI/CD
 
 **📅 Future Enhancements**
