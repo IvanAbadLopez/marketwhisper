@@ -1,104 +1,104 @@
 # MarketWhisper - Docker Setup
 
-**Docker es la forma RECOMENDADA de ejecutar MarketWhisper**, tanto para evaluación del TFM como para desarrollo local.
+**Docker is the RECOMMENDED way to run MarketWhisper**, both for thesis evaluation and local development.
 
-## ¿Por Qué Docker?
+## Why Docker?
 
-✅ **Zero setup**: No necesitas instalar Node.js, PostgreSQL, ni configurar bases de datos  
-✅ **Reproducible**: Funciona igual en cualquier máquina (Windows, Mac, Linux)  
-✅ **Todo incluido**: Base de datos PostgreSQL con pgvector integrada  
-✅ **Ideal para TFM**: Los evaluadores solo necesitan `docker compose up`  
+✅ **Zero setup**: No need to install Node.js, PostgreSQL, or configure databases  
+✅ **Reproducible**: Works the same on any machine (Windows, Mac, Linux)  
+✅ **All-inclusive**: PostgreSQL database with pgvector integrated  
+✅ **Ideal for thesis**: Evaluators only need `docker compose up`  
 
-Este archivo explica cómo ejecutar MarketWhisper usando Docker.
+This file explains how to run MarketWhisper using Docker.
 
-## Requisitos Previos
+## Prerequisites
 
-- **Docker Desktop** instalado ([descargar aquí](https://www.docker.com/products/docker-desktop))
-- **Git** (para clonar el repositorio)
+- **Docker Desktop** installed ([download here](https://www.docker.com/products/docker-desktop))
+- **Git** (to clone the repository)
 
-## Inicio Rápido
+## Quick Start
 
-### 1. Clonar el Repositorio
+### 1. Clone the Repository
 
 ```bash
 git clone https://github.com/IvanAbadLopez/marketwhisper.git
 cd marketwhisper
 ```
 
-### 2. Configurar Variables de Entorno (Opcional)
+### 2. Configure Environment Variables (Optional)
 
-Si quieres usar OAuth o APIs externas, crea un archivo `.env` en la raíz del proyecto:
+If you want to use OAuth or external APIs, create a `.env` file in the project root:
 
 ```bash
-# Copiar ejemplo
+# Copy example
 cp .env.example .env
 
-# Editar con tus credenciales (opcional)
-# Las variables vacías usarán valores por defecto para desarrollo
+# Edit with your credentials (optional)
+# Empty variables will use default values for development
 ```
 
-**Nota**: Para el modo demo, NO necesitas configurar nada. La aplicación funcionará con el usuario de demostración.
+**Note**: For demo mode, NO configuration needed. The application will work with the demo user.
 
-### 3. Iniciar la Aplicación
+### 3. Start the Application
 
 ```bash
 docker compose up
 ```
 
-Este comando:
-- Descarga las imágenes de Docker necesarias
-- Crea una base de datos PostgreSQL con pgvector
-- Construye la aplicación Next.js
-- Inicia todos los servicios
+This command:
+- Downloads necessary Docker images
+- Creates a PostgreSQL database with pgvector
+- Builds the Next.js application
+- Starts all services
 
-**Primera vez**: Puede tardar 3-5 minutos en construir todo.
+**First time**: May take 3-5 minutes to build everything.
 
-### 4. Acceder a la Aplicación
+### 4. Access the Application
 
-Abre tu navegador en: **http://localhost:3000**
+Open your browser at: **http://localhost:3000**
 
-**Credenciales de demo:**
+**Demo credentials:**
 - Email: `demo@marketwhisper.com`
 - Password: `demo1234`
 
-## Comandos Útiles
+## Useful Commands
 
-### Detener la aplicación
+### Stop the application
 ```bash
 docker compose down
 ```
 
-### Detener y eliminar datos
+### Stop and remove data
 ```bash
 docker compose down -v
 ```
 
-### Ver logs
+### View logs
 ```bash
 docker compose logs -f web
 ```
 
-### Reconstruir después de cambios en código
+### Rebuild after code changes
 ```bash
 docker compose up --build
 ```
 
-### Ejecutar scripts de Python (scraping, etc.)
+### Run Python scripts (scraping, etc.)
 
-Los scripts de Python deben ejecutarse desde tu máquina local, ya que requieren:
-- Playwright con navegador instalado
-- Acceso a las credenciales de blogs (en `.env.local`)
-- Opcionalmente: Whisper con GPU para transcripción
+Python scripts must be run from your local machine, as they require:
+- Playwright with browser installed
+- Access to blog credentials (in `.env.local`)
+- Optionally: Whisper with GPU for transcription
 
 ```bash
-# Asegúrate de tener Python 3.12+ y las dependencias instaladas
+# Make sure you have Python 3.12+ and dependencies installed
 pip install -r scripts/requirements.txt
 
-# Ejemplo: scraping de URL
+# Example: scraping from URL
 python scripts/scrape_url.py https://example.com "Example Source" --type WEB_ARTICLE
 ```
 
-## Estructura de Servicios
+## Service Structure
 
 ```
 ┌─────────────────────────────────────┐
@@ -111,82 +111,82 @@ python scripts/scrape_url.py https://example.com "Example Source" --type WEB_ART
 ┌─────────────────────────────────────┐
 │  db:5432                            │
 │  PostgreSQL + pgvector              │
-│  (Base de datos)                    │
+│  (Database)                         │
 └─────────────────────────────────────┘
 ```
 
-## Datos Persistentes
+## Persistent Data
 
-Los datos de la base de datos se guardan en un **volumen de Docker** llamado `postgres_data`. Esto significa que:
+Database data is saved in a **Docker volume** called `postgres_data`. This means:
 
-- ✅ Los datos persisten aunque detengas los contenedores
-- ✅ Puedes hacer `docker compose down` sin perder información
-- ❌ `docker compose down -v` SÍ borrará todos los datos
+- ✅ Data persists even if you stop containers
+- ✅ You can do `docker compose down` without losing information
+- ❌ `docker compose down -v` WILL delete all data
 
-## Poblar la Base de Datos
+## Populate the Database
 
-Para agregar empresas y contenido de ejemplo:
+To add sample companies and content:
 
 ```bash
-# Desde tu máquina local (con Python instalado)
+# From your local machine (with Python installed)
 python scripts/seed_companies.py
 python scripts/seed_content.py
 ```
 
-O accede a la aplicación web y usa el botón "Sync Now" para agregar contenido mediante scraping.
+Or access the web application and use the "Sync Now" button to add content via scraping.
 
-## Solución de Problemas
+## Troubleshooting
 
-### Puerto 3000 ya en uso
+### Port 3000 already in use
 ```bash
-# Cambiar puerto en docker-compose.yml
+# Change port in docker-compose.yml
 ports:
-  - "3001:3000"  # Ahora accesible en localhost:3001
+  - "3001:3000"  # Now accessible at localhost:3001
 ```
 
-### Puerto 5432 ya en uso (tienes Postgres instalado)
+### Port 5432 already in use (you have Postgres installed)
 ```bash
-# Cambiar puerto en docker-compose.yml
+# Change port in docker-compose.yml
 ports:
-  - "5433:5432"  # Cambiar también DATABASE_URL
+  - "5433:5432"  # Also change DATABASE_URL
 ```
 
-### Limpiar todo y empezar de cero
+### Clean everything and start fresh
 ```bash
 docker compose down -v
 docker system prune -a
 docker compose up --build
 ```
 
-### Ver estado de los contenedores
+### View container status
 ```bash
 docker compose ps
 ```
 
-## Para Producción
+## For Production
 
-Este setup es para **desarrollo/evaluación**. Para producción:
+This setup is for **development/evaluation**. For production:
 
-1. Cambiar `NEXTAUTH_SECRET` por uno generado con:
+1. Change `NEXTAUTH_SECRET` to one generated with:
    ```bash
    openssl rand -base64 32
    ```
 
-2. Usar PostgreSQL gestionado (Neon, Supabase, etc.)
+2. Use managed PostgreSQL (Neon, Supabase, etc.)
 
-3. Configurar HTTPS y dominio real
+3. Configure HTTPS and real domain
 
-4. Activar OAuth con credenciales reales
+4. Enable OAuth with real credentials
 
-5. Desplegar en:
+5. Deploy to:
    - **Vercel** (Frontend)
-   - **Railway/Fly.io** (Full-stack con Docker)
-   - **AWS ECS/Google Cloud Run** (Contenedores)
+   - **Railway/Fly.io** (Full-stack with Docker)
+   - **AWS ECS/Google Cloud Run** (Containers)
 
-## Soporte
+## Support
 
-Si encuentras problemas:
-1. Revisa los logs: `docker compose logs -f`
-2. Asegúrate de que Docker Desktop esté corriendo
-3. Verifica que los puertos 3000 y 5432 estén libres
-4. Consulta la documentación en `README.md`
+If you encounter problems:
+1. Check the logs: `docker compose logs -f`
+2. Make sure Docker Desktop is running
+3. Verify ports 3000 and 5432 are free
+4. Consult the documentation in `README.md`

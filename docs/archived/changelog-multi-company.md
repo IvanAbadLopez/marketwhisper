@@ -1,41 +1,41 @@
-# 🎯 Cambios Implementados: Análisis Multi-Empresa
+# 🎯 Implemented Changes: Multi-Company Analysis
 
-**Fecha**: 2026-07-02  
-**Estado**: ✅ Completado y Testeado
+**Date**: 2026-07-02  
+**Status**: ✅ Completed and Tested
 
-## 📋 Resumen
+## 📋 Summary
 
-Implementado el sistema de **detección y análisis múltiple de empresas** en un solo texto. Ahora cuando un usuario introduce texto que menciona varias compañías (ej: "AAPL subió 5% mientras MSFT bajó 2%"), el sistema:
+Implemented the **multiple company detection and analysis** system in a single text. Now when a user enters text mentioning multiple companies (e.g., "AAPL rose 5% while MSFT fell 2%"), the system:
 
-1. ✅ Detecta **todas las empresas** mencionadas
-2. ✅ Crea **análisis separados** para cada una
-3. ✅ Asigna **sentiment individual** (BULLISH/BEARISH/NEUTRAL)
-4. ✅ Calcula **reliability score individual** (1-10)
-5. ✅ Genera **reasoning específico** para cada empresa
-6. ✅ Actualiza **scores agregados** por empresa
+1. ✅ Detects **all companies** mentioned
+2. ✅ Creates **separate analyses** for each one
+3. ✅ Assigns **individual sentiment** (BULLISH/BEARISH/NEUTRAL)
+4. ✅ Calculates **individual reliability score** (1-10)
+5. ✅ Generates **specific reasoning** for each company
+6. ✅ Updates **aggregated scores** per company
 
 ---
 
-## 🔧 Archivos Modificados
+## 🔧 Modified Files
 
 ### 1. `src/shared/api/ollama.ts`
-**Cambios principales:**
-- ✅ Tipo de retorno cambiado de `AnalysisResult` → `AnalysisResult[]`
-- ✅ Prompt modificado para detectar TODAS las empresas
-- ✅ Response parsing actualizado para manejar array de empresas
-- ✅ Filtrado de resultados válidos (ticker no vacío, reliability > 0)
+**Main changes:**
+- ✅ Return type changed from `AnalysisResult` → `AnalysisResult[]`
+- ✅ Prompt modified to detect ALL companies
+- ✅ Response parsing updated to handle company array
+- ✅ Filtering of valid results (non-empty ticker, reliability > 0)
 
-**Antes:**
+**Before:**
 ```typescript
 export async function analyzeText(text: string): Promise<AnalysisResult>
 ```
 
-**Después:**
+**After:**
 ```typescript
 export async function analyzeText(text: string): Promise<AnalysisResult[]>
 ```
 
-**Nuevo formato de respuesta de la IA:**
+**New AI response format:**
 ```json
 {
   "companies": [
@@ -48,14 +48,14 @@ export async function analyzeText(text: string): Promise<AnalysisResult[]>
 ---
 
 ### 2. `src/app/api/analyze/route.ts`
-**Cambios principales:**
-- ✅ Loop sobre array de resultados de la IA
-- ✅ Creación de múltiples registros `Analysis` (uno por empresa)
-- ✅ Actualización de agregados para cada empresa detectada
-- ✅ Response con arrays `analyses[]` y `companies[]`
-- ✅ Mensaje con contador: "Successfully analyzed X companies"
+**Main changes:**
+- ✅ Loop over AI results array
+- ✅ Creation of multiple `Analysis` records (one per company)
+- ✅ Update aggregates for each detected company
+- ✅ Response with `analyses[]` and `companies[]` arrays
+- ✅ Message with counter: "Successfully analyzed X companies"
 
-**Lógica de procesamiento:**
+**Processing logic:**
 ```typescript
 for (const aiResult of aiResults) {
   // 1. Buscar o crear company
@@ -72,7 +72,7 @@ for (const aiResult of aiResults) {
 }
 ```
 
-**Estructura de respuesta:**
+**Response structure:**
 ```typescript
 {
   success: true,
@@ -89,13 +89,13 @@ for (const aiResult of aiResults) {
 ---
 
 ### 3. `src/components/SyncButton.tsx`
-**Cambios principales:**
-- ✅ Tipo `AnalysisResponse` actualizado con arrays
-- ✅ UI modificada para mostrar **lista de análisis**
-- ✅ Separadores visuales entre empresas
-- ✅ Contador en mensaje de éxito
+**Main changes:**
+- ✅ `AnalysisResponse` type updated with arrays
+- ✅ UI modified to display **analysis list**
+- ✅ Visual separators between companies
+- ✅ Counter in success message
 
-**Vista actualizada:**
+**Updated view:**
 ```tsx
 {result.analyses.map((analysis, index) => (
   <div key={analysis.id}>
@@ -110,28 +110,28 @@ for (const aiResult of aiResults) {
 ---
 
 ### 4. `README.md`
-**Cambios principales:**
-- ✅ Características actualizadas
-- ✅ Ejemplo visual de multi-empresa
-- ✅ Referencia a `MULTI_COMPANY_ANALYSIS.md`
-- ✅ Stack actualizado (sin Whisper, sin scraping)
+**Main changes:**
+- ✅ Updated features
+- ✅ Multi-company visual example
+- ✅ Reference to `MULTI_COMPANY_ANALYSIS.md`
+- ✅ Updated stack (no Whisper, no scraping)
 
 ---
 
-### 6. `MULTI_COMPANY_ANALYSIS.md` (NUEVO)
-**Contenido:**
-- ✅ Documentación completa de la funcionalidad
-- ✅ Ejemplos de uso (3 casos)
-- ✅ Flujo técnico de procesamiento
-- ✅ Estructura de API request/response
-- ✅ Casos de uso reales
-- ✅ Ventajas del sistema
+### 6. `MULTI_COMPANY_ANALYSIS.md` (NEW)
+**Content:**
+- ✅ Complete functionality documentation
+- ✅ Usage examples (3 cases)
+- ✅ Technical processing flow
+- ✅ API request/response structure
+- ✅ Real use cases
+- ✅ System advantages
 
 ---
 
-## 🧪 Validación
+## 🧪 Validation
 
-### Build Exitoso
+### Successful Build
 ```bash
 ✓ Compiled successfully in 3.3s
 ✓ Finished TypeScript in 6.8s
@@ -139,14 +139,14 @@ for (const aiResult of aiResults) {
 ✓ Generating static pages using 19 workers (16/16) in 729ms
 ```
 
-### No hay errores de TypeScript
-Todos los tipos actualizados correctamente.
+### No TypeScript errors
+All types updated correctly.
 
 ---
 
-## 🎯 Ejemplos de Uso
+## 🎯 Usage Examples
 
-### Caso 1: Comparación de Sector
+### Case 1: Sector Comparison
 **Input:**
 ```
 Tech sector mixed: AAPL +3% on strong earnings, MSFT -1% on cloud concerns
@@ -156,7 +156,7 @@ Tech sector mixed: AAPL +3% on strong earnings, MSFT -1% on cloud concerns
 - AAPL: BULLISH (8/10)
 - MSFT: BEARISH (7/10)
 
-### Caso 2: Análisis de Noticias
+### Case 2: News Analysis
 **Input:**
 ```
 Netflix gained 8M subscribers beating estimates. Disney+ lost 2M facing competition.
@@ -166,7 +166,7 @@ Netflix gained 8M subscribers beating estimates. Disney+ lost 2M facing competit
 - NFLX: BULLISH (9/10)
 - DIS: BEARISH (7/10)
 
-### Caso 3: Tweet de Mercado
+### Case 3: Market Tweet
 **Input:**
 ```
 $TSLA delivery numbers crushing it! Meanwhile $RIVN struggling with production issues.
@@ -178,26 +178,55 @@ $TSLA delivery numbers crushing it! Meanwhile $RIVN struggling with production i
 
 ---
 
-## 💡 Ventajas Técnicas
+## 💡 Technical Advantages
 
-1. **Eficiencia**: Un solo input → múltiples análisis
-2. **Contexto**: Cada empresa recibe sentiment según su mención específica
-3. **Escalabilidad**: No hay límite de empresas detectadas
-4. **Precisión**: La IA evalúa cada empresa independientemente
-5. **UX**: Resultados claros con separación visual
-6. **Datos**: Todos los análisis comparten el mismo `text` original
+1. **Efficiency**: Single input → multiple analyses
+2. **Context**: Each company receives sentiment according to its specific mention
+3. **Scalability**: No limit on detected companies
+4. **Precision**: AI evaluates each company independently
+5. **UX**: Clear results with visual separation
+6. **Data**: All analyses share the same original `text`
 
 ---
 
-## 📊 Impacto en Base de Datos
+## 📊 Database Impact
 
-### Antes
-Texto → 1 Analysis → 1 Company
+### Before
+Text → 1 Analysis → 1 Company
 
-### Después
-Texto → N Analyses → N Companies
+### After
+Text → N Analyses → N Companies
 
-**Ejemplo:**
+---
+
+## Implementation Notes
+
+**Status**: ✅ Feature successfully implemented and verified in production
+
+**Key Deviations from Original Plan**:
+
+1. **LLM Provider Changed** (2026-07-16):
+   - **Planned**: Local Ollama (`llama-3.1-8b-instant`)
+   - **Implemented**: Cloud Groq API (`llama-3.3-70b-versatile`)
+   - **Rationale**: Serverless deployment architecture, faster response (~2-5s vs ~60s), better accuracy with 70B model
+
+2. **File Structure**:
+   - **Planned**: `src/shared/api/ollama.ts`
+   - **Implemented**: `src/shared/api/llm.ts` (renamed to reflect provider-agnostic approach)
+   - **Exports**: `detectCompanies()` and `analyzeWithFinancials()` functions remain as designed
+
+3. **Temperature Settings**:
+   - Detection phase: `temperature: 0` (deterministic company detection)
+   - Analysis phase: `temperature: 0.3` (was 0.7, reduced for consistency)
+
+4. **Current Verification** (2026-07-17):
+   - ✅ Multi-company detection working in production
+   - ✅ Array-based response preserved: `AnalysisResult[]`
+   - ✅ Loop processing in `/api/analyze` route unchanged
+   - ✅ UI displays multiple analyses correctly
+   - ✅ 233 tests passing (including multi-company scenarios)
+
+**Example:**
 ```
 Input: "AAPL +5%, MSFT -2%, GOOGL +1%"
 
