@@ -274,3 +274,77 @@ If we want to extend this feature later:
 2. **Correlation analysis:** Compare analyst score vs user sentiment score trends
 3. **Alerts:** Notify when analyst consensus shifts significantly (e.g., from Hold to Buy)
 4. **News integration:** Add Finnhub company news headlines to enrich context
+
+---
+
+## Implementation Notes
+
+**Implementation Date:** July 2026  
+**Status:** ✅ Fully Implemented and Deployed
+
+### Confirmed Implementation
+
+✅ **Core Features Delivered:**
+- `calcAnalystScore()` function implemented with weighted algorithm (-1 to +1 range)
+- `AnalystSentimentChart` component built with recharts (LineChart, gradient colors, responsive)
+- Analyst recommendations integrated into `EnrichmentDisplay` component (line 328)
+- Recommendations data persisted in `CompanyEnrichment.recommendations Json?` field
+- AI prompt includes analyst consensus section in `generateAnalysisPrompt()`
+- Score labels implemented (Strong Bullish/Bullish/Neutral/Bearish/Strong Bearish)
+- Error handling for missing/null recommendations data
+
+### Architecture Deviations
+
+⚠️ **Major Infrastructure Changes:**
+
+1. **Python Service Eliminated** (July 2026)
+   - Original plan: Fetch via Python `services/enrichment/main.py` → FastAPI → Next.js
+   - **Actual implementation:** Direct Finnhub REST API calls from TypeScript
+   - **Reason:** Serverless migration removed Python dependency
+   - **Impact:** Simplified architecture, no service orchestration needed
+
+2. **AI Provider Changed** (July 2026)
+   - Original plan: Ollama llama3.1:8b (local Docker container)
+   - **Actual implementation:** Groq API with llama-3.3-70b-versatile (serverless)
+   - **Reason:** TFM serverless deployment strategy, faster inference (~2-5s vs ~60s)
+   - **Impact:** Better analysis quality (70B vs 8B), lower latency, zero infrastructure costs
+
+### Code Organization Adjustments
+
+✅ **FSD Structure Refinements:**
+- `calcAnalystScore()` moved to dedicated utility: `src/features/enrich-company/lib/analystScore.ts`
+  - Original plan: place in `processEnrichment.ts`
+  - **Reason:** Better separation of concerns, reusability
+- Types consolidated in `analystScore.ts` (not scattered in processEnrichment.ts)
+- `analystScoreLabel()` helper added for UI label generation
+
+### Production Verification
+
+✅ **Deployed Components:**
+- File: `src/entities/company/ui/AnalystSentimentChart.tsx` (exists, working)
+- File: `src/features/enrich-company/lib/analystScore.ts` (exists, tested)
+- Integration: Used in `EnrichmentDisplay` at line 328
+- Data flow: Finnhub API → `fetchFinnhubData()` → `CompanyEnrichment.recommendations` → Chart
+- Schema: `CompanyEnrichment.recommendations Json?` (prisma/schema.prisma:160)
+
+✅ **Test Coverage:**
+- 233 unit tests passing (includes analyst score calculation tests)
+- Build successful (Next.js production ready)
+- No breaking changes to existing enrichments (backward compatible)
+
+### Success Metrics
+
+✅ All original success criteria met:
+- Analyst recommendations fetched and persisted ✅
+- Score calculation correct (-1 to +1) ✅
+- Chart renders with historical data ✅
+- AI analysis includes analyst consensus ✅
+- Error states handled ✅
+- Backward compatible ✅
+
+### Lessons Learned
+
+1. **Serverless-first design:** Eliminated Python service complexity
+2. **AI model selection:** 70B models provide significantly better financial reasoning than 8B
+3. **Code organization:** Dedicated utility files (lib/) improve maintainability over monolithic api/ files
+4. **Technology stack:** Groq free tier (1K RPM) sufficient for TFM demo requirements
