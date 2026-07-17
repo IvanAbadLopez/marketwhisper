@@ -10,6 +10,16 @@
 
 ---
 
+## 🌐 Live Demo
+
+**🚀 Try it now: [https://marketwhisper.vercel.app](https://marketwhisper.vercel.app)**
+
+**Demo credentials:**
+- Email: `demo@marketwhisper.com`
+- Password: `MarketWhisper2026!`
+
+---
+
 ## 🎯 Project Overview
 
 **MarketWhisper** is a Master's Thesis (TFM) project that provides AI-powered market intelligence analysis. Simply paste any financial text (news articles, tweets, analyst reports), and get instant AI-powered analysis with company detection, sentiment scoring, and reliability assessment.
@@ -400,6 +410,12 @@ See [prisma/schema.prisma](prisma/schema.prisma) for full schema.
 ---
 
 ## 📚 Documentation
+
+### 🎓 Academic Materials
+- **[Presentation Slides](docs/presentation-slides.md)** - Complete slide deck content (ready for Google Slides/PowerPoint)
+- **[Video Script](docs/video-script.md)** - Detailed recording script with demo flow
+- **Presentation Slides**: *(Add your Google Slides/PowerPoint URL here)*
+- **Demo Video**: *(Add your YouTube/Drive URL here)*
 
 ### Core Guides
 - **[Testing Guide](docs/testing.md)** - Vitest unit tests + Playwright E2E tests
