@@ -452,7 +452,7 @@ See [prisma/schema.prisma](prisma/schema.prisma) for full schema.
 
 ### 🎓 Academic Materials
 - **Presentation Slides**: [View on Google Slides](https://docs.google.com/presentation/d/1H0mGnPKeSEtUoHk7C33rS5pYxX3hfyfg6tcEi4ph5D4/edit?usp=sharing) (15 slides)
-- **Demo Video**: *(Coming soon)*
+- **Demo Video**: [Watch on Google Drive](https://drive.google.com/file/d/1jvKVHvjclI_XqcFRgOyVlovCfiimckOm/view?usp=drive_link) (Spanish, 6 min)
 
 ### Core Guides
 - **[Testing Guide](docs/testing.md)** - Vitest unit tests + Playwright E2E tests
