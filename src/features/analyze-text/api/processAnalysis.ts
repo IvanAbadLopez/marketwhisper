@@ -271,24 +271,34 @@ export async function processAnalysis(
     console.log(`[Job ${jobId}] Analysis completed successfully: ${validResults.length} companies analyzed (2 LLM calls total)`);
 
     if (companiesData.length > 0) {
-      console.log(`[Job ${jobId}] Auto-enriching ${companiesData.length} companies in background...`);
+      console.log(`[Job ${jobId}] Auto-enriching ${companiesData.length} companies...`);
       
       for (const companyData of companiesData) {
-        const enrichment = await prisma.companyEnrichment.create({
-          data: {
-            userId,
-            companyId: companyData.company.id,
-            ticker: companyData.ticker,
-            source: "FINNHUB",
-            status: "PENDING",
-          },
-        });
+        try {
+          const enrichment = await prisma.companyEnrichment.create({
+            data: {
+              userId,
+              companyId: companyData.company.id,
+              ticker: companyData.ticker,
+              source: "FINNHUB",
+              status: "PENDING",
+            },
+          });
 
-        processEnrichment(enrichment.id, companyData.company.id, companyData.ticker, undefined, userId).catch(error => {
-          console.error(`[processAnalysis] Background enrichment failed for ${companyData.ticker}:`, error);
-        });
-
-        console.log(`[Job ${jobId}] Started background enrichment for ${companyData.ticker} (ID: ${enrichment.id})`);
+          console.log(`[Job ${jobId}] Starting enrichment for ${companyData.ticker} (ID: ${enrichment.id})...`);
+          
+          await processEnrichment(
+            enrichment.id,
+            companyData.company.id,
+            companyData.ticker,
+            undefined,
+            userId
+          );
+          
+          console.log(`[Job ${jobId}] Enrichment completed for ${companyData.ticker}`);
+        } catch (error) {
+          console.error(`[Job ${jobId}] Enrichment failed for ${companyData.ticker}:`, error);
+        }
       }
     }
   } catch (error: unknown) {
