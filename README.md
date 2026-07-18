@@ -464,8 +464,6 @@ See [prisma/schema.prisma](prisma/schema.prisma) for full schema.
 
 ### Technical Documentation
 - **[Finnhub Integration](docs/finnhub-integration.md)** - Financial data API integration
-- **[Multi-Company Analysis](docs/multi-company-analysis.md)** - AI detection feature
-- **[FSD Migration](docs/fsd-migration.md)** - Feature-Sliced Design architecture
 - **[Serverless Migration](docs/serverless-migration-summary.md)** - Serverless stack details
 - **[Copilot Instructions](copilot-instructions.md)** - Technical implementation guide
 
