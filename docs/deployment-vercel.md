@@ -173,18 +173,6 @@ FINNHUB_API_KEY=[your-finnhub-api-key]
 NODE_ENV=production
 ```
 
-#### Optional Variables (OAuth)
-
-```bash
-# GitHub OAuth (optional)
-GITHUB_CLIENT_ID=[your-github-client-id]
-GITHUB_CLIENT_SECRET=[your-github-client-secret]
-
-# Google OAuth (optional)
-GOOGLE_CLIENT_ID=[your-google-client-id]
-GOOGLE_CLIENT_SECRET=[your-google-client-secret]
-```
-
 #### Generate NEXTAUTH_SECRET
 
 ```bash

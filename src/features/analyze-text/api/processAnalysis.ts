@@ -270,11 +270,10 @@ export async function processAnalysis(
 
     console.log(`[Job ${jobId}] Analysis completed successfully: ${validResults.length} companies analyzed (2 LLM calls total)`);
 
-    const newCompanies = companiesData.filter(cd => cd.isNewCompany);
-    if (newCompanies.length > 0) {
-      console.log(`[Job ${jobId}] Auto-enriching ${newCompanies.length} newly created companies in background...`);
+    if (companiesData.length > 0) {
+      console.log(`[Job ${jobId}] Auto-enriching ${companiesData.length} companies in background...`);
       
-      for (const companyData of newCompanies) {
+      for (const companyData of companiesData) {
         const enrichment = await prisma.companyEnrichment.create({
           data: {
             userId,

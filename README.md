@@ -61,7 +61,7 @@ Output:
 | **Framework** | Next.js 16 (App Router) + React 19 |
 | **Language** | TypeScript (strict mode) |
 | **Styling** | Tailwind CSS 4 + shadcn/ui |
-| **Auth** | NextAuth.js v5 (JWT + DB sessions) |
+| **Auth** | NextAuth.js v5 (Credentials + JWT sessions) |
 | **Database** | PostgreSQL 16 + Prisma 7 ORM + pgvector |
 | **AI/ML** | Groq API (llama-3.3-70b-versatile) - Fast LLM |
 | **Financial Data** | Finnhub API (real-time quotes, news, analyst data) |
@@ -430,7 +430,7 @@ See [prisma/schema.prisma](prisma/schema.prisma) for full schema.
 
 **✅ Completed**
 - [x] Next.js 16 project setup with App Router
-- [x] Authentication (NextAuth.js v5 - Email, Google, GitHub)
+- [x] Authentication (NextAuth.js v5 - Email/password)
 - [x] PostgreSQL database with Prisma 7
 - [x] AI text analysis with Groq (serverless)
 - [x] Multi-company detection

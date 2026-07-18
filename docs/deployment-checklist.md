@@ -29,12 +29,6 @@ GROQ_API_KEY=gsk_[your-key]
 GROQ_MODEL=llama-3.1-8b-instant
 FINNHUB_API_KEY=[your-key]
 NODE_ENV=production
-
-# Optional (OAuth)
-GITHUB_CLIENT_ID=[your-id]
-GITHUB_CLIENT_SECRET=[your-secret]
-GOOGLE_CLIENT_ID=[your-id]
-GOOGLE_CLIENT_SECRET=[your-secret]
 ```
 
 ## Post-Deployment Verification

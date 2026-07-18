@@ -23,11 +23,6 @@ export const env = {
   NEXTAUTH_URL: getEnvVar("NEXTAUTH_URL", "http://localhost:3000"),
   NEXTAUTH_SECRET: getEnvVar("NEXTAUTH_SECRET"),
 
-  GOOGLE_CLIENT_ID: getOptionalEnvVar("GOOGLE_CLIENT_ID"),
-  GOOGLE_CLIENT_SECRET: getOptionalEnvVar("GOOGLE_CLIENT_SECRET"),
-  GITHUB_CLIENT_ID: getOptionalEnvVar("GITHUB_CLIENT_ID"),
-  GITHUB_CLIENT_SECRET: getOptionalEnvVar("GITHUB_CLIENT_SECRET"),
-
   FINNHUB_API_KEY: getOptionalEnvVar("FINNHUB_API_KEY"),
 
   GROQ_API_KEY: getOptionalEnvVar("GROQ_API_KEY"),

@@ -228,12 +228,6 @@ OLLAMA_MODEL=qwen2.5:7b
 
 # Financial Data
 FINNHUB_API_KEY=[your-key]
-
-# OAuth (optional)
-GITHUB_CLIENT_ID=[dev-oauth-app]
-GITHUB_CLIENT_SECRET=[dev-secret]
-GOOGLE_CLIENT_ID=[dev-oauth-app]
-GOOGLE_CLIENT_SECRET=[dev-secret]
 ```
 
 ### Production (Vercel Environment Variables)
@@ -253,12 +247,6 @@ GROQ_MODEL=llama-3.1-8b-instant
 
 # Financial Data
 FINNHUB_API_KEY=[prod-key]
-
-# OAuth (optional)
-GITHUB_CLIENT_ID=[prod-oauth-app]
-GITHUB_CLIENT_SECRET=[prod-secret]
-GOOGLE_CLIENT_ID=[prod-oauth-app]
-GOOGLE_CLIENT_SECRET=[prod-secret]
 
 # Node Environment
 NODE_ENV=production
