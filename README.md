@@ -37,7 +37,7 @@
 - 🔍 **Company Dashboard**: View all analyses, sentiment trends, enrichment data, and insights per ticker
 - ⚙️ **Job Queue System**: Background processing with real-time status, progress tracking, and cancellation support
 - 🐳 **Docker Stack**: PostgreSQL + Next.js ready to deploy
-- 🔐 **Secure Authentication**: Email/password + GitHub/Google OAuth with NextAuth.js
+- 🔐 **Secure Authentication**: Email/password authentication with NextAuth.js (JWT strategy)
 
 #### Multi-Company Analysis Example
 
@@ -442,11 +442,9 @@ See [prisma/schema.prisma](prisma/schema.prisma) for full schema.
 - [x] GitHub Actions CI/CD
 
 **📅 Future Enhancements**
-- [ ] Historical trend charts
-- [ ] Semantic search across analyses
+- [ ] Automatic enrichment via web scraping or video transcriptions
+- [ ] Semantic search across analyses with RAG (Retrieval-Augmented Generation)
 - [ ] Enhanced AI chat interface
-- [ ] Export functionality (CSV, PDF reports)
-- [ ] Real-time collaboration features
 
 ---
 
